@@ -1,0 +1,41 @@
+# File to specify which file extensions or folders git shouldn't track
+
+# Mac-related files
+.DS_Store
+
+# Word document and Excelfiles
+*.docx
+*.doc
+*.xlsx
+*.xls
+
+~*
+*~
+
+# Object files
+*.o
+
+# Executable files
+*.exe
+
+# Files associated with latex processing
+*.toc
+*.aux
+*.dvi
+*.log
+*.bbl
+*.blg
+
+# Sweave files
+*.synctex.gz(busy)
+
+# Python byte-code
+*.pyc
+
+# R-related files
+.Rhistory
+
+# Files associated with the trial
+data/RAW_PRIORS/community_dictionary_withtrialarm.csv
+data/GENERATED_PRIORS/
+data/SAMPLED_PARAMETERS/
