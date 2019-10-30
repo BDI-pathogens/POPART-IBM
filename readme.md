@@ -1,4 +1,4 @@
-IBM for the PopART trial
+IBM for the PopART trial 
 ========================
 Repository for the C code used to run the individual-based model for the PopART trial.  
 
