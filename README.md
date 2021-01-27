@@ -13,7 +13,7 @@ Compilation
 For Mac and Unix-type systems, PopART-IBM requires a C compiler (such as gcc) and the [GSL](https://www.gnu.org/software/gsl/) libraries installed:
 
 ```bash
-cd IBM_simul/src
+cd POPART-IBM/src
 make all
 ```
 
@@ -26,7 +26,7 @@ Usage
 -----
 
 ```bash
-cd IBM_simul/src
+cd POPART-IBM/src
 ./popart-simul.exe <inputdir> <nruns>
 ```
  
