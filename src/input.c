@@ -1054,8 +1054,14 @@ void read_cascade_params(char *patch_tag, parameters *allrunparameters, int n_ru
         check_if_cannot_read_param(checkreadok,"param_local->time_to_background_HIVtest_midpoint");
 
         /* Input probabilities for the cascade events: */
-        checkreadok = fscanf(param_file,"%lg",&(param_local->HIV_background_testing_rate_multiplier));
-        check_if_cannot_read_param(checkreadok,"param_local->HIV_background_testing_rate_multiplier");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_HIV_background_testing_female_pre2006));
+        check_if_cannot_read_param(checkreadok,"param_local->p_HIV_background_testing_female_pre2006");
+        
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_HIV_background_testing_female_current));
+        check_if_cannot_read_param(checkreadok,"param_local->p_HIV_background_testing_female_current");
+
+        checkreadok = fscanf(param_file,"%lg",&(param_local->RR_HIV_background_testing_male));
+        check_if_cannot_read_param(checkreadok,"param_local->RR_HIV_background_testing_male");
 
         checkreadok = fscanf(param_file,"%lg",&(param_local->HIV_rapid_test_sensitivity_CHIPS));
         check_if_cannot_read_param(checkreadok,"param_local->HIV_rapid_test_sensitivity_CHIPS");
@@ -1105,6 +1111,9 @@ void read_cascade_params(char *patch_tag, parameters *allrunparameters, int n_ru
 
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_stays_virally_suppressed));
         check_if_cannot_read_param(checkreadok,"param_local->p_stays_virally_suppressed");
+
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_stays_virally_suppressed_male));
+        check_if_cannot_read_param(checkreadok,"param_local->p_stays_virally_suppressed_male");
 
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_stops_virally_suppressed));
         check_if_cannot_read_param(checkreadok,"param_local->p_stops_virally_suppressed");
@@ -1461,27 +1470,7 @@ void read_chips_uptake_params(char *patch_tag, parameters *allrunparameters){
                 }
             }
         }
-        /* Check there's nothing remaining in the file; otherwise there's a mismatch btw the
-        number of timesteps in the chips round we calculate and the number of lines of data*/
-        char buffer[100];
-        int firsterror = 1;
-        while(!feof(param_file)){
-            /* Only print error statement once. */
-            if(firsterror == 1){
-                printf("Error: extra data in %s\n", param_file_name);
-                firsterror=0;
-            }
-            fgets(buffer, sizeof buffer, param_file);
-            fputs(buffer, stdout);
-        }
-        if(firsterror == 0){
-            printf("Exiting\n");
-            fclose(param_file);
-            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-            fflush(stdout);
-            exit(1);
-        }
-        /* If no problems, close chips uptake parameter file */
+        /* Close chips uptake parameter file */
         fclose(param_file);
     }
 }
@@ -1615,14 +1604,21 @@ void read_pc0_enrolment_params(char *patch_tag, int community_id, parameters *al
             }
             //printf("\n");
             i = i+1;
-
         }
 
-
         param_local->PC_params->n_timesteps_per_round[pc_round] = (param_local->PC_params->PC_END_YEAR[pc_round]-param_local->PC_params->PC_START_YEAR[pc_round])*N_TIME_STEP_PER_YEAR + param_local->PC_params->PC_END_TIMESTEP[pc_round] - param_local->PC_params->PC_START_TIMESTEP[pc_round]+1;
-        //for (pc_round=0;pc_round<NPC_ROUNDS;pc_round++)
-        //printf("Number of timesteps = %i in round %i. Start = %i %i. End = %i %i\n",param_local->PC_params->n_timesteps_per_round[pc_round],pc_round, param_local->PC_params->PC_START_YEAR[pc_round], param_local->PC_params->PC_START_TIMESTEP[pc_round], param_local->PC_params->PC_END_YEAR[pc_round], param_local->PC_params->PC_END_TIMESTEP[pc_round]);
-
+        
+        // Calculate PC midpoints from input data
+        int midpoint_timestep = (param_local->PC_params->PC_START_TIMESTEP[pc_round] +
+            param_local->PC_params->n_timesteps_per_round[pc_round]/2); 
+        
+        param_local->PC_params->PC_MIDPOINT_TIMESTEP[pc_round] = 
+            midpoint_timestep % N_TIME_STEP_PER_YEAR;
+        
+        param_local->PC_params->PC_MIDPOINT_YEAR[pc_round] =
+            param_local->PC_params->PC_START_YEAR[pc_round] + 
+            midpoint_timestep / N_TIME_STEP_PER_YEAR;
+        
         /* For debugging - check that total number of people seen agrees with the csv files, and check right duration of round. */
         if (param_local->PC_params->n_timesteps_per_round[pc_round]!=i){
             printf("ERROR: Mismatch in number of timesteps in PC round %i = %i %i. Exiting\n",pc_round,param_local->PC_params->n_timesteps_per_round[pc_round],i);
@@ -1724,6 +1720,9 @@ void copy_pc_params( parameters **allrunparameters, int n_runs){
                 allrunparameters[p][i_run].PC_params->PC_START_YEAR[pc_round] =  allrunparameters[p][0].PC_params->PC_START_YEAR[pc_round];
                 allrunparameters[p][i_run].PC_params->PC_END_TIMESTEP[pc_round] = allrunparameters[p][0].PC_params->PC_END_TIMESTEP[pc_round];
                 allrunparameters[p][i_run].PC_params->PC_END_YEAR[pc_round] =  allrunparameters[p][0].PC_params->PC_END_YEAR[pc_round];
+                
+                allrunparameters[p][i_run].PC_params->PC_MIDPOINT_TIMESTEP[pc_round] = allrunparameters[p][0].PC_params->PC_MIDPOINT_TIMESTEP[pc_round];
+                allrunparameters[p][i_run].PC_params->PC_MIDPOINT_YEAR[pc_round] =  allrunparameters[p][0].PC_params->PC_MIDPOINT_YEAR[pc_round];
             }
         }
     }

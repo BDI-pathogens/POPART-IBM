@@ -621,25 +621,47 @@ int get_chips_round(parameters *param, int year, int t_step){
     return saved_chips_round;
 }
 
-/* Function returns 1 if this is the start of a chips round, otherwise returns 0. Allows us to carry out chips sampling once per round. */
+/* Function returns 1 if this is the start of a chips round, otherwise returns 0. 
+Allows us to carry out chips sampling once per round. */
 int is_start_of_chips_round(parameters *param, int year, int t_step, int trial_arm){
+    
     int chips_round;
     int is_start_of_chips = 0;
-    if(trial_arm==ARM_A || trial_arm==ARM_B){
-        for (chips_round=0;chips_round<NCHIPSROUNDS;chips_round++){
-            if ((year==param->CHIPS_START_YEAR[chips_round] && t_step==param->CHIPS_START_TIMESTEP[chips_round])
-                    || (year>param->CHIPS_START_YEAR[NCHIPSROUNDS-1] && t_step==param->CHIPS_START_TIMESTEP_POSTTRIAL)
-                    || (year==param->CHIPS_END_YEAR[NCHIPSROUNDS-1] && t_step==param->CHIPS_START_TIMESTEP_POSTTRIAL && t_step>param->CHIPS_END_TIMESTEP[NCHIPSROUNDS-1])){
+    
+    if(trial_arm == ARM_A || trial_arm == ARM_B){
+        
+        for(chips_round = 0; chips_round < NCHIPSROUNDS; chips_round++){
+            if(
+                (year == param->CHIPS_START_YEAR[chips_round] &&
+                t_step == param->CHIPS_START_TIMESTEP[chips_round]) || 
+                    
+                (year > param->CHIPS_START_YEAR[NCHIPSROUNDS-1] &&
+                t_step == param->CHIPS_START_TIMESTEP_POSTTRIAL) ||
+                    
+                 (year == param->CHIPS_END_YEAR[NCHIPSROUNDS-1] &&
+                t_step == param->CHIPS_START_TIMESTEP_POSTTRIAL &&
+                t_step > param->CHIPS_END_TIMESTEP[NCHIPSROUNDS-1])
+            ){
                 is_start_of_chips = 1;
                 break;
             }
         }
-    }
-    else{
-        if (year>=T_ROLLOUT_CHIPS_EVERYWHERE){ /* The condition inside this loop is probably redundant (legacy code) but keep anyway for now. */
-            if ((year>param->CHIPS_END_YEAR[NCHIPSROUNDS-1] && t_step==param->CHIPS_START_TIMESTEP_POSTTRIAL)
-                    || (year==param->CHIPS_END_YEAR[NCHIPSROUNDS-1] && t_step==param->CHIPS_START_TIMESTEP_POSTTRIAL && t_step>param->CHIPS_END_TIMESTEP[NCHIPSROUNDS-1])){
+    }else{
+        /* The condition inside this loop is probably redundant (legacy code) but keep anyway*/
+        if(year >= T_ROLLOUT_CHIPS_EVERYWHERE){
+            // Allow rollout under CF scenarios
+            if(ALLOW_COUNTERFACTUAL_ROLLOUT == 1){
                 is_start_of_chips = 1;
+            }else{
+                if((year > param->CHIPS_END_YEAR[NCHIPSROUNDS-1] &&
+                t_step == param->CHIPS_START_TIMESTEP_POSTTRIAL) ||
+            
+                (year == param->CHIPS_END_YEAR[NCHIPSROUNDS-1] &&
+                t_step == param->CHIPS_START_TIMESTEP_POSTTRIAL &&
+                t_step > param->CHIPS_END_TIMESTEP[NCHIPSROUNDS-1])
+                ){
+                    is_start_of_chips = 1;
+                }
             }
         }
     }
@@ -690,8 +712,8 @@ void parse_command_line_arguments(int argc, char **argv, int *n_runs, int *i_sta
 
     if (argc>5)
         *n_startrun = strtol(argv[5],NULL,10);
-    else
-        *n_startrun = *n_runs;
+	else
+        *n_startrun = (*n_runs) - (*i_startrun - 1);
 
     if (argc>7)
         *rng_seed_offset = strtol(argv[7],NULL,10);
@@ -991,6 +1013,24 @@ void make_filenames_for_struct(file_label_struct *file_labels,
         concatenate_filename(file_data_store->filename_distr_n_partners_lastyear[p],
             output_file_directory, file_labels->filename_label_bypatch[p],
             "Distr_n_partners_lastyear");
+            
+        if(WRITE_COST_EFFECTIVENESS_OUTPUT == 1){
+        concatenate_filename(file_data_store->filename_cost_effectiveness_output[p],
+            output_file_directory, file_labels->filename_label_bypatch[p],
+            "Cost_effectiveness");
+        }
+        
+        if(WRITE_TREATS_OUTPUT == 1){
+        concatenate_filename(file_data_store->filename_treats_output[p],
+            output_file_directory, file_labels->filename_label_bypatch[p],
+            "TREATS");
+        }
+        
+        if(WRITE_ART_STATUS_BY_AGE_SEX == 1){
+        concatenate_filename(file_data_store->filename_art_status_by_age_sex_output[p],
+            output_file_directory, file_labels->filename_label_bypatch[p],
+            "ART_status_by_age_sex");
+        }
     }
     /* Some filenames are special - only made for one run. */
     concatenate_filename(file_data_store->filename_debug_nnewadults_ndeaths_file,
@@ -1463,8 +1503,8 @@ void check_if_parameters_plausible(parameters *param){
         exit(1);
     }
 
-    if (param->eff_circ_vmmc<0.3 || param->eff_circ_vmmc>0.8){
-        printf("Error: param->eff_circ_vmmc is outside expected range [0.3,0.8]\nExiting\n");
+    if (param->eff_circ_vmmc<0.0 || param->eff_circ_vmmc>1.0){
+        printf("Error: param->eff_circ_vmmc is outside expected range [0.0,1.0]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
@@ -1688,7 +1728,7 @@ void check_if_parameters_plausible(parameters *param){
 
     for (icd4=0; icd4<NCD4; icd4++){
         for (spvl=0; spvl<NSPVL; spvl++){
-            if (param->time_hiv_event[icd4][spvl]<0.25 || param->time_hiv_event[icd4][spvl]>18){
+            if (param->time_hiv_event[icd4][spvl]<0.0 || param->time_hiv_event[icd4][spvl]>18){
                 printf("Error: param->time_hiv_event[icd4=%i][spvl=%i][0]=%f is outside expected range [0.25,18]\nExiting\n",icd4,spvl,param->time_hiv_event[icd4][spvl]);
                 printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
                 fflush(stdout);
@@ -1904,7 +1944,7 @@ void check_if_parameters_plausible(parameters *param){
 
 
     for (chips_round=0; chips_round<NCHIPSROUNDS; chips_round++){
-        if (param->chips_params->n_timesteps_per_round[chips_round]<12 || param->chips_params->n_timesteps_per_round[chips_round]>=96){
+        if (param->chips_params->n_timesteps_per_round[chips_round]<1 || param->chips_params->n_timesteps_per_round[chips_round]>=96){
             printf("Error:param->chips_params->n_timesteps_per_round[%d] =%d is outside expected range [12,95] weeks (0.25-2yrs)\n. Note that if you want a CHiPs round to last 2 years or more then you must increase the size of param->chips_params->prop_tested_by_chips_per_timestep. Exiting\n",chips_round,param->chips_params->n_timesteps_per_round[chips_round]);
             printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
             fflush(stdout);
@@ -2303,7 +2343,7 @@ void check_if_parameters_plausible(parameters *param){
         fflush(stdout);
         exit(1);
     }
-    if (param->COUNTRY_ART_START<1985 || param->COUNTRY_ART_START>2015){
+    if (param->COUNTRY_ART_START<1985 || param->COUNTRY_ART_START>2100){
         printf("Error:param->COUNTRY_ART_START is outside expected range [1985,2015]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
@@ -2328,7 +2368,7 @@ void check_if_parameters_plausible(parameters *param){
         fflush(stdout);
         exit(1);
     }
-    if (param->COUNTRY_CD4_500_START>2020){
+    if (param->COUNTRY_CD4_500_START>2100){
         printf("Error:param->COUNTRY_CD4_500_START is outside expected range between COUNTRY_CD4_350_START and 2020\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
@@ -2354,12 +2394,12 @@ void check_if_parameters_plausible(parameters *param){
             fflush(stdout);
             exit(1);
         }
-        if (param->COUNTRY_ART_START>param->CHIPS_START_YEAR[chips_round]){
-            printf("Error: param->COUNTRY_ART_START is bigger than param->CHIPS_START_YEAR[chips_round].\nExiting\n");
-            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-            fflush(stdout);
-            exit(1);
-        }
+        //if (param->COUNTRY_ART_START>param->CHIPS_START_YEAR[chips_round]){
+        //    printf("Error: param->COUNTRY_ART_START is bigger than param->CHIPS_START_YEAR[chips_round].\nExiting\n");
+       //     printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+       //     fflush(stdout);
+       //     exit(1);
+       // }
         if (param->CHIPS_END_YEAR[chips_round]<2014 || param->CHIPS_END_YEAR[chips_round]>2020){
             printf("Error:param->CHIPS_END_YEAR[chips_round]=%i is outside expected range [2014,2020]\nExiting\n",param->CHIPS_END_YEAR[chips_round]);
             printf("LINE %d; FILE %s\n", __LINE__, __FILE__);

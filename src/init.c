@@ -372,6 +372,7 @@ void set_up_population(int p, patch_struct *patch, population *pop){
     person_template.HIV_status = UNINFECTED;
     person_template.ART_status = ARTNEG;
     person_template.t_sc = -1;                   /* Initialize at dummy value. */
+    person_template.t_vmmc = -1;                   /* Initialize at dummy value. */
     person_template.SPVL_num_G = 0;              /* Initialize at dummy value. */
     person_template.SPVL_num_E = 0;              /* Initialize at dummy value. */
     person_template.SPVL_infector = 0;           /* Initialize at dummy value. */
@@ -623,12 +624,62 @@ void init_cumulative_counters(cumulative_outputs_struct *cumulative_outputs){
     cumulative_outputs->N_total_HIV_tests_nonpopart = 0;
     cumulative_outputs->N_total_CD4_tests_popart = 0;
     cumulative_outputs->N_total_HIV_tests_popart = 0;
+    cumulative_outputs->N_total_HIV_tests_popart_positive = 0;
+    cumulative_outputs->N_total_HIV_tests_popart_negative = 0;
     cumulative_outputs->N_total_ever_started_ART_nonpopart = 0;
     cumulative_outputs->N_total_ever_started_ART_popart = 0;
 }
 
-void initialise_debug_variables(debug_struct *debug)
-{
+
+/* init_calendar_counters()
+Set all array elements of arrays in the calendar outputs to zero 
+(number of HIV tests, CD4 tests etc. ).  Used in cost-effectiveness analysis.  
+
+Arguments
+---------
+calendar_outputs : pointer to calendar_outputs_struct
+    Patch-specific structure housing a number of arrays that count yearly events (index starts
+    from first year of the simulation; i.e. a[0] is for year 1900 if the simulation starts 
+    in the year 1900).  
+
+Returns
+-------
+Nothing; sets the values of the calendar array elements to zero.  
+*/
+void init_calendar_counters(calendar_outputs_struct *calendar_outputs){
+    
+    int i, g, a, cd4, spvl;
+    for (i = 0; i < MAX_N_YEARS; i++){
+        calendar_outputs->N_calendar_CD4_tests_nonpopart[i] = 0;
+        calendar_outputs->N_calendar_HIV_tests_nonpopart[i] = 0;
+        calendar_outputs->N_calendar_CD4_tests_popart[i] = 0;
+        calendar_outputs->N_calendar_HIV_tests_popart[i] = 0;
+        calendar_outputs->N_calendar_HIV_tests_popart_positive[i] = 0;
+        calendar_outputs->N_calendar_HIV_tests_popart_negative[i] = 0;
+        calendar_outputs->N_calendar_started_ART_annual[i] = 0;
+        calendar_outputs->N_calendar_dropout[i] = 0;
+        calendar_outputs->N_calendar_CHIPS_visits[i] = 0;
+        calendar_outputs->N_calendar_VMMC[i] = 0;
+        
+        // For use with TREATS output
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < N_AGE_UNPD + 1; a++){
+                calendar_outputs->N_calendar_infections[g][a][i] = 0;
+                for(cd4 = 0; cd4 < NCD4 + 1; cd4++){
+                    for(spvl = 0; spvl < NSPVL + 1; spvl++){
+                        calendar_outputs->N_calendar_started_ART[g][a][cd4][spvl][i] = 0;
+                        calendar_outputs->N_calendar_Died_from_HIV_OnART[g][a][cd4][spvl][i] = 0;
+                        calendar_outputs->N_calendar_Died_from_HIV_ARTNaive[g][a][cd4][spvl][i] = 0;
+                        calendar_outputs->N_calendar_AnnualDropoutOnART[g][a][cd4][spvl][i] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+void initialise_debug_variables(debug_struct *debug){
     int year, age_f, age_m, risk_f, risk_m;
     int p, art_i, art_j;
 

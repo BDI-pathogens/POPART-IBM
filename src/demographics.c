@@ -2135,27 +2135,69 @@ void make_pop_from_age_list(population *pop, age_list_struct *age_list, individu
  * Routine which calls a subfunction to delete an individual dying of AIDS (including sorting out 
  * partnerships and lists which the individual belonged to). 
  * Note they are already dying of AIDS so we don't need to fix hiv_pos_progression.
- * Also note this function does not remove the individual from the cascade_events, this needs to be done separately by calling remove_from_cascade_events */
+ * Also note this function does not remove the individual from the cascade_events, 
+ * this needs to be done separately by calling remove_from_cascade_events */
 void individual_death_AIDS(age_list_struct *age_list, individual *dead_person, 
-        population_size *n_population,  population_size_one_year_age *n_population_oneyearagegroups, population_size_one_year_age *n_infected,
+        population_size *n_population, population_size_one_year_age *n_population_oneyearagegroups,
+        population_size_one_year_age *n_infected,
         stratified_population_size *n_population_stratified, double t, parameters *param, 
         individual **susceptible_in_serodiscordant_partnership, 
-        long *n_susceptible_in_serodiscordant_partnership, population_partners *pop_available_partners, 
-        population_size_all_patches *n_pop_available_partners, individual ***cascade_events, long *n_cascade_events, long *size_cascade_events, patch_struct *patch, int p, file_struct *file_data_store){
+        long *n_susceptible_in_serodiscordant_partnership, 
+        population_partners *pop_available_partners, 
+        population_size_all_patches *n_pop_available_partners, individual ***cascade_events, 
+        long *n_cascade_events, long *size_cascade_events, patch_struct *patch, int p, 
+        file_struct *file_data_store){
+    
     int aa, ai, age_list_index;
-    int g = dead_person->gender;
-
-    //print_here_string("individual_death_AIDS line",1466);
-    //printf("Reached individual_death_AIDS() for individual %li in patch %i at t=%6.2f. Exiting\n",dead_person->id,dead_person->patch_no,t);
-    //printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-    //fflush(stdout);
-    //exit(1);
-
-    if (dead_person->id==FOLLOW_INDIVIDUAL && dead_person->patch_no==FOLLOW_PATCH){
-        printf("Killing %li from patch %d by HIV at time %6.2f\n",dead_person->id,dead_person->patch_no,t);
+    int g = dead_person->gender, cd4 = dead_person->cd4, spvl = dead_person->SPVL_cat;
+    
+    // Find age of the dead person when they died
+    int age = (int) floor(t - dead_person->DoB);
+    
+    int year_idx = (int) floor(t) - param->start_time_simul;
+    
+    // Find the age index of this person (>=80 is its own category)
+    // truncate >=80 to 80 so that indexing of FIND_AGE_GROUPS_UNPD works
+    if(age >= MAX_AGE){
+        age = MAX_AGE;
+    }
+    int age_idx = FIND_AGE_GROUPS_UNPD[age - AGE_ADULT];
+    
+    if (dead_person->id==FOLLOW_INDIVIDUAL && dead_person->patch_no == FOLLOW_PATCH){
+        printf("Killing %li from patch %d by HIV at time %6.2f\n", 
+            dead_person->id, dead_person->patch_no, t);
         fflush(stdout);
     }
+    
     patch[p].OUTPUT_NDIEDFROMHIV++;
+    patch[p].n_died_from_HIV_by_risk[dead_person->sex_risk]++;
+    
+    if( ( dead_person->ART_status == ARTNEG ) || 
+        ( dead_person->ART_status == ARTNAIVE ) || 
+        (dead_person->ART_status == ARTDROPOUT) || 
+        (dead_person->ART_status == CASCADEDROPOUT)
+        ){
+            patch[p].calendar_outputs->N_calendar_Died_from_HIV_ARTNaive[g][age_idx][cd4][spvl][year_idx]++;
+    }
+    
+    if( ( dead_person->ART_status == EARLYART ) || 
+        ( dead_person->ART_status == LTART_VS ) || 
+        ( dead_person->ART_status == LTART_VU ) || 
+        ( dead_person->ART_status == ARTDEATH ) ){
+            patch[p].calendar_outputs->N_calendar_Died_from_HIV_OnART[g][age_idx][cd4][spvl][year_idx]++;
+    }
+    
+    // If cost-effectiveness output is being recorded, record the amount of time of mortality that
+    // was accumulated in the current year from this individual that died an HIV-related death.  
+    if(WRITE_COST_EFFECTIVENESS_OUTPUT == 1){
+        
+        // Find difference between time of death and end of year
+        double py_fraction = 1.0 - (t - ((int)t));
+        
+        // Add counter to the py_died_from_HIV array and n_died_from_hiv
+        patch[p].py_died_from_HIV[g][age_idx] += py_fraction;
+        patch[p].n_died_from_HIV[g][age_idx] += 1;
+    }
 
     if (WRITE_DEBUG_HIV_DURATION==1){
         /* Only consider people who are ART-naive for now: */
@@ -2174,19 +2216,13 @@ void individual_death_AIDS(age_list_struct *age_list, individual *dead_person,
             write_hiv_duration_km(dead_person, t, file_data_store, 1);
     }
 
-    //print_here_string("individual_death_AIDS line",1474);
-
     /* Note that we deal with deaths aged MAX_AGE separately - it is a separate array in age_list */
     aa = (int) floor(floor(t) - dead_person->DoB) - AGE_ADULT;
     if (aa<(MAX_AGE-AGE_ADULT)){
 
-        //print_here_string("YOUNG",0);
-
         ai = age_list->age_list_by_gender[g]->youngest_age_group_index + aa; /* ai is the index of the array age_list->number_per_age_group of the age group of people you want to be dead */
         while (ai>(MAX_AGE-AGE_ADULT-1))
             ai = ai - (MAX_AGE-AGE_ADULT);
-
-        //print_here_string("YOUNG",1);
 
         if (PRINT_DEBUG_DEMOGRAPHICS){
             if (age_list->age_list_by_gender[g]->number_per_age_group[ai]>0)

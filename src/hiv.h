@@ -33,7 +33,7 @@ double get_mean_time_hiv_progression(parameters *, individual *);
 double get_RR_SPVL(double , parameters *);
 double hiv_transmission_probability(individual *, parameters *);
 void hiv_acquisition(individual*, double , patch_struct *, int, all_partnerships *, 
-    output_struct *, debug_struct *, file_struct *);
+    output_struct *, debug_struct *, file_struct *, int, int);
 int find_who_infected(int, double);
 void inform_partners_of_seroconversion_and_update_list_serodiscordant_partnerships(individual *,
     individual **, long *);
@@ -41,20 +41,21 @@ void new_infection(double, int, individual *, individual *, population_size_one_
     population_size_one_year_age *, age_list_struct *,  parameters *, individual ***, long *,
     long *, population_size_one_year_age *, file_struct *);
 void draw_initial_infection(double, individual* , patch_struct *, int, all_partnerships *,
-    output_struct *, file_struct *);
+    output_struct *, file_struct *, int, int);
 void next_hiv_event(individual *, individual ***, long *, long *, parameters *, double ,
-    cumulative_outputs_struct *);
+    cumulative_outputs_struct *, calendar_outputs_struct *);
 void carry_out_HIV_events_per_timestep(double , patch_struct *, int , all_partnerships *,
     debug_struct *, file_struct *);
 int get_window_result(double ,double , patch_struct *);
-int joins_preart_care(individual* , parameters *, double , cumulative_outputs_struct *);
+int joins_preart_care(individual* , parameters *, double , cumulative_outputs_struct *,
+    calendar_outputs_struct *);
 int remains_in_cascade(individual* , parameters *, int);
 int measured_cd4_cat(parameters *, int );
 int art_cd4_eligibility_group(parameters *, double);
 int is_eligible_for_art(individual* , parameters *, double , patch_struct *, int );
 double get_time_emergency_start_ART(individual *, parameters *, double );
 void start_ART_process(individual* , parameters *, double , individual ***, long *, long *,
-    individual ***, long *, long *, int , file_struct *);
+    individual ***, long *, long *, int , file_struct *, calendar_outputs_struct *);
 void draw_initial_hiv_tests(parameters *, age_list_struct *, double, individual ***, 
     long *, long *);
 void draw_hiv_tests(parameters *, age_list_struct *, int , individual ***, long *, long *, int );
@@ -64,18 +65,19 @@ void schedule_new_hiv_test(individual *, parameters *, double, individual ***, l
 void probability_get_hiv_test_in_next_window(double *, double *, int , int , int , parameters *);
 void schedule_hiv_test_fixedtime(individual* , parameters *, int , individual ***, long *, 
     long *, double , int , double *);
-void hiv_test_process(individual* , parameters *, double, individual ***, long *, long *,
-    individual ***, long *, long *, cumulative_outputs_struct *, individual ***, long *, 
-    long *, patch_struct *, int , debug_struct *);
+void hiv_test_process(individual* , parameters *, double, individual ***, long *, long *, 
+    individual ***, long *, long *, cumulative_outputs_struct *, calendar_outputs_struct *, 
+    individual ***, long *, long *, patch_struct *, int , debug_struct *);
 void schedule_start_of_art(individual* , parameters *, double , individual ***, long *, long *);
 void cd4_test_process(individual* , parameters *, double , individual ***, long *, long *,
-    individual ***, long *, long *, cumulative_outputs_struct *, patch_struct *, int );
+    individual ***, long *, long *, cumulative_outputs_struct *, calendar_outputs_struct *,
+    patch_struct *, int );
 void virally_suppressed_process(individual* , parameters *, double , individual ***, long *, 
     long *, individual ***, long *, long *);
 void virally_unsuppressed_process(individual* , parameters *, double , individual ***, long *,
-    long *, individual ***, long *, long *, cumulative_outputs_struct *);
+    long *, individual ***, long *, long *, cumulative_outputs_struct *, calendar_outputs_struct *);
 void dropout_process(individual* , parameters *, double , individual ***, long *, long *,
-    individual ***, long *, long *, cumulative_outputs_struct *);
+    individual ***, long *, long *, cumulative_outputs_struct *, calendar_outputs_struct *);
 void carry_out_cascade_events_per_timestep(double , patch_struct *, int , all_partnerships *,
     debug_struct *, file_struct *);
 double PANGEA_get_cd4(individual* , double );

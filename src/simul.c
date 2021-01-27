@@ -81,8 +81,8 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
     
     */
     
-    
     int p, t_step, fit_flag;
+    int icd4, i, r;
     
     // Reset the counters for newly infected individuals
     for(p = 0; p < NPATCHES; p++){
@@ -93,6 +93,17 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
         patch[p].n_newly_infected_total_pconly = 0;
         patch[p].n_newly_infected_total_from_outside_pconly = 0;
         patch[p].n_newly_infected_total_from_acute_pconly = 0;
+        
+        for(r = 0; r < N_RISK; r++){
+            patch[p].n_newly_infected_total_by_risk[r] = 0;
+            patch[p].n_newly_infected_total_by_risk_pconly[r] = 0;
+            patch[p].n_died_from_HIV_by_risk[r] = 0;
+        }
+        
+        for(icd4 = 0; icd4 < NCD4; icd4++){
+            patch[p].py_n_positive_on_art[icd4] = 0;
+            patch[p].py_n_positive_not_on_art[icd4] = 0;
+        }
     }
 
     long npop_check;
@@ -153,10 +164,10 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
                 (t_step%OUTPUTTIMESTEP == (OUTPUTTIMESTEP - 1))
             ){
                 /* Stores data for all age groups. */
-                store_timestep_outputs(patch, p ,t0 + (t_step + 1)*TIME_STEP, output, 0);
+                store_timestep_outputs(patch, p ,t0 + (t_step + 1)*TIME_STEP, output, 0, t0, t_step);
                 
                 /* Stores data for PC age groups only. */
-                store_timestep_outputs(patch, p , t0 + (t_step + 1)*TIME_STEP, output, 1);
+                store_timestep_outputs(patch, p , t0 + (t_step + 1)*TIME_STEP, output, 1, t0, t_step);
                 
                 // Store age-specific timestep outputs
                 if(TIMESTEP_AGE == 1){
@@ -165,6 +176,57 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
                     
                     /* Stores data for PC age groups only. */
                     store_timestep_age_outputs(patch, p , t0 + (t_step + 1)*TIME_STEP, output, 1);
+                }
+                
+                if(WRITE_COST_EFFECTIVENESS_OUTPUT == 1){
+                    // Loop through all individuals in the current patch; count person-years events
+                    for(i = 0; i < patch[p].id_counter; i++){
+                        if(patch[p].individual_population[i].cd4 != DEAD){
+                        
+                            // Check that person is HIV positive
+                            if(patch[p].individual_population[i].HIV_status > UNINFECTED){
+                            
+                                // Find the CD4 category of the person in question
+                                icd4 = patch[p].individual_population[i].cd4;
+                            
+                                // Check that the person is on ART
+                                if(patch[p].individual_population[i].ART_status > ARTNAIVE &&
+                                    patch[p].individual_population[i].ART_status < ARTDROPOUT){
+                                
+                                    patch[p].py_n_positive_on_art[icd4] += TIME_STEP;
+                                }else{ // Otherwise, the person is not on ART
+                                
+                                    patch[p].py_n_positive_not_on_art[icd4] += TIME_STEP;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if(WRITE_ART_STATUS_BY_AGE_SEX == 1){
+                    store_art_status_by_age_sex(patch, p, t0 + (t_step + 1)*TIME_STEP, output);
+                }
+            }
+        }
+        
+        // Store PC outputs that are a cross-section (prev, cascade, etc) to calibration file.
+        if(WRITE_CALIBRATION == 1){
+            
+            int pc_round;
+            
+            for(p = 0; p < NPATCHES; p++){
+                
+                // Store the "person-timesteps" for the given PC round
+                save_person_timesteps_pc(patch, p, output, t0, t_step);
+                
+                // Check we're at the start of a PC round.  
+                for(pc_round = 0; pc_round < NPC_ROUNDS; pc_round++){
+                    
+                    if(t0 == patch[p].param->PC_params->PC_MIDPOINT_YEAR[pc_round] &&
+                        t_step == patch[p].param->PC_params->PC_MIDPOINT_TIMESTEP[pc_round]){
+                        
+                        save_calibration_outputs_pc(patch, p, output, t0, t_step);
+                    }
                 }
             }
         }
@@ -288,7 +350,7 @@ void carry_out_partnership_processes_by_time_step(int t_step, int t0, patch_stru
             hiv_acquisition(overall_partnerships->susceptible_in_serodiscordant_partnership[k], t,
                 patch,
                 overall_partnerships->susceptible_in_serodiscordant_partnership[k]->patch_no, 
-                overall_partnerships, output, debug, file_data_store);
+                overall_partnerships, output, debug, file_data_store, t0, t_step);
             
         }else{
             printf("Here problem: trying to make a dead person acquire HIV. ID = %li\n",
@@ -501,6 +563,28 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
         }
     }
     
+    // In the case of a counterfactual run where we would like CHiPs rollout post-trial to occur
+    if(
+        (patch[p].trial_arm == ARM_C) && 
+        (is_counterfactual == IS_COUNTERFACTUAL_RUN) &&
+        (ALLOW_COUNTERFACTUAL_ROLLOUT == 1)
+    ){
+        if(is_start_of_chips_round(patch[p].param, t0, t_step, patch[p].trial_arm) == 1){
+            
+            if(POPART_FINISHED == 1 && t0 >= T_ROLLOUT_CHIPS_EVERYWHERE){
+                if(VERBOSE_OUTPUT == 1){
+                    printf("Post-round CHiPs rollout carried out at time t=%f\n",t);
+                    fflush(stdout);
+                }
+                chips_round = CHIPSROUNDPOSTTRIAL;
+                
+                POPART_SAMPLING_FRAME_ESTABLISHED = 1;
+                create_popart_chips_samples(patch[p].age_list, patch[p].chips_sample,
+                    patch[p].param, chips_round, p);
+            }
+        }
+    }
+    
     /********************************************/
     /*      3. HIV testing                      */
     /********************************************/
@@ -650,7 +734,7 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
                         
                     draw_initial_infection(t, 
                         patch[p].age_list->age_list_by_gender[g]->age_group[ai][k], patch, p,
-                        overall_partnerships, output,file_data_store);
+                        overall_partnerships, output,file_data_store, t0, t_step);
                 }
             }
             
@@ -663,7 +747,7 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
                     // with probability depending on gender and risk group */
                     draw_initial_infection(t,
                         patch[p].age_list->age_list_by_gender[g]->oldest_age_group[k], patch, p,
-                        overall_partnerships, output,file_data_store);
+                        overall_partnerships, output,file_data_store, t0, t_step);
                 }
             }
         }
@@ -772,23 +856,33 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
         (patch[p].trial_arm == ARM_A || patch[p].trial_arm == ARM_B) && 
         (RUN_POPART == 1)
     ){
+        int RUN_CHIPS = 1;
         
-        if(get_chips_round(patch[p].param, t0, t_step) > CHIPSNOTRUNNING){
-            
-            if(POPART_SAMPLING_FRAME_ESTABLISHED == 0){
-                printf("Error -trying to start PopART before PopART sample is set up at time ");
-                printf("t=%f Exiting\n", t);
-                printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-                fflush(stdout);
-                exit(1);
+        if( POPART_FINISHED == 1){
+            if( (ROLL_OUT_CHIPS_INSIDE_PATCH == 0) && (t0 >= T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH)){
+                RUN_CHIPS = 0;
             }
+        }
+        
+        if(RUN_CHIPS == 1){
+            if(get_chips_round(patch[p].param, t0, t_step) > CHIPSNOTRUNNING){
             
-            chips_round = get_chips_round(patch[p].param, t0, t_step);
-            
-            carry_out_chips_visits_per_timestep(t0, t_step, patch, p, chips_round, debug, output);
+                if(POPART_SAMPLING_FRAME_ESTABLISHED == 0){
+                    printf("Error -trying to start PopART before PopART sample is set up at time ");
+                    printf("t=%f Exiting\n", t);
+                    printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                    fflush(stdout);
+                    exit(1);
+                }
+                
+                chips_round = get_chips_round(patch[p].param, t0, t_step);
+                
+                carry_out_chips_visits_per_timestep(t0, t_step, patch, p, 
+                    chips_round, debug, output);
+            }
         }
     }
-
+    
     /* In the case of an external patch (arm C like but with PopART) assume popart-like household
     intervention adopted from end of PopART onwards. */
     if(
@@ -810,12 +904,44 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
             carry_out_chips_visits_per_timestep(t0, t_step, patch, p, chips_round, debug, output);
         }
     }
-
+    
+    /* In the case of a counterfactual run but we would like to simulate post-trial rollout */
+    if(
+        (patch[p].trial_arm == ARM_C) &&
+        (is_counterfactual == IS_COUNTERFACTUAL_RUN) && 
+        (RUN_POPART == 1) &&
+        (ALLOW_COUNTERFACTUAL_ROLLOUT == 1)
+    ){
+        if(POPART_FINISHED == 1 && t0 >= T_ROLLOUT_CHIPS_EVERYWHERE){
+            // To indicate we are post-trial
+            chips_round = CHIPSROUNDPOSTTRIAL;
+            
+            if(POPART_SAMPLING_FRAME_ESTABLISHED == 0){
+                printf("Error -trying to start PopART before PopART sample is set up at time ");
+                printf("t=%f Exiting\n", t);
+                printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                fflush(stdout);
+                exit(1);
+            }
+            carry_out_chips_visits_per_timestep(t0, t_step, patch, p, chips_round, debug, output);
+        }
+    }
+    
     /*********************************************************************/
     /* 10. Carry out VMMC (if it has started in the country in question) */
     /*********************************************************************/
     
     if(t >= patch[p].param->COUNTRY_VMMC_START){
+        
+        // Turn VMMC efficacy to zero at start of PopART if this macro is switched on.  
+        if(VMMC_EFF_ZERO_AT_POPART_START == 1){
+            if(
+                (t0 == patch[p].param->CHIPS_START_YEAR[0]) &&
+                (t_step == patch[p].param->CHIPS_START_TIMESTEP[0])
+            ){
+                patch[p].param->eff_circ_vmmc = 0.0;
+            }
+        }
         carry_out_VMMC_events_per_timestep(t_step, t, patch, p);
     }
     

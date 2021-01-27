@@ -239,15 +239,15 @@ void check_partnership_formation_and_HIV_acquisition(patch_struct *patch, int p,
     for(i = 0; i < 100; i++){
         if(indiv2->HIV_status==0 && indiv2->n_HIVpos_partners>0){
             hiv_acquisition(indiv2, patch[p].param->start_time_hiv, 
-                patch, p, overall_partnerships, output, debug, file_data_store);
+                patch, p, overall_partnerships, output, debug, file_data_store, 0, 0);
         }
         if(indiv3->HIV_status==0 && indiv3->n_HIVpos_partners>0){
             hiv_acquisition(indiv3, patch[p].param->start_time_hiv, 
-                patch, p, overall_partnerships, output, debug, file_data_store);
+                patch, p, overall_partnerships, output, debug, file_data_store, 0, 0);
         }
         if(indiv4->HIV_status==0 && indiv4->n_HIVpos_partners>0){
             hiv_acquisition(indiv4, patch[p].param->start_time_hiv, 
-                patch, p, overall_partnerships, output, debug, file_data_store);
+                patch, p, overall_partnerships, output, debug, file_data_store, 0, 0);
         }
     }
 

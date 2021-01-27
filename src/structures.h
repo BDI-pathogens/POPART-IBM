@@ -62,6 +62,7 @@ struct individual{
 
     int HIV_status; /* 0 if uninfected, 1 if infected in acute infection, 2 if infected not in acute infection */
     int ART_status; /* -1 if never tested positive, 0 if positive but not yet on ART (or dropped out), 1 if on ART for <6 months, 2 if on ART for >=6 months and virally suppressed, 3 if on ART for >=6 months and not virally suppressed. */
+    double t_start_art; /* Time at which the individual first started ART (used in cost-effectiveness) */
     double t_sc;    /* time at which person seroconverts. Note this is used to check if the person is currently outside the window period of the given HIV test. */
     int cd4; /* Currently use -2: dead ; -1: uninfected ; 0: CD4>500, 1: CD4 350-500, 2: CD4 200-350, 3: CD4<200. */
     double SPVL_num_G; /* This is the genetic component of the log10(SPVL) - use for transmissibility and heritability. */
@@ -83,11 +84,11 @@ struct individual{
     long debug_last_cascade_event_index; /* Stores the first index of idx_cascade_event for the last cascade event to happen - so can check that two cascade events do not happen to the same person in the same timestep. */
 
     int circ; /* 0 if uncircumcised, 1 if VMMC circumcised (and healed), 2 if VMMC during healing period, 3 if traditional circumcised (assumed at birth/youth). */
-
+    double t_vmmc; /* Time at which an individual undergoes the VMMC procedure (used in cost-effectiveness) */
     long idx_vmmc_event[2];   /* The indices which locate this individual in the vmmc_event array. The first index is a function of the time to their next event (ie puts them in the group of people having a VMMC event at some timestep dt) and the second is their location in this group. */
     long debug_last_vmmc_event_index; /* Stores the first index of idx_vmmc_event for the last vmmc event to happen - so can check that two vmmc events do not happen to the same person in the same timestep. */
 
-    // Pangea outputs for Olli                                                                                                     
+    // Pangea outputs for Olli
     double PANGEA_t_prev_cd4stage; /* Time at which an individual last moved CD4 stage. Allows us to linearly estimate CD4 at ART initiation. */
     double PANGEA_t_next_cd4stage; /* Time at which individual will move to the next CD4 stage. Used with PANGEA_t_prev_cd4stage. */  
     double PANGEA_cd4atdiagnosis;  /* Based on t_next_cd4stage, estimate CD4 at diagnosis. */
@@ -169,6 +170,10 @@ typedef struct{
                                   So the PC round starts at PC_START_TIMESTEP[n]+PC_START_TIMESTEP[n]*TIME_STEP. */
     int PC_END_TIMESTEP[NPC_ROUNDS]; /* This represents the timestep when the nth round of PC  ends. */
     int PC_END_YEAR[NPC_ROUNDS];     /* This represents the  year when the nth round of PC  ends. */
+    
+    // Mid-point of the PC round
+    int PC_MIDPOINT_TIMESTEP[NPC_ROUNDS];
+    int PC_MIDPOINT_YEAR[NPC_ROUNDS];
 
     int number_seen_by_PC_per_timestep[N_GENDER][AGE_PC_MAX-AGE_PC_MIN+1][N_PC_HIV_STRATA][MAX_N_TIMESTEPS_PER_PC_ROUND][NPC_ROUNDS];
     int number_enrolled_in_PC_round[N_GENDER][AGE_PC_MAX-AGE_PC_MIN+1][N_PC_HIV_STRATA][NPC_ENROLMENTS]; /* The number of people in each age group enrolled in PC in a single round. */
@@ -343,7 +348,9 @@ typedef struct {
 
     /* Cascade probabilities: */
 
-    double HIV_background_testing_rate_multiplier; /* Increase the background rate of HIV testing so we can fit the first 90 at time of CHiPs visit. */
+    double p_HIV_background_testing_female_pre2006; /* Baseline probability of a women having an HIV test in the background cascade from start of HIV testing until 2006. */
+    double p_HIV_background_testing_female_current; /* Baseline annual probability of a women having an annual test in the background cascade. */
+    double RR_HIV_background_testing_male; /* Decrease in annual probability of an HIV test for men (cp to women) so we can fit VS in PC24. */
 
     double HIV_rapid_test_sensitivity_CHIPS;       /* Represents the sensitivity of the rapid HIV test used by CHiPs. We might want this to be time-varying (to reflect better training/test kits used later in trial). */
     double p_collect_hiv_test_results_cd4_over200; /* given you've had an HIV test, probability that you get your results if you have CD4>200 */
@@ -367,6 +374,7 @@ typedef struct {
 
     /* Given you've become virally suppressed, 3 possible events can happen with following probabilities */
     double p_stays_virally_suppressed; /* remain virally suppressed until you die */
+    double p_stays_virally_suppressed_male; /* Decrease in p_stays_virally_suppressed for men compared to women */
     double p_stops_virally_suppressed; /* at some point you will become unsuppressed */
     /* or you will drop out */
 
@@ -583,7 +591,7 @@ typedef struct{
      * The same structure is then used to store the people who will get visited by CHiPs teams that
     year. */ 
     
-    /* contains ID of people who may be visited by CHiPs in a round. The 100 is fairly arbitrary. */
+    /* contains ID of people who may be visited by CHiPs in a round. The 50 is fairly arbitrary. */
     long list_ids_to_visit[N_GENDER][MAX_AGE-AGE_CHIPS+1][MAX_POP_SIZE/100];
     
     /* The number of people in each age group visited by CHiPs in a single round. */
@@ -663,10 +671,46 @@ typedef struct{
     long N_total_CD4_tests_popart; /* Cum. num of CD4 tests done by PopART. */
     long N_total_HIV_tests_popart; /* Cum. num of HIV tests done by PopART. */
     
+    long N_total_HIV_tests_popart_positive; /* Cum. num of HIV tests done by PopART that returned positive (cost-effectiveness). */
+    long N_total_HIV_tests_popart_negative; /* Cum. num of HIV tests done by PopART that returned negative (cost-effectiveness). */
+    
     /* Number of people who ever started ART (including those dead) for non-popart & popart: */
     long N_total_ever_started_ART_nonpopart;
     long N_total_ever_started_ART_popart;
 } cumulative_outputs_struct;
+
+
+/* Number of events (not cumulative) for a particular calendar year of the simulation */
+// (used in the cost-effectiveness)
+typedef struct{
+    /* Cumulative number of CD4 and HIV tests within the year (excluding those from PopART). */
+    long N_calendar_CD4_tests_nonpopart[MAX_N_YEARS];
+    long N_calendar_HIV_tests_nonpopart[MAX_N_YEARS];
+    
+    long N_calendar_CD4_tests_popart[MAX_N_YEARS];
+    long N_calendar_HIV_tests_popart[MAX_N_YEARS];
+    long N_calendar_HIV_tests_popart_positive[MAX_N_YEARS];
+    long N_calendar_HIV_tests_popart_negative[MAX_N_YEARS];
+    
+    /* Number of people who started ART this year */
+    long N_calendar_started_ART_annual[MAX_N_YEARS];
+    
+    // Record number of people dropping out of the care cascade each year
+    long N_calendar_dropout[MAX_N_YEARS];
+    
+    long N_calendar_CHIPS_visits[MAX_N_YEARS];
+    
+    long N_calendar_VMMC[MAX_N_YEARS];
+    
+    // For TREATS outputs, the number of new infections each year stratified by age/sex
+    long N_calendar_infections[N_GENDER][N_AGE_UNPD+1][MAX_N_YEARS];
+    long N_calendar_started_ART[N_GENDER][N_AGE_UNPD+1][NCD4+1][NSPVL+1][MAX_N_YEARS];
+    
+    long N_calendar_Died_from_HIV_OnART[N_GENDER][N_AGE_UNPD+1][NCD4+1][NSPVL+1][MAX_N_YEARS];
+    long N_calendar_Died_from_HIV_ARTNaive[N_GENDER][N_AGE_UNPD+1][NCD4+1][NSPVL+1][MAX_N_YEARS];
+    long N_calendar_AnnualDropoutOnART[N_GENDER][N_AGE_UNPD+1][NCD4+1][NSPVL+1][MAX_N_YEARS];
+    
+} calendar_outputs_struct;
 
 
 /* 'patch' refers to a geographical unit - this may be trial community,
@@ -691,11 +735,15 @@ typedef struct{
     long n_newly_infected_total;
     long n_newly_infected_total_from_outside;
     long n_newly_infected_total_from_acute;
-
+    long n_newly_infected_total_by_risk[N_RISK];
+    
     long n_newly_infected_total_pconly;
     long n_newly_infected_total_from_outside_pconly;
     long n_newly_infected_total_from_acute_pconly;
-
+    long n_newly_infected_total_by_risk_pconly[N_RISK];
+    
+    long n_died_from_HIV_by_risk[N_RISK];
+    
     int country_setting;
     individual ***hiv_pos_progression;
     long *n_hiv_pos_progression;
@@ -711,6 +759,7 @@ typedef struct{
     PC_cohort_struct *PC_cohort; /* This is the actual PC cohort - everyone in this group was visited in PC0. */
     PC_cohort_data_struct *PC_cohort_data; /* This stores the PC data for each person (HIV status at each round, date of visit at each round etc). */
     cumulative_outputs_struct *cumulative_outputs;
+    calendar_outputs_struct *calendar_outputs;
     int n_fit;
     int i_fit;
     fitting_data_struct *fitting_data;
@@ -735,6 +784,13 @@ typedef struct{
 
     long ****cross_sectional_distr_n_lifetime_partners;
     long ****cross_sectional_distr_n_partners_lastyear;
+    
+    // Person-years in various categories (for cost-effectiveness).
+    double py_n_positive_on_art[NCD4];
+    double py_n_positive_not_on_art[NCD4];
+    double py_died_from_HIV[N_GENDER][N_AGE_UNPD + 1];
+    long n_died_from_HIV[N_GENDER][N_AGE_UNPD + 1];
+    
 } patch_struct;
 
 
@@ -803,18 +859,33 @@ typedef struct{ /* structure which contains all the strings that are outputted *
 
     char *chips_output_string[NPATCHES];
     char *dhs_output_string[NPATCHES];
+    char *pc_output_string[NPATCHES];
     char *calibration_outputs_combined_string[NPATCHES];
 
     char *phylogenetics_output_string;
 
     char *hazard_output_string; /* Stores hazard and other factors (e.g. age, risk gp, partner in/outside community) to allow us to examine whether the average hazard is credible. */
 
+    char *cost_effectiveness_outputs_string[NPATCHES];
+    char *treats_outputs_string[NPATCHES];
+    char *art_status_by_age_sex_outputs_string[NPATCHES];
+
     long NCHIPS_VISITED[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
     long NCHIPS_HIVPOS[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
     long NCHIPS_HIVAWARE[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
     long NCHIPS_ONART[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
     long NCHIPS_VS[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
-
+    
+    // Counter for the number of incident infections in a PC round
+    long PC_ROUND_INFECTIONS[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS - 1];
+    // Counter for person-timesteps so as we can calculate person years
+    long PC_ROUND_PERSON_TIMESTEPS[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS - 1];
+    
+    long PC_NPOP[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
+    long PC_NPOSITIVE[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
+    long PC_NAWARE[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
+    long PC_NONART[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
+    long PC_NVS[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
 } output_struct;
 
 
@@ -950,7 +1021,19 @@ typedef struct{
 
     FILE *HIVSURVIVAL_INDIVIDUALDATA_FILE;
     char filename_hivsurvival_individualdata[LONGSTRINGLENGTH];
-
+    
+    /* Cost-effectiveness outputs*/
+    FILE *COST_EFFECTIVENESS_OUTPUT_FILE[NPATCHES];
+    char filename_cost_effectiveness_output[NPATCHES][LONGSTRINGLENGTH];
+    
+    /* TREATS outputs*/
+    FILE *TREATS_OUTPUT_FILE[NPATCHES];
+    char filename_treats_output[NPATCHES][LONGSTRINGLENGTH];
+    
+    /* ART_status outputs*/
+    FILE *ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[NPATCHES];
+    char filename_art_status_by_age_sex_output[NPATCHES][LONGSTRINGLENGTH];
+    
 } file_struct;
 
 #endif

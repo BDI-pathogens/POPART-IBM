@@ -122,6 +122,7 @@
 #include "structures.h"
 #include "utilities.h"
 #include "hiv.h"
+#include "pc.h"
 
 /************************************************************************/
 /******************************** functions *****************************/
@@ -1118,6 +1119,18 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
             "temp_string and temp_string2 in store_annual_outputs()");
     }
     
+    for(r = 0; r < N_RISK; r++){
+        sprintf(temp_string2, "%li,", patch[p].n_newly_infected_total_by_risk[r]);
+        join_strings_with_check(temp_string, temp_string2, 10000,
+            "temp_string and temp_string2 in store_annual_outputs()");
+    }
+    
+    for(r = 0; r < N_RISK; r++){
+        sprintf(temp_string2, "%li,", patch[p].n_died_from_HIV_by_risk[r]);
+        join_strings_with_check(temp_string, temp_string2, 10000,
+            "temp_string and temp_string2 in store_annual_outputs()");
+    }
+    
     /* Population size and number of HIV+ and incident HIV+ by age and gender here: */
     int tempcount_pop, tempcount_inc, tempcount_prev;
     
@@ -1452,7 +1465,7 @@ void store_annual_partnerships_outputs(patch_struct *patch, int p, output_struct
 
 
 void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct *output, 
-        int PCdata){
+        int PCdata, int t0, int t_step){
     /* 
     Stores timestep data (such as incidence, prevalence, number on ART, cum numbers of tests etc.)
     for a given time step and state of the epidemic.  
@@ -1471,13 +1484,17 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
     patch : pointer to a patch_struct
             
     p : int
-            
+            Patch index
     t : double
-            
+            Year (in decimal) in question
     output : pointer to a output_struct object
             
     PCdata : int (0 or 1)
             Should the counts be restricted to PC-eligible population (18-45 age group)
+	t0 : int
+			Year in equation
+	t_step : int
+			Time step in question
     */
     
     int aa, g, r, ai;
@@ -1557,8 +1574,8 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
         exit(1);
     }
     // Write variables to string `temp_string`
-    sprintf(temp_string,"%6.4f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,",
-        t, npop_m, npop_f, npositive_m, npositive_f, Nknowpositive_m, Nknowpositive_f, 
+    sprintf(temp_string,"%6.4f,%i,%i,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,",
+        t, (int) floor(t0 + (t_step+1)*TIME_STEP), (t_step + 1)%N_TIME_STEP_PER_YEAR, npop_m, npop_f, npositive_m, npositive_f, Nknowpositive_m, Nknowpositive_f, 
         NArt_m, NArt_f, NVS_m, NVS_f, NNotKnowStatus_m, NNotKnowStatus_f, N_men_MC/(1.0*npop_m));
     
     if(PCdata == 0){
@@ -1721,8 +1738,8 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
                 if(patch[p].individual_population[n_id].HIV_status > UNINFECTED){
                     npositive[g][a]++;
                 
-                    if(patch[p].individual_population[n_id].ART_status > ARTNAIVE && 
-                        patch[p].individual_population[n_id].ART_status > ARTDEATH){
+                    if(patch[p].individual_population[n_id].ART_status >= ARTNAIVE && 
+                        patch[p].individual_population[n_id].ART_status < ARTDEATH){
                             naware[g][a]++;
                     
                         // Check if individual is on ART
@@ -1781,8 +1798,8 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
                     npositive[g][a]++;
                     
                     // Check if the individual is aware of status
-                    if(patch[p].individual_population[n_id].ART_status > ARTNAIVE && 
-                        patch[p].individual_population[n_id].ART_status > ARTDEATH){
+                    if(patch[p].individual_population[n_id].ART_status >= ARTNAIVE && 
+                        patch[p].individual_population[n_id].ART_status < ARTDEATH){
                             naware[g][a]++;
                     
                         // Check if individual is on ART
@@ -1974,6 +1991,230 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
  ****************************    Calibration output functions    **********************************
 ***************************************************************************************************/
 
+/* store_person_timesteps_pc
+
+Stores "person timesteps" so that we can calculate incidence.  This function loops through the population and increments a counter for each timestep that an individual is alive and HIV negative.  
+It does this for all PC rounds, and by year of age, and by sex.  This is eventually output in the Calibration*.csv files and is written to the output sting in the function store_calibration_outputs_pc.  
+*/
+
+void save_person_timesteps_pc(patch_struct *patch, int p, output_struct *output, 
+    int t0, int t_step){
+    
+    int g, a, age, pc_round;
+    long n_id;
+    // Return the PC round (according to the inside patch)
+    pc_round = get_pc_round(t0, t_step, patch, 0);
+    double t = t0 + (t_step + 1)*TIME_STEP; 
+    
+    if(pc_round != -1){
+        
+        // Loop through the population
+        for(n_id = 0; n_id < patch[p].id_counter; n_id++){
+            
+            // Check that the person is alive
+            if(patch[p].individual_population[n_id].cd4 != DEAD){
+                
+                // Check the individual is HIV negative
+                if(patch[p].individual_population[n_id].HIV_status == UNINFECTED){
+                
+                    g = patch[p].individual_population[n_id].gender;
+                    age = (int) floor(t - patch[p].individual_population[n_id].DoB);
+                    
+                    // Check that the age is within the PC age range
+                    if( (age >= AGE_PC_MIN) && (age <= AGE_PC_MAX) ){
+                        a = age - AGE_PC_MIN;
+                        output->PC_ROUND_PERSON_TIMESTEPS[p][g][a][pc_round]++;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+/* save_calibration_outputs_pc
+
+Save "cross-sectional" outputs associated with the PC (this is really the whole simulated population
+but within a particular age range.  By sex and year of age, store the size of the total population, 
+the number of HIV positive individuals, the number aware, the number on ART, and the number that are
+virally suppressed.  
+*/
+void save_calibration_outputs_pc(patch_struct *patch, int p, output_struct *output, int t0, 
+    int t_step){
+    
+    int pc_round, g, age, a;
+    
+    // Get PC round according to the inside patch
+    pc_round = get_pc_round(t0, t_step, patch, 0);
+    
+    double t = t0 + (t_step + 1)*TIME_STEP; 
+    
+    long n_id;
+    
+    for(n_id = 0; n_id < patch[p].id_counter; n_id++){
+        /* Check that the person is not dead: */
+        if(patch[p].individual_population[n_id].cd4 != DEAD){
+            
+            /* Use only 18-44 year olds (or whatever the PC age limits are): */
+            age = (int) floor(t - patch[p].individual_population[n_id].DoB);
+            
+            if((age >= AGE_PC_MIN) && (age <= AGE_PC_MAX)){
+                /* use g to make code more readable. */
+                g = patch[p].individual_population[n_id].gender;
+                a = age - AGE_PC_MIN;
+                
+                output->PC_NPOP[p][g][a][pc_round]++;
+                
+                if(patch[p].individual_population[n_id].HIV_status > UNINFECTED){
+                    output->PC_NPOSITIVE[p][g][a][pc_round]++;
+                    
+                    if(patch[p].individual_population[n_id].ART_status >= ARTNAIVE &&
+                        patch[p].individual_population[n_id].ART_status < ARTDEATH){
+                        output->PC_NAWARE[p][g][a][pc_round]++;
+                        
+                        if(patch[p].individual_population[n_id].ART_status == EARLYART ||
+                            patch[p].individual_population[n_id].ART_status == LTART_VS ||
+                            patch[p].individual_population[n_id].ART_status == LTART_VU){
+                            output->PC_NONART[p][g][a][pc_round]++;
+                            
+                            if(patch[p].individual_population[n_id].ART_status == LTART_VS){
+                                output->PC_NVS[p][g][a][pc_round]++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+/* store_calibration_outputs_pc
+
+Store all the outputs associated with the PC calibration columns into the string array called
+output->pc_output_string.  This string is then combined with the additional calibration outputs 
+and written to file.  
+
+Store PC outputs in output->pc_output_string[p] array.  These outputs are later copied to 
+output->calibration_outputs_combined_string within main.c (after the DHS outputs are added).  The
+storage of the PC outputs is called after the CHiPs calibration output is stored.  However some of these PC outputs are calculated earlier in the simulation as the PC cross-section needs to be taken
+at a particular time-step, not at the end of a year.  
+
+This function may be replaced or updated at a later stage when PC sampling occurs within the model.
+*/
+void store_calibration_outputs_pc(patch_struct *patch, int p, output_struct *output){
+    
+    int g, a, pc_round;
+    
+    char temp_string_n[300]; /* Temporary store of number of people in a population subgroup. */
+    char temp_string_pos[300]; /* Temporary store of number of HIV+ in a population subgroup. */
+    char temp_string_aware[300];
+    char temp_string_onart[300];
+    char temp_string_vs[300];
+    char temp_string_ninc[300];
+    char temp_string_inc[300];
+    char temp_string_py[300];
+    
+    for(pc_round = 0; pc_round < NPC_ROUNDS; pc_round++){
+        
+        // Store number of individuals in the population, per age and sex
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_n, "%ld,", output->PC_NPOP[p][g][a][pc_round]);
+                join_strings_with_check(output->pc_output_string[p], temp_string_n,
+                    SIZEOF_calibration_outputs-1, 
+                    "pc_output_string and temp_string_n in store_calibration_outputs_pc()");
+            }
+        }
+    
+        // Store number of HIV+ individuals in the population, per age and sex
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_pos,"%ld,", output->PC_NPOSITIVE[p][g][a][pc_round]);
+                join_strings_with_check(output->pc_output_string[p], temp_string_pos,
+                    SIZEOF_calibration_outputs-1, 
+                    "pc_output_string and temp_string_pos in store_calibration_outputs_pc()");
+            }
+        }
+    
+        // Store number of HIV+ individuals in the population aware of HIV status, per age and sex
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_aware,"%ld,", output->PC_NAWARE[p][g][a][pc_round]);
+                join_strings_with_check(output->pc_output_string[p], temp_string_aware,
+                    SIZEOF_calibration_outputs-1, 
+                    "pc_output_string and temp_string_aware in store_calibration_outputs_pc()");
+            }
+        }
+    
+        // Store number of HIV+ individuals aware of HIV status that are on ART, per age and sex
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_onart,"%ld,", output->PC_NONART[p][g][a][pc_round]);
+                join_strings_with_check(output->pc_output_string[p], temp_string_onart,
+                    SIZEOF_calibration_outputs-1, 
+                    "pc_output_string and temp_string_onart in store_calibration_outputs_pc()");
+            }
+        }
+    
+        // Store number of HIV+ individuals aware of HIV status that are on ART and VS, per age and sex
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_vs,"%ld,", output->PC_NVS[p][g][a][pc_round]);
+                join_strings_with_check(output->pc_output_string[p], temp_string_vs,
+                    SIZEOF_calibration_outputs-1, 
+                    "pc_output_string and temp_string_vs in store_calibration_outputs_pc()");
+            }
+        }
+        
+        // Store N incident cases per age and sex
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_ninc,"%ld,",
+                    output->PC_ROUND_INFECTIONS[p][g][a][pc_round]);
+                join_strings_with_check(output->pc_output_string[p], temp_string_ninc,
+                    SIZEOF_calibration_outputs-1,
+                    "pc_output_string and temp_string_ninc in store_calibration_outputs_pc()");
+            }
+        }
+        
+        // Store incidence rate
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_inc,"%lf,", 
+                (double) output->PC_ROUND_INFECTIONS[p][g][a][pc_round]/(output->PC_ROUND_PERSON_TIMESTEPS[p][g][a][pc_round]/N_TIME_STEP_PER_YEAR));
+                join_strings_with_check(output->pc_output_string[p], temp_string_inc,
+                    SIZEOF_calibration_outputs-1,
+                    "pc_output_string and temp_string_inc in store_calibration_outputs_pc()");
+            }
+        }
+
+        // Store person-years
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+
+                // If we're printing the last entry, then don't add a trailing comma
+                if(
+                    (g == (N_GENDER - 1)) &&
+                    (a == (PC_AGE_RANGE_MAX - 1)) &&
+                    (pc_round == (NPC_ROUNDS - 1))
+                ){
+                    sprintf(temp_string_py,"%lf",
+                         (double) output->PC_ROUND_PERSON_TIMESTEPS[p][g][a][pc_round]/N_TIME_STEP_PER_YEAR);
+                }else{
+                    sprintf(temp_string_py,"%lf,", 
+                        (double) output->PC_ROUND_PERSON_TIMESTEPS[p][g][a][pc_round]/N_TIME_STEP_PER_YEAR);
+                }
+
+                join_strings_with_check(output->pc_output_string[p], temp_string_py,
+                    SIZEOF_calibration_outputs-1,
+                    "pc_output_string and temp_string_py in store_calibration_outputs_pc()");
+            }
+        }
+    }
+}
+
+
 /* Store data at the time of the given DHS round. This will eventually be written in the file Calibration_output.csv. */
 void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *output, int year){
     long n_id;
@@ -2122,16 +2363,7 @@ void store_calibration_outputs_chips(patch_struct *patch, int p, output_struct *
         // Record number positive on ART who are virally suppressed
         for(g=0; g<N_GENDER; g++){
             for(ac = 0; ac < (MAX_AGE - AGE_CHIPS + 1); ac++){
-                // If we're printing the last entry, then don't add a trailing comma
-                if(
-                    (g == (N_GENDER - 1)) && 
-                    (ac == (MAX_AGE - AGE_CHIPS)) && 
-                    (chips_round == (NCHIPSROUNDSFORFITTING - 1))
-                ){
-                    sprintf(temp_string,"%li", output->NCHIPS_VS[p][g][ac][chips_round]);
-                }else{
-                    sprintf(temp_string,"%li,", output->NCHIPS_VS[p][g][ac][chips_round]);
-                }
+                sprintf(temp_string,"%li,", output->NCHIPS_VS[p][g][ac][chips_round]);
                 
                 join_strings_with_check(output->calibration_outputs_combined_string[p],
                     temp_string, SIZEOF_calibration_outputs-1, 
@@ -2140,8 +2372,6 @@ void store_calibration_outputs_chips(patch_struct *patch, int p, output_struct *
             }
         }
     }
-    // Add a newline character to the output
-    strcat(output->calibration_outputs_combined_string[p], "\n");
 }
 
 
@@ -2195,11 +2425,61 @@ void blank_calibration_output_file(char *calibration_output_filename, int NDHSRO
         for(a = AGE_CHIPS; a <= MAX_AGE; a++)
             fprintf(TEMPFILE, "CHIPSRound%iNvsM%i,", r, a);
         for(a = AGE_CHIPS; a <= MAX_AGE; a++){
+            fprintf(TEMPFILE, "CHIPSRound%iNvsF%i,", r, a);
+        }
+    }
+    
+    // Write PC columns to file.  
+    for(r = 0; r < NPC_ROUNDS; r++){
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNtotM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNtotF%i,", r*12, a);
+
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNposM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNposF%i,", r*12, a);
+
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE,"PC%iNawareM%i,",r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNawareF%i,",r*12, a);
+
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNonARTM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNonARTF%i,", r*12, a);
+
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNvsM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++){
+            fprintf(TEMPFILE, "PC%iNvsF%i,", r*12, a);
+        }
+        
+        // Incident cases
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNincM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++){
+            fprintf(TEMPFILE, "PC%iNincF%i,", r*12, a);
+        }
+        
+        // Incidence rate
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iIncM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++){
+            fprintf(TEMPFILE, "PC%iIncF%i,", r*12, a);
+        }
+        
+        // Person years
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iPYM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++){
             /* Last entry should have a new-line rather than a comma. */
-            if(a == MAX_AGE && r == NCHIPSROUNDSFORFITTING)
-                fprintf(TEMPFILE, "CHIPSRound%iNvsF%i\n", r, a);
+            if(a == AGE_PC_MAX && r == NPC_ROUNDS - 1)
+                fprintf(TEMPFILE, "PC%iPYF%i\n", r*12, a);
             else
-                fprintf(TEMPFILE, "CHIPSRound%iNvsF%i,", r, a);
+                fprintf(TEMPFILE, "PC%iPYF%i,", r*12, a);
         }
     }
     fclose(TEMPFILE);
@@ -2266,7 +2546,13 @@ void write_annual_outputs(file_struct *file_data_store, output_struct *output, i
     for(r = 0; r < N_RISK; r++){
         fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Prevalence_risk%s,",RISK_GP_NAMES[r]);
     }
-
+    for(r = 0; r < N_RISK; r++){
+        fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYear_risk%s,",RISK_GP_NAMES[r]);
+    }
+    for(r = 0; r < N_RISK; r++){
+        fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NDied_from_HIV_risk%s,",RISK_GP_NAMES[r]);
+    }
+    
     //if (PCdata==0){
     for(a = 0; a < N_AGE; a++){
         fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
@@ -2405,7 +2691,7 @@ void write_timestep_outputs(file_struct *file_data_store, output_struct *output,
     }
     
     // Write the header file
-    fprintf(file_data_store->TIMESTEP_OUTPUT_FILE[p],"Time,N_m,N_f,NPos_m,NPos_f,N_knowpos_m,N_knowpos_f,NART_m,NART_f,NVS_m,NVS_f,NNotKnowStatus_m,NNotKnowStatus_f,PropMenCirc,Cumulative_Infected_m,Cumulative_Infected_f\n");
+    fprintf(file_data_store->TIMESTEP_OUTPUT_FILE[p],"Time,Year,Timestep,N_m,N_f,NPos_m,NPos_f,N_knowpos_m,N_knowpos_f,NART_m,NART_f,NVS_m,NVS_f,NNotKnowStatus_m,NNotKnowStatus_f,PropMenCirc,Cumulative_Infected_m,Cumulative_Infected_f\n");
     
     if (PCdata == 0){
         fprintf(file_data_store->TIMESTEP_OUTPUT_FILE[p],"%s\n",output->timestep_outputs_string[p]);
@@ -2576,30 +2862,73 @@ void write_timestep_age_outputs(file_struct *file_data_store, output_struct *out
  * whether infecting partner was acute. 
  */
 /* NOTE: if we change the output from this function then we may need to alter the size of the string array phylogenetics_output_string[] in constants.h */
-void store_phylogenetic_transmission_output(output_struct *output, double time, individual* infectee, individual* infector, file_struct *file_data_store){
+void store_phylogenetic_transmission_output(output_struct *output, double time, individual* infectee, individual* infector, file_struct *file_data_store, int t0, int t_step){
 
     ////// MEMORY CHECK THIS
     char temp_string[100]; /* Temporary store of data from one transmission event. */
-    long who_infected_id = infector -> id;
-    long new_infectee_id = infectee -> id;
-    int partner_is_acute = 2 - (infector -> HIV_status);
-    int partner_on_art = infector -> ART_status;
-    int infector_out_patch;
+    long who_infected_id = infector->id;
+    long new_infectee_id = infectee->id;
     
-    if (infector->patch_no == infectee->patch_no)
+    int partner_is_acute;
+    if(infector->HIV_status == ACUTE){
+        partner_is_acute = 1;
+    }else{
+        partner_is_acute = 0;
+    }
+    
+    int partner_on_art = infector->ART_status;
+    
+    int infector_out_patch;
+    if (infector->patch_no == infectee->patch_no){
         infector_out_patch = 0;
-    else
+    }else{
         infector_out_patch = 1;
+    }
     
     double SPVL_infector = infector->SPVL_num_E + infector->SPVL_num_G; /* Log10(SPVL). */
     double SPVL_infectee = infectee->SPVL_num_E + infectee->SPVL_num_G;
     
+	// Risk group of infected individual
+	char infected_risk_text[2];
+	if(infectee->sex_risk == LOW){
+		sprintf(infected_risk_text,"L");
+	}else if(infectee->sex_risk == MEDIUM){
+		sprintf(infected_risk_text,"M");
+	}else if(infectee->sex_risk == HIGH){
+		sprintf(infected_risk_text,"H");
+	}else{
+        printf("Unknown Sexual Risk Group\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+	
+	// Risk group of individual responsible for infection
+	char infector_risk_text[2];
+	if(infector->sex_risk == LOW){
+		sprintf(infector_risk_text,"L");
+	}else if(infector->sex_risk == MEDIUM){
+		sprintf(infector_risk_text,"M");
+	}else if(infector->sex_risk == HIGH){
+		sprintf(infector_risk_text,"H");
+	}else{
+        printf("Unknown Sexual Risk Group\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+	
     /* Format output: */
     if (infector->gender==MALE)
-        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,M\n",who_infected_id,new_infectee_id,time, partner_is_acute,partner_on_art,infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners);
+        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,M,%s,%s,%.2lf,%.2lf\n",
+			who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
+			infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
+			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB);
     else
-        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,F\n",who_infected_id,new_infectee_id,time, partner_is_acute,partner_on_art,infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners);
-    //print_here_string("store_phylogenetic_transmission_output line",978);
+        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,F,%s,%s,%.2lf,%.2lf\n",
+			who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
+			infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
+			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB);
     
     //print_here_string(temp_string,0);
     /* The -2 is because in C the last character in any string of length n is "\0" - so we only have n-1 characters in the array we can write to. Make -2 instead of -1 to be a bit more sure! */
@@ -2629,24 +2958,35 @@ void store_phylogenetic_transmission_output(output_struct *output, double time, 
  * e.g. if person 1234 is infected in 1975.0 then the output will be
  * -1 1234 1975.0000 -1. Include file_data_store in case we want to be able to write to file immediately
  * (in case any worries about buffer overflow in  phylogenetics_output_string).  */
-void store_phylogenetic_transmission_initial_cases(output_struct *output, parameters *param, individual* infectee, file_struct *file_data_store){
+void store_phylogenetic_transmission_initial_cases(output_struct *output, parameters *param, individual* infectee, file_struct *file_data_store, int t0, int t_step){
     ////// MEMORY CHECK THIS
     char temp_string[100]; /* Temporary store of data from one transmission event. Note that format of string below means it will not be 40 chars long. */
 
     long new_infectee_id = infectee -> id;
 
+	// Risk group of infected individual
+	char infected_risk_text[2];
+	if(infectee->sex_risk == LOW){
+		sprintf(infected_risk_text,"L");
+	}else if(infectee->sex_risk == MEDIUM){
+		sprintf(infected_risk_text,"M");
+	}else if(infectee->sex_risk == HIGH){
+		sprintf(infected_risk_text,"H");
+	}
+	
     /* Format output. If more data is added, make temp_string a bigger array.
      * The "-1" indicates that this is a seeded infection (so no infector in the model). */
-    sprintf(temp_string,"-1,%li,%6.4lg,%i,-1,-1,-1\n",new_infectee_id,infectee->t_sc,-1);
+    sprintf(temp_string,"-1,%li,%6.4lg,%i,%i,%i,-1,-1,-1,,,,,%s,-1,%.2lf,-1\n",
+		new_infectee_id,infectee->t_sc, t0, t_step,-1,infected_risk_text,infectee->DoB);
+	
     /* Add to existing phylogenetic output string. */
     strcat(output->phylogenetics_output_string,temp_string);
 }
 
 void blank_phylo_transmission_data_file(file_struct *file_data_store){
     file_data_store->PHYLOGENETIC_TRANSMISSION_FILE = fopen(file_data_store->filename_phylogenetic_transmission,"w");
-    fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE,"IdInfector,IdInfected,TimeOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfecteeSPVL,Infector_NPartners,InfectorGender\n");
+    fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE,"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB\n");
     fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE);
-
 }
 
 
@@ -2666,7 +3006,7 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
     memset(tempstring, '\0', sizeof(tempstring));
     char PANGEA_STRING[100];
     memset(PANGEA_STRING, '\0', sizeof(PANGEA_STRING));
-    int n_id;
+    long n_id;
     //printf("Phylo individual filename = %s\n",file_data_store->filename_phylogenetic_individualdata);
 
     file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE = fopen(
@@ -2755,7 +3095,7 @@ void write_hivpos_individual_data(file_struct *file_data_store, individual *indi
     char HIVSURVIVAL_STRING[100];
     memset(HIVSURVIVAL_STRING, '\0', sizeof(HIVSURVIVAL_STRING));
 
-    int n_id;
+    long n_id;
     printf("HIV survival individual filename = %s\n",file_data_store->filename_hivsurvival_individualdata);
 
     file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE = fopen(file_data_store->filename_hivsurvival_individualdata,"w");
@@ -3527,7 +3867,7 @@ void write_chips_data_visit(patch_struct *patch, int p, file_struct *file_data_s
 void write_chips_data_annual(patch_struct *patch, int p, int year, int t_step, int POPART_FINISHED, file_struct *file_data_store){
 
     int g, ac, v;
-    int n_id;
+    long n_id;
     long N_POPULATION[N_GENDER][MAX_AGE-AGE_CHIPS+1]; /* Total population (to get CHiPS coverage). */
     /* Duplicate outputs in output_struct for easy comparison. */
     long NCHIPS_VISITED[N_GENDER][MAX_AGE-AGE_CHIPS+1];
@@ -3729,4 +4069,1014 @@ void write_chips_data_annual(patch_struct *patch, int p, int year, int t_step, i
     fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"\n");
 
     fclose(file_data_store->ChipsAnnual_DATAFILE[p]);
+}
+
+
+void store_cost_effectiveness_outputs(patch_struct *patch, int p, output_struct *output, 
+    all_partnerships *overall_partnerships, int *n_infected_total, int year, int i_run){
+    /* Stores annual data associated with the cost effectiveness output (such as incidence,
+    prevalence, number on ART, cum. no. of tests etc.) for a single patch (patch `p`) in the output
+    structure `output`.  
+    
+    This function populates a range of string variables (e.g. `temp_string`) with output summaries
+    from the different patches.  These strings are then added to the structure `output` which 
+    is used within functions which write to file.  Output is only generated for a single year.  
+    
+    Arguments
+    ---------
+    patch : pointer to an array of patch_struct structs
+        An array of patch structs each of which stores information about a patch (see structures.h
+        for attributes of the patch structures).  
+    p : int
+        The index of the patch for which output is to be generated.  
+    output : pointer to an output_struct struct
+        Structure within which the strings of output are to be stored.  
+    overall_partnerships : pointer to an all_partnerships struct
+        
+    n_infected_total : pointer to an int
+    year : int
+        Year in question for which output is to be generated.  
+    
+    Returns
+    -------
+    Nothing; output is stored in output_struct
+    */
+    
+    int year_idx = year - patch[p].param->start_time_simul;
+    
+    int aa, g, r, ai;
+    long n_id;
+    long npositive_wrong=0;
+    long nincident=0;
+    long npop_m = 0;
+    long npop_f = 0;
+    long npop;
+    long npop_check = 0;
+    long npositive_m=0;
+    long npositive_m_cd4[NCD4];
+    long npositive_f=0;
+    long npositive_f_cd4[NCD4];
+    long npositive;
+    long npositive_dead = 0;
+    long n_dead = 0;
+    int i;
+    
+    long NArt_m = 0;
+    long NNeedART_m = 0;
+    long NArt_f = 0;
+    long NNeedART_f = 0;/* Counts no. of eligible M/F for ART given current CD4 elig criteria. */
+    
+    long NNotOnArt_m_cd4[NCD4];
+    long NNotOnArt_f_cd4[NCD4];
+    
+    long NOnArt_m_cd4[NCD4];
+    long NOnArt_f_cd4[NCD4];
+    
+    /* Reset counts (of those HIV positive stratified by CD4 category) to zero */
+    for(i = 0; i < NCD4; i++){
+        npositive_m_cd4[i] = 0;
+        npositive_f_cd4[i] = 0;
+        
+        NNotOnArt_m_cd4[i] = 0;
+        NNotOnArt_f_cd4[i] = 0;
+        
+        NOnArt_m_cd4[i] = 0;
+        NOnArt_f_cd4[i] = 0;
+    }
+    
+    int current_cd4_guidelines = art_cd4_eligibility_group(patch[p].param,(double) year);
+
+    double prop_annual_acute;
+    double prophivposonart;
+
+    /* Temporary store of data from current year. */
+    char temp_string[10000];
+    
+    int MINAGE_COUNTED = 0;
+    int MAX_AGE_COUNTED = MAX_AGE - AGE_ADULT;
+    
+    for(g = 0; g < N_GENDER; g++){
+        for(aa = MINAGE_COUNTED; aa < MAX_AGE_COUNTED; aa++){
+            ai = aa + patch[p].age_list->age_list_by_gender[g]->youngest_age_group_index;
+            while (ai>(MAX_AGE-AGE_ADULT-1)){
+                ai = ai - (MAX_AGE-AGE_ADULT);
+            }
+            npop_check += patch[p].age_list->age_list_by_gender[g]->number_per_age_group[ai];
+        }
+        npop_check += patch[p].age_list->age_list_by_gender[g]->number_oldest_age_group;
+    }
+
+    for(g = 0; g < N_GENDER; g++){
+        for(r = 0; r < N_RISK; r++){
+            for(aa = MINAGE_COUNTED; aa < MAX_AGE_COUNTED; aa++){
+                ai = aa + patch[p].n_infected->youngest_age_group_index;
+                while(ai > (MAX_AGE - AGE_ADULT - 1)){
+                    ai = ai - (MAX_AGE - AGE_ADULT);
+                }
+                
+                /* NOTE: if we are getting prevalence by age group we have to offset the aa by
+                n_infected->youngest_age_group_index. */
+                npositive_wrong += patch[p].n_infected->pop_size_per_gender_age1_risk[g][ai][r];
+
+                ai = aa + patch[p].n_newly_infected->youngest_age_group_index;
+                while (ai > (MAX_AGE - AGE_ADULT - 1)){
+                    ai = ai - (MAX_AGE - AGE_ADULT);
+                }
+                nincident += patch[p].n_newly_infected->pop_size_per_gender_age1_risk[g][ai][r];
+            }
+            npositive_wrong += patch[p].n_infected->pop_size_oldest_age_group_gender_risk[g][r];
+            nincident += patch[p].n_newly_infected->pop_size_oldest_age_group_gender_risk[g][r];
+        }
+    }
+    
+    /* This if statement determines if we are just looking at PC stuff: */
+    for (n_id = 0; n_id < patch[p].id_counter; n_id++){
+        
+        /* Check that the person is not dead: */
+        if (patch[p].individual_population[n_id].cd4 != DEAD){
+            
+            /* Gender-specific outputs derived here: */
+            if (patch[p].individual_population[n_id].gender == MALE){
+                /* Use a function here so easy to add extra stratifications to output: */
+                update_annual_outputs_gender_cd4(&(patch[p].individual_population[n_id]), &npop_m,
+                    &npositive_m, &NNeedART_m, &NArt_m, npositive_m_cd4, NNotOnArt_m_cd4, 
+                    NOnArt_m_cd4, current_cd4_guidelines);
+            }else{ /* Else female */
+                update_annual_outputs_gender_cd4(&(patch[p].individual_population[n_id]), &npop_f,
+                    &npositive_f, &NNeedART_f, &NArt_f, npositive_f_cd4, NNotOnArt_f_cd4,
+                    NOnArt_f_cd4, current_cd4_guidelines);
+            }
+        }else{
+            n_dead += 1;
+            if (patch[p].individual_population[n_id].HIV_status > 0){
+                npositive_dead += 1;
+            }
+        }
+    }
+    npop = npop_m + npop_f;
+    npositive = npositive_m + npositive_f;
+    
+    /* Store number of positive people in n_infected_total: */
+    *n_infected_total = npositive;
+
+    if (patch[p].PANGEA_N_ANNUALINFECTIONS > 0){
+        
+        prop_annual_acute = patch[p].PANGEA_N_ANNUALACUTEINFECTIONS/
+            (1.0*patch[p].PANGEA_N_ANNUALINFECTIONS);
+        
+    }else{
+        prop_annual_acute = 0.0;
+    }
+    
+    if (npositive > 0){
+        prophivposonart = (NArt_m + NArt_f)/(1.0*npositive);
+    }else{
+        prophivposonart = 0.0;
+    }
+    
+    sprintf(temp_string,
+        "%d,%d,%i,%8.6f,%8.6f,\
+        %li,%li,%li,%li,%li,\
+        %li,%li,%li,%li,%li,\
+        %li,%li,%li,%li,%li,\
+        %li,%li,%li,%li,%li,",
+        i_run,
+        patch[p].community_id,
+        year,
+        npositive/(npop+0.0),
+        patch[p].PANGEA_N_ANNUALINFECTIONS/(npop - npositive + 0.0),
+        npositive,
+        patch[p].PANGEA_N_ANNUALINFECTIONS,
+        npop,
+        npositive_m,
+        npop_m,
+        npositive_f,
+        npop_f,
+        patch[p].calendar_outputs->N_calendar_HIV_tests_nonpopart[year_idx],
+        patch[p].calendar_outputs->N_calendar_HIV_tests_popart[year_idx],
+        patch[p].calendar_outputs->N_calendar_HIV_tests_popart_positive[year_idx],
+        patch[p].calendar_outputs->N_calendar_HIV_tests_popart_negative[year_idx],
+        patch[p].calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx],
+        patch[p].calendar_outputs->N_calendar_CD4_tests_popart[year_idx],
+        patch[p].calendar_outputs->N_calendar_CHIPS_visits[year_idx],
+        NArt_m,
+        NArt_f,
+        patch[p].calendar_outputs->N_calendar_started_ART_annual[year_idx],
+        patch[p].calendar_outputs->N_calendar_VMMC[year_idx],
+        patch[p].calendar_outputs->N_calendar_dropout[year_idx],
+        patch[p].OUTPUT_NDIEDFROMHIV);
+    
+    for(i = 0; i < (N_AGE_UNPD + 1); i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", patch[p].n_died_from_HIV[MALE][i]);
+    }
+    
+    for(i = 0; i < (N_AGE_UNPD + 1); i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", patch[p].n_died_from_HIV[FEMALE][i]);
+    }
+    
+    // Add number of person-years of mortality stratified by age and sex
+    // "Mortality person-years" is a sum of (1 - "fraction of year after DoD").  
+    for(i = 0; i < (N_AGE_UNPD + 1); i++){
+        sprintf(temp_string + strlen(temp_string), "%8.6f,", patch[p].py_died_from_HIV[MALE][i]);
+    }
+    
+    for(i = 0; i < (N_AGE_UNPD + 1); i++){
+        sprintf(temp_string + strlen(temp_string), "%8.6f,", patch[p].py_died_from_HIV[FEMALE][i]);
+    }
+    
+    /* Add to the end of the variable temp_string */
+    for(i = 0; i < NCD4; i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", npositive_m_cd4[i]);
+    }
+    
+    for(i = 0; i < NCD4; i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", npositive_f_cd4[i]);
+    }
+    
+    
+    for(i = 0; i < NCD4; i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", NNotOnArt_m_cd4[i]);
+    }
+    
+    for(i = 0; i < NCD4; i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", NNotOnArt_f_cd4[i]);
+    }
+    
+    
+    for(i = 0; i < NCD4; i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", NOnArt_m_cd4[i]);
+    }
+    
+    for(i = 0; i < NCD4; i++){
+        sprintf(temp_string + strlen(temp_string), "%li,", NOnArt_f_cd4[i]);
+    }
+    
+    // Units in terms of person-years.  Those positive on ART.  
+    for(i = 0; i < NCD4; i++){
+        sprintf(temp_string + strlen(temp_string), "%f,", patch[p].py_n_positive_on_art[i]);
+    }
+    
+    // Units in terms of person-years.  Those positive not on ART.  
+    for(i = 0; i < (NCD4 - 1); i++){
+        sprintf(temp_string + strlen(temp_string), "%f,", patch[p].py_n_positive_not_on_art[i]);
+    }
+    
+    sprintf(temp_string + strlen(temp_string), "%f", patch[p].py_n_positive_not_on_art[NCD4-1]);
+    
+    strcat(temp_string, "\n");
+    
+    /* Add the string `temp_string` to the `output` structure (so as to be written to file)*/
+    join_strings_with_check(output->cost_effectiveness_outputs_string[p], 
+        temp_string, SIZEOF_cost_effectiveness_outputs_string, 
+        "output->annual_outputs_string[p] and temp_string in store_annual_outputs()");
+}
+
+
+void write_cost_effectiveness_outputs(file_struct *file_data_store, output_struct *output, int p){
+    /* Write cost_effectiveness_outputs_string (an attribute of an output_struct) into a file.  
+    
+    Arguments
+    ---------
+    file_data_store : pointer to a file_struct structure
+        Structure with information on filenames to be used for writing.  
+    output : pointer to a output_struct structure
+        Output structure where the strings to be written to file are stored.  
+    p : int
+        Patch of interest
+    
+    Returns
+    -------
+    Nothing; strings are written to file.  
+    */
+    
+    /* Open connection to the patch-specific file where annual outputs are to be written to file */
+    file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p] =
+        fopen(file_data_store->filename_cost_effectiveness_output[p], "w");
+    
+    if(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p] == NULL){
+        printf("Cannot open cost_effectiveness_output file\n");
+        fflush(stdout);
+        exit(1);
+    }
+    
+    /* Print the header of the file */
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "RunID,CommunityID,Year,Prevalence,Incidence,NumberPositive,");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "NAnnual,TotalPopulation,");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "NumberPositiveM,PopulationM,NumberPositiveF,PopulationF,");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "AnnualNonPopartHIVtests,AnnualPopartHIVtests,");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "AnnualPopartHIVtests_positive,AnnualPopartHIVtests_negative,");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "AnnualNonPopartCD4tests,AnnualPopartCD4tests,AnnualCHIPSvisits,");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "NOnARTM,NOnARTF,AnnualInitiatingART,");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "AnnualVMMC,AnnualDropout,NDied_from_HIV,");
+    
+    int i;
+    for(i = 0; i < N_AGE_UNPD; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NDied_from_HIVM%d_%d,", AGE_GROUPS_UNPD[i], AGE_GROUPS_UNPD[i+1] - 1);
+    }
+    // Add a column for greater than 80
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "NDied_from_HIVM%d_over,", AGE_GROUPS_UNPD[N_AGE_UNPD]);
+    
+    for(i = 0; i < N_AGE_UNPD; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NDied_from_HIVF%d_%d,", AGE_GROUPS_UNPD[i], AGE_GROUPS_UNPD[i+1] - 1);
+    }
+    // Add a column for greater than 80
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "NDied_from_HIVF%d_over,", AGE_GROUPS_UNPD[N_AGE_UNPD]);
+    
+    for(i = 0; i < N_AGE_UNPD; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "PYDied_from_HIVM%d_%d,", AGE_GROUPS_UNPD[i], AGE_GROUPS_UNPD[i+1] - 1);
+    }
+    // Add a column for greater than 80
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "PYDied_from_HIVM%d_over,", AGE_GROUPS_UNPD[N_AGE_UNPD]);
+    
+    for(i = 0; i < N_AGE_UNPD; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "PYDied_from_HIVF%d_%d,", AGE_GROUPS_UNPD[i], AGE_GROUPS_UNPD[i+1] - 1);
+    }
+    // Add a column for greater than 80
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "PYDied_from_HIVF%d_over,", AGE_GROUPS_UNPD[N_AGE_UNPD]);
+    
+    for(i = 0; i < NCD4; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NumberPositiveM_CD4_%d,", i + 1);
+    }
+    for(i = 0; i < NCD4; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NumberPositiveF_CD4_%d,", i + 1);
+    }
+    
+    for(i = 0; i < NCD4; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NumberPositiveNotOnARTM_CD4_%d,", i + 1);
+    }
+    for(i = 0; i < NCD4; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NumberPositiveNotOnARTF_CD4_%d,", i + 1);
+    }
+    
+    for(i = 0; i < NCD4; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NumberPositiveOnARTM_CD4_%d,", i + 1);
+    }
+    for(i = 0; i < NCD4; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "NumberPositiveOnARTF_CD4_%d,", i + 1);
+    }
+    
+    for(i = 0; i < NCD4; i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "PYNumberPositiveOnART_CD4_%d,", i + 1);
+    }
+    
+    for(i = 0; i < (NCD4-1); i++){
+        fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+            "PYNumberPositiveNotOnART_CD4_%d,", i + 1);
+    }
+    
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p],
+        "PYNumberPositiveNotOnART_CD4_%d", NCD4);
+    
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p], "\n");
+    fprintf(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p], "%s\n",
+        output->cost_effectiveness_outputs_string[p]);
+    fclose(file_data_store->COST_EFFECTIVENESS_OUTPUT_FILE[p]);
+}
+
+
+void update_annual_outputs_gender_cd4(individual *individual, long *npop_g, long *npositive, 
+    long *NNeedART, long *NArt, long npositive_cd4[NCD4], long NNotOnArt[NCD4], 
+    long NOnArt[NCD4], int current_cd4_guidelines){
+    /* Update counters of total number of HIV+, on ART, for a given individual.  
+    
+    
+    The counters are typically gender-specific and this function is called from the function
+    store_annual_outputs() to avoid repetition.  
+    
+    Arguments
+    ---------
+    individual : pointer to an individual structure
+        The individual in question who needs their status counted.  
+    npop_g : pointer to a long
+        Current count of population size.  
+    npositive : pointer to a long
+        Current count of individuals who are HIV positive.  
+    NNeedART : pointer to a long
+        Current counter of individuals who are eligible for ART.  
+    NArt : pointer to a long
+        Current count of individuals on ART.  
+    current_cd4_guidelines : int
+        The highest CD4 category that is eligible for ART.  See function art_cd4_eligibility_group()
+        within hiv.c for details of how this variable is generated.  
+    
+    Returns
+    -------
+    Nothing; the input arguments npop_g, npositive, NNeedART, NArt are updated.  
+    
+    */
+    
+    *npop_g += 1;
+    
+    if(individual->HIV_status > UNINFECTED){
+        
+        (*npositive) += 1;
+        npositive_cd4[individual->cd4] += 1;
+        
+        if(individual->cd4 >= current_cd4_guidelines){
+            (*NNeedART) += 1;
+        }
+        
+        if(
+        (individual->ART_status == EARLYART) || 
+        (individual->ART_status == LTART_VS) || 
+        (individual->ART_status == LTART_VU)
+        ){
+            (*NArt) += 1;
+            NOnArt[individual->cd4] += 1;
+        }else{
+            // Increment CD4 number of positives stratified by CD4 category.
+            // This gives the number of people who are on ART by CD4 category.
+            //= 0 if positive but not yet on ART (or dropped out)
+            NNotOnArt[individual->cd4] += 1;
+        }
+    }
+}
+
+
+void store_treats_outputs(patch_struct *patch, int p, output_struct *output, 
+    all_partnerships *overall_partnerships, int *n_infected_total, int year, int i_run){
+    
+    int aa, gg, icd4, ispvl, iart;
+    int age, ai, gi, cd4, spvl, art; 
+    long n_id;
+    long npop[N_GENDER][N_AGE_UNPD + 1][NCD4+1][NSPVL+1][NARTEVENTS - 1];
+    char temp_string[10000];
+    
+    // Set counters of total population and HIV positive population to 0
+    for(gg = 0; gg < N_GENDER; gg++){
+        for(aa = 0; aa < N_AGE_UNPD + 1; aa++){
+            for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                    for(iart = 0; iart < NARTEVENTS - 1; iart++){
+                        npop[gg][aa][icd4][ispvl][iart] = 0;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Age/sex/VL/CD4 category/ART status
+    for(n_id = 0; n_id < patch[p].id_counter; n_id++){
+        /* Check that the person is not dead: */
+        if(patch[p].individual_population[n_id].cd4 != DEAD){
+            
+            // Find sex
+            gi = patch[p].individual_population[n_id].gender;
+            
+            // Find age and convert to index
+            age = (int) floor(year - patch[p].individual_population[n_id].DoB);
+            if(age >= MAX_AGE){
+                age = MAX_AGE;
+            }
+            ai = FIND_AGE_GROUPS_UNPD[age - AGE_ADULT];
+            
+            cd4 = patch[p].individual_population[n_id].cd4;
+            spvl = patch[p].individual_population[n_id].SPVL_cat;
+            art = patch[p].individual_population[n_id].ART_status;
+            
+            // For uninfected individuals (SPVL_cat == -1), make sure indexing is correct
+            spvl += 1;
+            if(spvl < 0){
+                printf("Error, SPVL_cat < 0\n");
+                fflush(stdout);
+                exit(1);
+            }
+            
+            // HIV uninfected inidividuals (CD4 == -1) have index of 0.  
+            cd4 += 1;
+            if(cd4 < 0){
+                printf("Error, cd4 category < 0\n");
+                fflush(stdout);
+                exit(1);
+            }
+            
+            if(art == ARTNAIVE || art == ARTNEG){
+                art = 0;
+            }else if(art == EARLYART){
+                art = EARLYART;
+            }else if(art == LTART_VS){
+                art = LTART_VS;
+            }else if(art == LTART_VU){
+                art = LTART_VU;
+            }else if(art == ARTDROPOUT){
+                art = ARTDROPOUT;
+            }else if(art == CASCADEDROPOUT){
+                art = CASCADEDROPOUT;
+            }else if(art == ARTDEATH){
+                art = ARTDEATH;
+            }else{
+                printf("Unknown ART status\n");
+                exit(1);
+            }
+            
+            npop[gi][ai][cd4][spvl][art] += 1;
+        }
+    }
+    
+    // Store the outputs of RunID,CommunityID,Year
+    sprintf(temp_string, "%d,%d,%d,", i_run, patch[p].community_id, year);
+    join_strings_with_check(output->treats_outputs_string[p], temp_string,  
+        SIZEOF_calibration_outputs - 1, 
+        "treats_outputs_string and temp_string in store_treats_outputs()");
+    
+    // Store total population
+    for(gg = 0; gg < N_GENDER; gg++){
+        for(aa = 0; aa < N_AGE_UNPD + 1; aa++){
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    for(iart = 0; iart < NARTEVENTS - 1; iart++){
+                        
+                        sprintf(temp_string, "%ld,",
+                            npop[gg][aa][icd4][ispvl][iart]);
+                        
+                        join_strings_with_check(output->treats_outputs_string[p], temp_string,  
+                            SIZEOF_calibration_outputs - 1, 
+                            "treats_outputs_string and temp_string in store_treats_outputs()");
+                    }
+                }
+            }
+        }
+    }
+    
+    // Write incident infections to file
+    int year_idx = (int) floor(year - patch[p].param->start_time_simul) - 1;
+    
+    for(gg = 0; gg < N_GENDER; gg++){
+        for(aa = 0; aa < N_AGE_UNPD + 1; aa++){
+            sprintf(temp_string, "%li,",
+                patch[p].calendar_outputs->N_calendar_infections[gg][aa][year_idx]);
+            join_strings_with_check(output->treats_outputs_string[p], temp_string,  
+                SIZEOF_calibration_outputs - 1, 
+                "treats_outputs_string and temp_string in store_treats_outputs()");
+        }
+    }
+    
+    // Write ART initiations to file.  
+    for(gg = 0; gg < N_GENDER; gg++){
+        for(aa = 0; aa < N_AGE_UNPD + 1; aa++){
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    sprintf(temp_string, "%li,",
+                        patch[p].calendar_outputs->N_calendar_started_ART[gg][aa][icd4][ispvl][year_idx]);
+                    
+                    join_strings_with_check(output->treats_outputs_string[p], temp_string,  
+                        SIZEOF_calibration_outputs - 1, 
+                        "treats_outputs_string and temp_string in store_treats_outputs()");
+                }
+            }
+        }
+    }
+    
+    // Write HIV-related deaths to file (among those on ART)
+    for(gg = 0; gg < N_GENDER; gg++){
+        for(aa = 0; aa < N_AGE_UNPD + 1; aa++){
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    
+                    sprintf(temp_string, "%li,",
+                        patch[p].calendar_outputs->N_calendar_Died_from_HIV_ARTNaive[gg][aa][icd4][ispvl][year_idx]);
+                    
+                    join_strings_with_check(output->treats_outputs_string[p], 
+                        temp_string, SIZEOF_calibration_outputs - 1, 
+                        "treats_outputs_string and temp_string in store_treats_outputs()");
+                }
+            }
+        }
+    }
+    
+    // Write HIV-related deaths to file (among ART naive)
+    for(gg = 0; gg < N_GENDER; gg++){
+        for(aa = 0; aa < N_AGE_UNPD + 1; aa++){
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    
+                    sprintf(temp_string, "%li,",
+                        patch[p].calendar_outputs->N_calendar_Died_from_HIV_OnART[gg][aa][icd4][ispvl][year_idx]);
+                    
+                    join_strings_with_check(output->treats_outputs_string[p], 
+                        temp_string, SIZEOF_calibration_outputs - 1, 
+                        "treats_outputs_string and temp_string in store_treats_outputs()");
+                }
+            }
+        }
+    }
+
+    // Write annual dropouts to file (among those on ART)
+    for(gg = 0; gg < N_GENDER; gg++){
+        for(aa = 0; aa < N_AGE_UNPD + 1; aa++){
+            for(icd4 = 0; icd4 < NCD4 + 1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL + 1; ispvl++){
+                    
+                    // Do not include a comma on the last entry
+                    if(
+                    (aa == N_AGE_UNPD) &&
+                    (gg == N_GENDER-1) &&
+                    (ispvl == NSPVL) &&
+                    (icd4 == NCD4)){
+                        sprintf(temp_string, "%li",
+                            patch[p].calendar_outputs->N_calendar_AnnualDropoutOnART[gg][aa][icd4][ispvl][year_idx]);
+                    }else{
+                        sprintf(temp_string, "%li,",
+                            patch[p].calendar_outputs->N_calendar_AnnualDropoutOnART[gg][aa][icd4][ispvl][year_idx]);
+                    }
+                    
+                    join_strings_with_check(output->treats_outputs_string[p], 
+                        temp_string, SIZEOF_calibration_outputs - 1, 
+                        "treats_outputs_string and temp_string in store_treats_outputs()");
+                }
+            }
+        }
+    }
+    
+    strcat(output->treats_outputs_string[p], "\n");
+}
+
+
+void write_treats_outputs(file_struct *file_data_store, output_struct *output, int p){
+    /* Write treats_outputs_string (an attribute of an output_struct) into a file.  
+    
+    Arguments
+    ---------
+    file_data_store : pointer to a file_struct structure
+        Structure with information on filenames to be used for writing.  
+    output : pointer to a output_struct structure
+        Output structure where the strings to be written to file are stored.  
+    p : int
+        Patch of interest
+    
+    Returns
+    -------
+    Nothing; strings are written to file.  
+    */
+    
+    /* Open connection to the patch-specific file where annual outputs are to be written to file */
+    file_data_store->TREATS_OUTPUT_FILE[p] =
+        fopen(file_data_store->filename_treats_output[p], "w");
+    
+    if(file_data_store->TREATS_OUTPUT_FILE[p] == NULL){
+        printf("Cannot open treats_output file\n");
+        fflush(stdout);
+        exit(1);
+    }
+    
+    /* Print the header of the file */
+    fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+        "RunID,CommunityID,Year,");
+    
+    int a, g, icd4, ispvl, iart;
+    char *g_text;
+    
+    // population size at each week by age/sex/VL/CD4 category/ART status.  5 year age groups.  
+    for(g = 0; g < N_GENDER; g++){ // sex
+        
+        if(g == MALE){
+            g_text = "M";
+        }else{
+            g_text = "F";
+        }
+        
+        for(a = 0; a < N_AGE_UNPD + 1; a++){ // age
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    for(iart = 0; iart < NARTEVENTS - 1; iart++){
+                        
+                        if(a == N_AGE_UNPD){
+                            fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                                "Ntot_%s_%d_over_CD4%d_SPVL%d_ART%d,", g_text, 
+                                    AGE_GROUPS_UNPD[a], icd4, ispvl, iart);
+                        }else{
+                            fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                                "Ntot_%s_%d_%d_CD4%d_SPVL%d_ART%d,", g_text, 
+                                    AGE_GROUPS_UNPD[a], AGE_GROUPS_UNPD[a+1] - 1, 
+                                    icd4, ispvl, iart);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Count HIV positive population at each week: age/sex.  5 year age groups.  
+    for(g = 0; g < N_GENDER; g++){ // sex
+        
+        if(g == MALE){
+            g_text = "M";
+        }else{
+            g_text = "F";
+        }
+        
+        for(a = 0; a < N_AGE_UNPD + 1; a++){ // age
+            if(a == N_AGE_UNPD){
+                fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                    "Ninc_%s_%d_over,", g_text, AGE_GROUPS_UNPD[a]);
+            }else{
+                fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                    "Ninc_%s_%d_%d,", g_text, AGE_GROUPS_UNPD[a], AGE_GROUPS_UNPD[a+1] - 1);
+            }
+        }
+    }
+    
+    // ART intiations
+    for(g = 0; g < N_GENDER; g++){ // sex
+        
+        if(g == MALE){
+            g_text = "M";
+        }else{
+            g_text = "F";
+        }
+        
+        for(a = 0; a < N_AGE_UNPD + 1; a++){ // age
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    if(a == N_AGE_UNPD){
+                        fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                            "NARTinit_%s_%d_over_CD4%d_SPVL%d,", g_text, 
+                                AGE_GROUPS_UNPD[a], icd4, ispvl);
+                    }else{
+                        fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                            "NARTinit_%s_%d_%d_CD4%d_SPVL%d,", g_text, 
+                                AGE_GROUPS_UNPD[a], AGE_GROUPS_UNPD[a+1] - 1, 
+                                icd4, ispvl);
+                    }
+                }
+            }
+        }
+    }
+    
+    // HIV-related deaths among HIV positive among those that are ART naive
+    for(g = 0; g < N_GENDER; g++){ // sex
+        
+        if(g == MALE){
+            g_text = "M";
+        }else{
+            g_text = "F";
+        }
+        
+        for(a = 0; a < N_AGE_UNPD + 1; a++){ // age
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    if(a == N_AGE_UNPD){
+                        fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                            "NDied_from_HIV_ARTNaive_%s_%d_over_CD4%d_SPVL%d,", g_text, 
+                                AGE_GROUPS_UNPD[a], icd4, ispvl);
+                    }else{
+                        fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                            "NDied_from_HIV_ARTNaive_%s_%d_%d_CD4%d_SPVL%d,", g_text, 
+                                AGE_GROUPS_UNPD[a], AGE_GROUPS_UNPD[a+1] - 1, 
+                                icd4, ispvl);
+                    }
+                }
+            }
+        }
+    }
+
+    // HIV-related deaths among HIV positive among those receiving ART
+    for(g = 0; g < N_GENDER; g++){ // sex
+        
+        if(g == MALE){
+            g_text = "M";
+        }else{
+            g_text = "F";
+        }
+        
+        for(a = 0; a < N_AGE_UNPD + 1; a++){ // age
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    if(a == N_AGE_UNPD){
+                        fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                            "NDied_from_HIV_OnART_%s_%d_over_CD4%d_SPVL%d,", g_text, 
+                                AGE_GROUPS_UNPD[a], icd4, ispvl);
+                    }else{
+                        fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                            "NDied_from_HIV_OnART_%s_%d_%d_CD4%d_SPVL%d,", g_text, 
+                                AGE_GROUPS_UNPD[a], AGE_GROUPS_UNPD[a+1] - 1, 
+                                icd4, ispvl);
+                    }
+                }
+            }
+        }
+    }
+
+    // Drop-outs and LTFU among those receiving ART
+    for(g = 0; g < N_GENDER; g++){ // sex
+        
+        if(g == MALE){
+            g_text = "M";
+        }else{
+            g_text = "F";
+        }
+
+        for(a = 0; a < N_AGE_UNPD + 1; a++){ // age
+            for(icd4 = 0; icd4 < NCD4+1; icd4++){
+                for(ispvl = 0; ispvl < NSPVL+1; ispvl++){
+                    if(a == N_AGE_UNPD){
+                        if(
+                        (a == N_AGE_UNPD) && 
+                        (g == N_GENDER-1) && 
+                        (ispvl == NSPVL) && 
+                        (icd4 == NCD4)){
+                            fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                                "AnnualDropoutOnART_%s_%d_over_CD4%d_SPVL%d", g_text, 
+                                    AGE_GROUPS_UNPD[a], icd4, ispvl);
+                        }else{
+                            fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                                "AnnualDropoutOnART_%s_%d_over_CD4%d_SPVL%d,", g_text, 
+                                    AGE_GROUPS_UNPD[a], icd4, ispvl);
+                        }
+                    }else{
+                        fprintf(file_data_store->TREATS_OUTPUT_FILE[p],
+                            "AnnualDropoutOnART_%s_%d_%d_CD4%d_SPVL%d,", g_text, 
+                                AGE_GROUPS_UNPD[a], AGE_GROUPS_UNPD[a+1] - 1, 
+                                icd4, ispvl);
+                    }
+                }
+            }
+        }
+    }
+
+    fprintf(file_data_store->TREATS_OUTPUT_FILE[p], "\n");
+    fprintf(file_data_store->TREATS_OUTPUT_FILE[p], "%s",
+        output->treats_outputs_string[p]);
+    fclose(file_data_store->TREATS_OUTPUT_FILE[p]);
+}
+
+
+void store_art_status_by_age_sex(patch_struct *patch, int p, double t, output_struct *output){
+    /*
+    
+    Parameters
+    ----------
+    patch : pointer to a patch_struct
+    p : int
+    t : double
+    output : pointer to a output_struct object
+    */
+
+    int g, a, age, ihiv, iart;
+    long n_id;
+    long npop[N_GENDER][MAX_AGE - AGE_ADULT + 1][3][NARTEVENTS];
+    
+    for(g = 0; g < N_GENDER; g++){
+        for(a = 0; a < (MAX_AGE - AGE_ADULT + 1); a++){
+            for(ihiv = 0; ihiv < 3; ihiv++){
+                for(iart = 0; iart < NARTEVENTS; iart++){
+                    npop[g][a][ihiv][iart] = 0;
+                }
+            }
+        }
+    }
+    
+    char temp_string[10000]; // Temporary store of data from current year.
+
+    for(n_id = 0; n_id < patch[p].id_counter; n_id++){
+        /* Check that the person is not dead: */
+        if(patch[p].individual_population[n_id].cd4 != DEAD){
+            
+            
+            // Find gender, sex, and ART status
+            g = patch[p].individual_population[n_id].gender;
+            
+            age = floor(t - patch[p].individual_population[n_id].DoB);
+            
+            if(age > MAX_AGE){
+                age = MAX_AGE;
+            }
+            a = age - AGE_ADULT;
+            
+            ihiv = patch[p].individual_population[n_id].HIV_status;
+            iart = patch[p].individual_population[n_id].ART_status + 1;
+            
+            if(ihiv < UNINFECTED || ihiv > CHRONIC){
+                printf("Error: Unknown HIV status; exiting\n");
+                fflush(stdout);
+                exit(1);
+            }
+            
+            npop[g][a][ihiv][iart] += 1;
+        }
+    }
+    
+    // Store the outputs of time
+    sprintf(temp_string, "%6.4f,", t);
+    
+    join_strings_with_check(output->art_status_by_age_sex_outputs_string[p], 
+        temp_string, 
+        N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP*SIZEOF_calibration_outputs - 1, 
+        "art_status_by_age_sex_outputs_string and temp_string in store_art_status_...()");
+    
+    for(g = 0; g < N_GENDER; g++){
+        for(a = 0; a < MAX_AGE - AGE_ADULT + 1; a++){
+            for(ihiv = 0; ihiv < 3; ihiv++){
+                for(iart = 0; iart < NARTEVENTS; iart++){
+                
+                    if(g == (N_GENDER - 1) && a == (MAX_AGE - AGE_ADULT) && 
+                        ihiv == 2 && iart == NARTEVENTS - 1){
+                        sprintf(temp_string, "%li", npop[g][a][ihiv][iart]);
+                
+                        join_strings_with_check(output->art_status_by_age_sex_outputs_string[p],
+                            temp_string,
+                            N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP*SIZEOF_calibration_outputs - 1, 
+                            "art_status_..._string and temp_string in store_art_status...()");
+                    }else{
+                        sprintf(temp_string, "%li,", npop[g][a][ihiv][iart]);
+                
+                        join_strings_with_check(output->art_status_by_age_sex_outputs_string[p],
+                            temp_string, 
+                            N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP*SIZEOF_calibration_outputs - 1, 
+                            "art_status_..._string and temp_string in store_art_status...()");
+                    }
+                }
+            }
+        }
+    }
+    
+    // Add a newline to the output string
+    strcat(output->art_status_by_age_sex_outputs_string[p], "\n");
+}
+
+
+void write_art_status_by_age_sex(file_struct *file_data_store, output_struct *output, int p){
+    /*
+    Writes out the timestep_outputs_string into a file
+    the timestep_outputs_string is populated using the function store_timestep_outputs()
+    
+    Parameters
+    ----------
+    file_data_store : pointer to file_struct
+        Assumes that `file_data_store` has an attribute `filename_timestep_output` and 
+        `filename_timestep_output_PConly`
+    output : pointer to output_struct
+        
+    p : int 
+        Patch number
+    */
+    
+    /* Write to correct file: */
+    file_data_store->ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[p] = 
+        fopen(file_data_store->filename_art_status_by_age_sex_output[p],"w");
+    
+    if (file_data_store->ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[p] == NULL){
+        printf("Cannot open ART_status_by_age_sex file\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    
+    // Write the header line
+    fprintf(file_data_store->ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[p],"Time,");
+    
+    int g, a, ihiv, iart;
+    char *g_text;
+    
+    for(g = 0; g < N_GENDER; g++){
+        
+        if(g == MALE){
+            g_text = "M";
+        }else{
+            g_text = "F";
+        }
+        
+        for(a = AGE_ADULT; a <= MAX_AGE; a++){
+            for(ihiv = 0; ihiv < 3; ihiv++){
+                for(iart = ARTNEG; iart <= ARTDEATH; iart++){
+                    if(g == (N_GENDER - 1) && a == MAX_AGE && ihiv == 2 && iart == ARTDEATH){
+                        fprintf(file_data_store->ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[p],
+                            "N%s%d_HIV%d_ART%d\n", g_text, a, ihiv, iart);
+                    }else{
+                        fprintf(file_data_store->ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[p],
+                            "N%s%d_HIV%d_ART%d,", g_text, a, ihiv, iart);
+                    }
+                }
+            }
+        }
+    }
+    
+    fprintf(file_data_store->ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[p],
+        "%s\n", output->art_status_by_age_sex_outputs_string[p]);
+    
+    // Close the connection to the file
+    fclose(file_data_store->ART_STATUS_BY_AGE_SEX_OUTPUT_FILE[p]);
 }

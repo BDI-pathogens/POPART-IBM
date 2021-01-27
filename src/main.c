@@ -102,6 +102,7 @@ int main(int argc,char *argv[]){
     not satisfied. This allows us to see if a run should be terminated early or not. */
     int fit_flag;
     int p; /* Index over patches. */
+    int g, a, r;
     
     /* is_counterfactual = 1 if this is a counterfactual run (ie all patches set to be arm C) and
     is_counterfactual=0 if this is not a counterfactual run (ie it is a normal run). */
@@ -237,7 +238,7 @@ int main(int argc,char *argv[]){
     /*** Allocation of memory                              ***/
     /*********************************************************/
 
-    int n, pc_enrolment_round, pc_size;
+    int pc_enrolment_round, pc_size;
     patch = malloc(NPATCHES*sizeof(patch_struct));
 
     alloc_patch_memoryv2(patch);
@@ -305,44 +306,6 @@ int main(int argc,char *argv[]){
     If this is not the case then we need to move this into the "for i_run" loop.
     country_setting determines demographics only (fertility+death rate). */
     get_setting(patch);
-
-    // NEEDS FIXING WHEN UPDATING PATCH MODEL:
-
-    patch[0].n_fit = load_fitting_data_n(input_file_directory);
-    
-    for(p = 1; p < NPATCHES; p++){
-        patch[p].n_fit = patch[0].n_fit;
-    }
-
-    for(p = 0; p < NPATCHES; p++){
-        fitting_data[p] = (fitting_data_struct*) calloc((patch[p].n_fit), 
-            sizeof(fitting_data_struct));
-        
-        if(fitting_data[p] == NULL){
-            printf("Unable to allocate fitting_data in main(). Execution aborted.");
-            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-            fflush(stdout);
-            exit(1);
-        }
-    }
-
-    load_fitting_data(input_file_directory, fitting_data[0], patch[0].n_fit);
-
-    for(p = 1; p < NPATCHES; p++){
-        /* Loop over data points to fit to: */
-        for(n = 0; n < patch[0].n_fit; n++){
-            
-            fitting_data[p][n].fit_year = fitting_data[0][n].fit_year;
-            fitting_data[p][n].fit_timestep = fitting_data[0][n].fit_timestep;
-            
-            fitting_data[p][n].whatfitto = fitting_data[0][n].whatfitto;
-            fitting_data[p][n].fit_time = fitting_data[0][n].fit_time;
-            
-            fitting_data[p][n].prevalence_point_est = fitting_data[0][n].prevalence_point_est;
-            fitting_data[p][n].prevalence_ll = fitting_data[0][n].prevalence_ll;
-            fitting_data[p][n].prevalence_ul = fitting_data[0][n].prevalence_ul;
-        }
-    }
 
     file_label_struct *file_labels;
     file_labels = malloc(sizeof(file_label_struct));
@@ -488,6 +451,20 @@ int main(int argc,char *argv[]){
                 /* Set cumulative counters to zero: */
                 init_cumulative_counters(patch[p].cumulative_outputs);
                 
+                
+                
+                /* Set calendar counters to zero: */
+                init_calendar_counters(patch[p].calendar_outputs);
+                
+                // Reset counters of new infections and person-years each PC round.  
+                for(g = 0; g < N_GENDER; g++){
+                    for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                        for(r = 0; r < NPC_ROUNDS; r++){
+                            output->PC_ROUND_INFECTIONS[p][g][a][r] = 0;
+                            output->PC_ROUND_PERSON_TIMESTEPS[p][g][a][r] = 0;
+                        }
+                    }
+                }
             }
             
             /* Loop through multiple years of the simulation */
@@ -501,7 +478,8 @@ int main(int argc,char *argv[]){
                 }
                 
                 /* Save data on no. births/new adults/deaths if needed before it is overwritten. */
-                if(WRITE_DEBUG_DEMOGRAPHICS_NBIRTHS_NEWADULTS_DEATHS == 1 && PRINT_EACH_RUN_OUTPUT == 1){
+                if((WRITE_DEBUG_DEMOGRAPHICS_NBIRTHS_NEWADULTS_DEATHS == 1) &&
+                    (PRINT_EACH_RUN_OUTPUT == 1)){
                     write_nbirths_nnewadults_ndeaths(file_data_store, patch, year);
                 }
 
@@ -513,6 +491,13 @@ int main(int argc,char *argv[]){
                     patch[p].DEBUG_NBIRTHS = 0;
                     patch[p].DEBUG_NNEWADULTS = 0;
                     patch[p].DEBUG_NDEATHS = 0;
+                    
+                    for(g = 0; g < N_GENDER; g++){
+                        for(a = 0; a < (N_AGE_UNPD + 1); a++){
+                            patch[p].py_died_from_HIV[g][a] = 0.0;
+                            patch[p].n_died_from_HIV[g][a] = 0;
+                        }
+                    }
                 }
                 
                 /**** FIX TO fit_flag = carry_out_processes(patch, year); ***/
@@ -544,9 +529,6 @@ int main(int argc,char *argv[]){
                 fit_flag = carry_out_processes(year, *fitting_data, patch, overall_partnerships,
                     output, rng_seed_offset, rng_seed_offset_PC, debug, file_data_store,
                     is_counterfactual);
-
-                /* If there was one or more criteria which were not fitted in the past year, then
-                stop this run and move on to the next parameter set. */
                 
                 if(fit_flag == -1){
                     printf("Error.  Unexpected return from carry_out_processes(). Exiting.\n");
@@ -586,7 +568,7 @@ int main(int argc,char *argv[]){
                     DEBUGHIVNEGWITHHIVPOSPARTNERS[p] = 0;
                     NACUTE[p] = 0;
                     NCHRONIC[p] = 0;
-
+                    
                     for(i = 0; i < patch[p].id_counter; i++){
                         if(patch[p].individual_population[i].cd4 != DEAD){
                             if(patch[p].individual_population[i].cd4 == DUMMYVALUE){
@@ -612,15 +594,28 @@ int main(int argc,char *argv[]){
                             }
                         }
                     }
-
+                    
                     /* store_annual_outputs is called at the end of the year, so the time at this
                     point is year+1. */
                     store_annual_outputs(patch, p, output, overall_partnerships,
-                        n_infected_total + p, year + 1, 0);
+                        n_infected_total + p, year, 0);
                     
                     store_annual_outputs(patch, p, output, overall_partnerships,
-                        n_infected_total + p, year + 1, 1);
-
+                        n_infected_total + p, year, 1);
+                    
+                    // Store the TREATS outputs
+                    if(WRITE_TREATS_OUTPUT == 1){
+                        store_treats_outputs(patch, p, output, overall_partnerships,
+                            n_infected_total + p, year + 1, i_run + 1);
+                    }
+                    
+                    /* Store the output associated with the cost-effectiveness analysis,
+                    this is called every year.  */
+                    if(WRITE_COST_EFFECTIVENESS_OUTPUT == 1){
+                        store_cost_effectiveness_outputs(patch, p, output, overall_partnerships,
+                            n_infected_total + p, year, i_run + 1);
+                    }
+                    
                     if(WRITE_ANNUAL_PARTNERSHIPS_OUTPUTS == 1){
                         store_annual_partnerships_outputs(patch, p, output, overall_partnerships,
                             n_infected_total + p, year + 1, 0);
@@ -730,8 +725,17 @@ int main(int argc,char *argv[]){
                         // called Annual_outputs.csv.
                         write_annual_outputs(file_data_store, output, p);
                         
+                        if(WRITE_COST_EFFECTIVENESS_OUTPUT == 1){
+                            write_cost_effectiveness_outputs(file_data_store, output, p);
+                        }
+                        
                         if(WRITE_ANNUAL_PARTNERSHIPS_OUTPUTS == 1){
                             write_annual_partnerships_outputs(file_data_store, output, p);
+                        }
+                        
+                        if(WRITE_TREATS_OUTPUT == 1){
+                            /* Write files for alignment with TREATS model. */
+                            write_treats_outputs(file_data_store, output, p);
                         }
                         
                         if(WRITE_EVERYTIMESTEP == 1){
@@ -748,7 +752,10 @@ int main(int argc,char *argv[]){
                             
                                 /* Write Timestep_age_outputs_PConly files (ages 18-44 only). */
                                 write_timestep_age_outputs(file_data_store, output, p, 1);
-                                
+                            }
+                            
+                            if(WRITE_ART_STATUS_BY_AGE_SEX == 1){
+                                write_art_status_by_age_sex(file_data_store, output, p);
                             }
                         }
                     }
@@ -802,20 +809,37 @@ int main(int argc,char *argv[]){
             //int N_ANNUAL_SEROSTATUS_PTS = 20;
             
             if(WRITE_CALIBRATION == 1){
+                
+                // Write the CHIPS values for the calibration file to the character array
+                // called `output->calibration_outputs_combined_string`.  
                 for(p = 0; p < NPATCHES; p++){
                     store_calibration_outputs_chips(patch, p, output);
+                    
+                    // Combine PC "snapshot" outputs with PC "window" outputs
+                    store_calibration_outputs_pc(patch, p, output);
+                
+                // Combine PC calibration values with calibration_outputs_combined_string
+                join_strings_with_check(
+                    output->calibration_outputs_combined_string[p],
+                    output->pc_output_string[p], SIZEOF_calibration_outputs - 1,
+                    "output->pc_output_string[p] and output->calibration_..._string[p] in main()");
+                    
+                    // Add a newline character to the output
+                    strcat(output->calibration_outputs_combined_string[p], "\n");
                 }
-            
+                
                 /* Only want to write out to disk every NRUNSPERWRITETOFILE runs. So calculate i_run
                 (mod NRUNSPERWRITETOFILE): */
                 if((i_run % NRUNSPERWRITETOFILE == 0) || (i_run == n_runs - 1)){
                 
                     for(p = 0; p < NPATCHES; p++){
                         write_calibration_outputs(calibration_output_filename[p],output, p);
-                    
-                        /* Now blank the string calibration_outputs_combined_string again so don't run
-                        out of memory: */
+                        
+                        // Blank the string so we don't run out of memory
                         memset(output->calibration_outputs_combined_string[p], '\0',
+                            SIZEOF_calibration_outputs*sizeof(char));
+                        
+                        memset(output->pc_output_string[p], '\0',
                             SIZEOF_calibration_outputs*sizeof(char));
                     }
                 }
@@ -868,7 +892,7 @@ int main(int argc,char *argv[]){
         (CHECK_AGE_AND_RISK_ASSORTATIVITY != 0) ||
         (DEBUG_PARTNERSHIP_DURATION != 0 )||
         (WRITE_ANNUAL_PARTNERSHIPS_OUTPUTS != 0) ||
-        (AGE_DISTRIBUTION_CHECK!= 0) ||
+        (WRITE_DEBUG_DEMOGRAPHICS_AGE_DISTRIBUTION_BY_GENDER!= 0) ||
         (WRITE_DEBUG_INITIAL_SPVL_DISTRIBUTION!= 0) ||
         (WRITE_DEBUG_CD4_AFTER_SEROCONVERSION!= 0) ||
         (WRITE_DEBUG_HIV_DURATION!= 0) ||
@@ -884,7 +908,7 @@ int main(int argc,char *argv[]){
             printf("- CHECK_AGE_AND_RISK_ASSORTATIVITY\n");
             printf("- DEBUG_PARTNERSHIP_DURATION\n");
             printf("- WRITE_ANNUAL_PARTNERSHIPS_OUTPUTS\n");
-            printf("- AGE_DISTRIBUTION_CHECK\n");
+            printf("- WRITE_DEBUG_DEMOGRAPHICS_AGE_DISTRIBUTION_BY_GENDER\n");
             printf("- WRITE_DEBUG_INITIAL_SPVL_DISTRIBUTION\n");
             printf("- WRITE_DEBUG_CD4_AFTER_SEROCONVERSION\n");
             printf("- WRITE_DEBUG_HIV_DURATION\n");
@@ -980,7 +1004,6 @@ int main(int argc,char *argv[]){
             free(calibration_output_filename[p]);
         }
     }
-    
     
     free(file_data_store);
     free(file_labels);

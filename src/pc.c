@@ -734,26 +734,52 @@ void PC_visit_person(individual *indiv, patch_struct *patch,  double t, int p, i
 }
 
 
-/* Function returns the current PC round (-1 if not a PC round). 0=PC0, 1=PC12 etc given the current (discrete) time. */
-int get_pc_round(int t0,int t_step, patch_struct *patch, int p){
-    /* PC is only recruited in patch p=0. */
-    if (p>0)
-        return -1;
+/* get_pc_round
 
-    /* If before/after PC years return -1. Note that this is slightly more computationally efficient as we deal with most cases first. */
-    if (t0<patch[p].param->PC_params->PC_START_YEAR[0] || t0>patch[p].param->PC_params->PC_END_YEAR[NPC_ROUNDS-1])
+Return the index of the current PC round
+
+Arguments
+---------
+t0 : int
+    Current year
+t_step : int
+    Current time step
+patch : pointer to a patch_struct
+    Patch structure containing info on PC round times.  Assumed to have a  patch[0].param->PC_params->PC_END_TIMESTEP[NPC_ROUNDS]
+    
+
+Returns
+-------
+Index of the current PC round 0 = PC0, 1 = PC12 etc given the current (discrete) time.  A value of
+-1 is returned if the input time is not a PC round.  
+*/
+int get_pc_round(int t0, int t_step, patch_struct *patch, int p){
+    
+    /* PC is only recruited in patch p=0. */
+    if(p > 0){
         return -1;
+    }
+
+    /* If before/after PC years return -1. 
+    Note that this is slightly more computationally efficient as we deal with most cases first. */
+    if(t0 < patch[p].param->PC_params->PC_START_YEAR[0] ||
+        t0 > patch[p].param->PC_params->PC_END_YEAR[NPC_ROUNDS - 1]){
+        return -1;
+    }
 
     int pc_round = 0;
-    while (pc_round<NPC_ROUNDS){
-        if ((t0==patch[p].param->PC_params->PC_START_YEAR[pc_round] && t_step>=patch[p].param->PC_params->PC_START_TIMESTEP[pc_round]) ||
-                (t0>patch[p].param->PC_params->PC_START_YEAR[pc_round] && t0<patch[p].param->PC_params->PC_END_YEAR[pc_round]) ||
-                (t0==patch[p].param->PC_params->PC_END_YEAR[pc_round] && t_step<=patch[p].param->PC_params->PC_END_TIMESTEP[pc_round]))
+    while(pc_round < NPC_ROUNDS){
+        if((t0 == patch[p].param->PC_params->PC_START_YEAR[pc_round] &&
+            t_step >= patch[p].param->PC_params->PC_START_TIMESTEP[pc_round]) ||
+            (t0 > patch[p].param->PC_params->PC_START_YEAR[pc_round] &&
+            t0 < patch[p].param->PC_params->PC_END_YEAR[pc_round]) ||
+            (t0 == patch[p].param->PC_params->PC_END_YEAR[pc_round] &&
+            t_step <= patch[p].param->PC_params->PC_END_TIMESTEP[pc_round])){
             return pc_round;
+        }
         pc_round = pc_round +1;
     }
     return -1;
-
 }
 
 

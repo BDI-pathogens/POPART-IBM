@@ -81,7 +81,7 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
 {
 
     long i;
-    int g, ac, chips_round;
+    int g, ac, a, chips_round, pc_round;
     for (i=0; i<MAX_N_PER_AGE_GROUP; i++)
         patch[p].death_dummylist[i] = i;         /* Initialize the dummy list. */
 
@@ -135,6 +135,22 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
             }
         }
     }
+    
+    // Reset counters of new infections and person-years each PC round.  
+    for(g = 0; g < N_GENDER; g++){
+        for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+            for(pc_round = 0; pc_round < NPC_ROUNDS; pc_round++){
+                output->PC_ROUND_INFECTIONS[p][g][a][pc_round] = 0;
+                output->PC_ROUND_PERSON_TIMESTEPS[p][g][a][pc_round] = 0;
+                
+                output->PC_NPOP[p][g][a][pc_round] = 0;
+                output->PC_NPOSITIVE[p][g][a][pc_round] = 0;
+                output->PC_NAWARE[p][g][a][pc_round] = 0;
+                output->PC_NONART[p][g][a][pc_round] = 0;
+                output->PC_NVS[p][g][a][pc_round] = 0;
+            }
+        }
+    }
 
     /* Set annual outputs strings to be blank: */
     memset(output->annual_outputs_string[p], '\0', SIZEOF_annual_outputs_string*sizeof(char));
@@ -146,12 +162,19 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
     memset(output->timestep_age_outputs_string[p], '\0', (N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_annual_outputs_string*sizeof(char));
     memset(output->timestep_age_outputs_string_PConly[p], '\0', (N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_annual_outputs_string*sizeof(char));
     memset(output->dhs_output_string[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
+    memset(output->pc_output_string[p], '\0', SIZEOF_calibration_outputs*sizeof(char));
     //memset(output->annual_outputs_string_prevalence[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
     //memset(output->annual_outputs_string_knowserostatus[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
     //memset(output->annual_outputs_string_knowserostatusandonart[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
     /* Note we only blank calibration_outputs_combined_string every NRUNSPERWRITETOFILE runs - this is done in main.c at present. */
     memset(output->phylogenetics_output_string, '\0', PHYLO_OUTPUT_STRING_LENGTH*sizeof(char));
     memset(output->hazard_output_string, '\0', HAZARD_OUTPUT_STRING_LENGTH*sizeof(char));
+    memset(output->cost_effectiveness_outputs_string[p], '\0',
+        SIZEOF_cost_effectiveness_outputs_string*sizeof(char));
+    memset(output->treats_outputs_string[p], '\0',
+        (N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_annual_outputs_string*sizeof(char));
+    memset(output->art_status_by_age_sex_outputs_string[p], '\0',
+        (N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_calibration_outputs*sizeof(char));
 }
 
 //void alloc_pop_memory(population **pop, parameters **allrunparameters, int n_runs){
@@ -188,10 +211,16 @@ void alloc_output_memory(output_struct **output)
         //(*output)->annual_outputs_string_prevalence[p] = (char *)calloc(SIZEOF_annual_outputs_tempstore, sizeof(char));
         //(*output)->annual_outputs_string_knowserostatus[p] = (char *)calloc(SIZEOF_annual_outputs_tempstore, sizeof(char));
         //(*output)->annual_outputs_string_knowserostatusandonart[p] = (char *)calloc(SIZEOF_annual_outputs_tempstore, sizeof(char));
-        (*output)->dhs_output_string[p] = (char *)calloc(SIZEOF_annual_outputs_tempstore, sizeof(char));
-
-        (*output)->calibration_outputs_combined_string[p] = (char *)calloc(SIZEOF_calibration_outputs, sizeof(char));
-
+        (*output)->dhs_output_string[p] = 
+            (char *)calloc(SIZEOF_annual_outputs_tempstore, sizeof(char));
+        (*output)->pc_output_string[p] = 
+            (char *)calloc(SIZEOF_calibration_outputs, sizeof(char));
+        (*output)->calibration_outputs_combined_string[p] = 
+            (char *)calloc(SIZEOF_calibration_outputs, sizeof(char));
+        (*output)->cost_effectiveness_outputs_string[p] = 
+            (char *)calloc(SIZEOF_cost_effectiveness_outputs_string, sizeof(char));
+        (*output)->treats_outputs_string[p] = (char *)calloc((N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_annual_outputs_string, sizeof(char));
+        (*output)->art_status_by_age_sex_outputs_string[p] = (char *)calloc((N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_calibration_outputs, sizeof(char));
     }
 }
 
@@ -652,6 +681,15 @@ void alloc_patch_memoryv2(patch_struct *patch){
             fflush(stdout);
             exit(1);
         }
+        
+        patch[p].calendar_outputs  = malloc(sizeof(calendar_outputs_struct));
+        if(patch[p].calendar_outputs==NULL)
+        {
+            printf("Unable to allocate calendar_outputs in alloc_all_memory. Execution aborted.");
+            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+            fflush(stdout);
+            exit(1);
+        }
 
 
         //      patch[p].i_fit = malloc(sizeof(int));
@@ -964,12 +1002,11 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
 }
 
 
-
 void free_all_patch_memory(parameters *param, individual *individual_population, population_size *n_population, population_size_one_year_age *n_population_oneyearagegroups, stratified_population_size *n_population_stratified, age_list_struct *age_list, child_population_struct *child_population,
         individual ***hiv_pos_progression, long *n_hiv_pos_progression, long *size_hiv_pos_progression, individual ***cascade_events, long *n_cascade_events, long *size_cascade_events, individual ***vmmc_events, long *n_vmmc_events, long *size_vmmc_events,
         long *new_deaths, long *death_dummylist,
         population_size_one_year_age *n_infected, population_size_one_year_age *n_newly_infected, population_size_one_year_age *n_infected_cumulative, population_size *n_infected_wide_age_group, population_size *n_newly_infected_wide_age_group,
-        chips_sample_struct *chips_sample, cumulative_outputs_struct *cumulative_outputs, long ****cross_sectional_distr_n_lifetime_partners, long ****cross_sectional_distr_n_partners_lastyear, PC_sample_struct *PC_sample, PC_cohort_struct *PC_cohort, PC_cohort_data_struct *PC_cohort_data)
+        chips_sample_struct *chips_sample, cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs, long ****cross_sectional_distr_n_lifetime_partners, long ****cross_sectional_distr_n_partners_lastyear, PC_sample_struct *PC_sample, PC_cohort_struct *PC_cohort, PC_cohort_data_struct *PC_cohort_data)
 {
 
     long i;
@@ -1025,7 +1062,8 @@ void free_all_patch_memory(parameters *param, individual *individual_population,
     free(PC_cohort_data);
 
     free(cumulative_outputs);
-
+    free(calendar_outputs);
+    
     for (g=0;g<N_GENDER;g++)
     {
         for (a=0;a<N_AGE;a++)
@@ -1116,7 +1154,7 @@ void free_patch_memory(patch_struct *patch){
                 patch[p].size_vmmc_events, patch[p].new_deaths, patch[p].death_dummylist,
                 patch[p].n_infected,
                 patch[p].n_newly_infected, patch[p].n_infected_cumulative, patch[p].n_infected_wide_age_group, patch[p].n_newly_infected_wide_age_group,
-                patch[p].chips_sample, patch[p].cumulative_outputs, patch[p].cross_sectional_distr_n_lifetime_partners, patch[p].cross_sectional_distr_n_partners_lastyear,
+                patch[p].chips_sample, patch[p].cumulative_outputs, patch[p].calendar_outputs, patch[p].cross_sectional_distr_n_lifetime_partners, patch[p].cross_sectional_distr_n_partners_lastyear,
                 patch[p].PC_sample, patch[p].PC_cohort, patch[p].PC_cohort_data);
     }
     free(patch);
@@ -1153,8 +1191,7 @@ void free_fitting_data_memory(fitting_data_struct *fitting_data){
     free(fitting_data);
 }
 
-void free_output_memory(output_struct *output)
-{
+void free_output_memory(output_struct *output){
     int p;
     for (p=0; p<NPATCHES; p++){
 
@@ -1167,15 +1204,12 @@ void free_output_memory(output_struct *output)
         free(output->timestep_age_outputs_string[p]);
         free(output->timestep_age_outputs_string_PConly[p]);
         free(output->chips_output_string[p]);
-//      free(output->chips_output_string[p]);
-//      free(output->chips_output_string[p]);
-        //free(output->annual_outputs_string_prevalence[p]);
-        //free(output->annual_outputs_string_knowserostatus[p]);
-        //free(output->annual_outputs_string_knowserostatusandonart[p]);
         free(output->dhs_output_string[p]);
-
+        free(output->pc_output_string[p]);
         free(output->calibration_outputs_combined_string[p]);
-
+        free(output->cost_effectiveness_outputs_string[p]);
+        free(output->treats_outputs_string[p]);
+        free(output->art_status_by_age_sex_outputs_string[p]);
     }
     free(output->phylogenetics_output_string);
     free(output->hazard_output_string);

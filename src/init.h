@@ -35,6 +35,7 @@ void initialize_child_population(parameters *, child_population_struct *, strati
 void set_up_population(int, patch_struct *, population *);
 void init_available_partnerships(int , patch_struct *, all_partnerships *,population *);
 void init_cumulative_counters(cumulative_outputs_struct *);
+void init_calendar_counters(calendar_outputs_struct *);
 void initialise_debug_variables(debug_struct *);
 
 #endif /* INIT_H_ */

@@ -39,3 +39,10 @@
 data/RAW_PRIORS/community_dictionary_withtrialarm.csv
 data/GENERATED_PRIORS/
 data/SAMPLED_PARAMETERS/
+
+# eclipse related
+/Debug/
+.cproject
+.project
+.pydevproject
+.settings/

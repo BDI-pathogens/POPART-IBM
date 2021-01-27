@@ -1183,8 +1183,8 @@ void blank_debugging_files(file_struct *file_data_store){
             fprintf(file_data_store->HIVSTATEPOPULATIONFILE[p],"time,cd4_status,spvl,art_status,cumulative_t_earlyART,cumulative_t_ARTVS,cumulative_t_ARTVU,npartners\n");
             fclose(file_data_store->HIVSTATEPOPULATIONFILE[p]);
         }
-        /* If AGE_DISTRIBUTION_CHECK==1 then we print age distribution at some specified times, so make sure that the file is initially blank. */
-        if (AGE_DISTRIBUTION_CHECK==1){
+        /* If WRITE_DEBUG_DEMOGRAPHICS_AGE_DISTRIBUTION_BY_GENDER==1 then we print age distribution at some specified times, so make sure that the file is initially blank. */
+        if (WRITE_DEBUG_DEMOGRAPHICS_AGE_DISTRIBUTION_BY_GENDER==1){
             /* The "1000" refers to the size of the array age_group_string declared above. */
             generate_demographics_byage_gender_file_header(age_group_string, 1000);
             file_data_store->AGEDISTRIBUTIONFILE[p] = fopen(file_data_store->filename_debug_agedistribution[p],"w");
@@ -1196,7 +1196,7 @@ void blank_debugging_files(file_struct *file_data_store){
             file_data_store->ARTPOPULATIONFILE[p] = fopen(file_data_store->filename_debug_artpopulation[p],"w");
             fprintf(file_data_store->ARTPOPULATIONFILE[p],"time,n_hivneg,n_hivpos_dontknowstatus,n_hivpos_knowposneverart,n_hivpos_earlyart,n_hivpos_artvs,n_hivpos_artvu,n_hivpos_dropout,n_hivpos_cascadedropout,n_artdeath,");
             fprintf(file_data_store->ARTPOPULATIONFILE[p],"cumulative_n_start_emergency_art_fromuntested,cumulative_n_start_emergency_art_fromartnaive,cumulative_n_start_emergency_art_fromartdroupout,cumulative_n_start_emergency_art_fromcascadedropout,");
-            fprintf(file_data_store->ARTPOPULATIONFILE[p],"cumulative_n_learnhivpos_fromuntested,cumulative_n_startART_fromuntested,cumulative_n_startART_fromartnaive,cumulative_n_startART_fromartdropout,cumulative_n_startART_fromcascadedropout,cumulative_n_becomeVS_fromearlyart, cumulative_n_becomeVS_fromartvu,cumulative_n_becomeVU_fromearlyart, cumulative_n_becomeVU_fromartvs,cumulative_n_ARTdropout_fromearlyart,cumulative_n_ARTdropout_fromartvs,cumulative_n_ARTdropout_fromartvu,cumulative_n_cascadedropout_fromARTnaive,n_cascadedropout_fromARTneg,cumulative_n_aidsdeaths_fromuntested,cumulative_n_aidsdeaths_fromartnaive,cumulative_n_aidsdeaths_fromearlyart,cumulative_n_aidsdeaths_fromartvs,cumulative_n_aidsdeaths_fromartvu,cumulative_n_aidsdeaths_fromartdropout,cumulative_n_aidsdeaths_fromcascadedropout\n");
+            fprintf(file_data_store->ARTPOPULATIONFILE[p],"cumulative_n_learnhivpos_fromuntested,cumulative_n_startART_fromuntested,cumulative_n_startART_fromartnaive,cumulative_n_startART_fromartdropout,cumulative_n_startART_fromcascadedropout,cumulative_n_becomeVS_fromearlyart,cumulative_n_becomeVS_fromartvu,cumulative_n_becomeVU_fromearlyart,cumulative_n_becomeVU_fromartvs,cumulative_n_ARTdropout_fromearlyart,cumulative_n_ARTdropout_fromartvs,cumulative_n_ARTdropout_fromartvu,cumulative_n_cascadedropout_fromARTnaive,n_cascadedropout_fromARTneg,cumulative_n_aidsdeaths_fromuntested,cumulative_n_aidsdeaths_fromartnaive,cumulative_n_aidsdeaths_fromearlyart,cumulative_n_aidsdeaths_fromartvs,cumulative_n_aidsdeaths_fromartvu,cumulative_n_aidsdeaths_fromartdropout,cumulative_n_aidsdeaths_fromcascadedropout\n");
             fclose(file_data_store->ARTPOPULATIONFILE[p]);
         }
 

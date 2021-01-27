@@ -22,7 +22,10 @@
 void create_popart_chips_samples(age_list_struct *, chips_sample_struct *, parameters *, int, int);
 void schedule_chips_visits(chips_sample_struct *, parameters *, int);
 void carry_out_chips_visits_per_timestep(int, int , patch_struct *, int , int , debug_struct *, output_struct *);
-void chips_visit_person(individual *, cumulative_outputs_struct *, double ,individual ***, long *, long *, individual ***, long *, long *, parameters *, individual ***, long *, long *, patch_struct *, int , int , debug_struct *, output_struct *, int, int);
+void chips_visit_person(individual *, cumulative_outputs_struct *, calendar_outputs_struct *, 
+    double ,individual ***, long *, long *, individual ***, long *, long *, parameters *, 
+    individual ***, long *, long *, patch_struct *, int , int , debug_struct *, output_struct *,
+    int, int);
 
 /* VMMC intervention (both popart and non-popart). */
 void draw_if_VMMC(individual *, parameters *, individual ***, long *, long *, double , int );

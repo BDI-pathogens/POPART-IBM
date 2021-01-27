@@ -52,7 +52,7 @@
 #include "partnership.h"
 #include "interventions.h"
 #include "debug.h"
-
+#include "pc.h"
 
 /* Function: get_spvl_cat()
 
@@ -338,7 +338,7 @@ Returns
 
 void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *patch, int p,
     all_partnerships *overall_partnerships, output_struct *output, debug_struct *debug, 
-    file_struct *file_data_store){
+    file_struct *file_data_store, int t0, int t_step){
 
     double partner_SPVL_G; /* Environmental component of log-10 SPVL. */
     double partner_SPVL_E; /* Genetic component of log-10 SPVL. */
@@ -437,7 +437,7 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
                 // Adjust hazard based upon circumcision status
                 if((susceptible->circ) == UNCIRC || (susceptible->circ) == UNCIRC_WAITING_VMMC){
                     temp_hazard = PER_PARTNERSHIP_HAZARD_TEMPSTORE[i];
-                }else if((susceptible->circ) == VMMC || (susceptible->circ) == TRADITIONAL_MC){
+                }else if((susceptible->circ) == VMMC){
                     temp_hazard = PER_PARTNERSHIP_HAZARD_TEMPSTORE[i] * 
                             (1.0-patch[p].param->eff_circ_vmmc);
                 }else if((susceptible->circ) == TRADITIONAL_MC){
@@ -457,7 +457,7 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
     /* Adjust according to the circumcision status of the susceptible: */
     if((susceptible->circ) == UNCIRC || (susceptible->circ) == UNCIRC_WAITING_VMMC){
         total_hazard_per_timestep = total_hazard_ignore_circ * TIME_STEP;
-    }else if((susceptible->circ) == VMMC || (susceptible->circ) == TRADITIONAL_MC){
+    }else if((susceptible->circ) == VMMC){
         total_hazard_per_timestep = total_hazard_ignore_circ * 
                 (1.0 - patch[p].param->eff_circ_vmmc) * TIME_STEP;
     }else if((susceptible->circ) == TRADITIONAL_MC){
@@ -513,6 +513,7 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
         
         // Increment counters
         patch[p].n_newly_infected_total++;
+        patch[p].n_newly_infected_total_by_risk[susceptible->sex_risk]++;
         
         if(susceptible->patch_no != infector->patch_no){
             patch[p].n_newly_infected_total_from_outside++;
@@ -522,18 +523,40 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
         }
         
         // Increment PConly outputs
-        if((time_infect-susceptible->DoB) > 18 && (time_infect-susceptible->DoB) < 45){
+        
+        // Find the age of the newly infected individual
+        int age = (int) floor(time_infect - susceptible->DoB);
+        if((age >= AGE_PC_MIN) && (age <= AGE_PC_MAX)){
             patch[p].n_newly_infected_total_pconly++;
+            patch[p].n_newly_infected_total_by_risk_pconly[susceptible->sex_risk]++;
             if(susceptible->patch_no != infector->patch_no){
                 patch[p].n_newly_infected_total_from_outside_pconly++;
             }
             if(infector->HIV_status == ACUTE){
                 patch[p].n_newly_infected_total_from_acute_pconly++;
             }
+            
+            // Does this infection take place during a PC round?  
+            // If so, increment the incident infections in the PC age range.  
+            int pc_round = get_pc_round(t0, t_step, patch, 0);
+            
+            if(pc_round != -1){
+                output->PC_ROUND_INFECTIONS[p][susceptible->gender][age - AGE_PC_MIN][pc_round]++;
+            }
         }
 
         patch[p].DEBUG_NHIVPOS++;
         patch[p].PANGEA_N_ANNUALINFECTIONS++;
+        
+        // Increment incident infections
+        int g = susceptible->gender;
+        if(age >= MAX_AGE){
+            age = MAX_AGE;
+        }
+        int age_idx = FIND_AGE_GROUPS_UNPD[age - AGE_ADULT];
+        int year_idx = (int) floor(time_infect - patch[p].param->start_time_simul);
+        
+        patch[p].calendar_outputs->N_calendar_infections[g][age_idx][year_idx]++;
 
         /* Update each of their HIV- partners so that they know that they have a serodiscordant partner and update list of serodiscrodant partnerships */
         inform_partners_of_seroconversion_and_update_list_serodiscordant_partnerships(susceptible, 
@@ -555,7 +578,7 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
         if(p == PHYLO_PATCH && WRITE_PHYLOGENETICS_OUTPUT == 1){
             store_phylogenetic_transmission_output(output, time_infect, susceptible, 
                 susceptible->partner_pairs_HIVpos[infector_index]->ptr[partner_gender], 
-                file_data_store);
+                file_data_store, t0, t_step);
         }
         //printf("Individual %d is infected by individual %d\n",
         //  susceptible->id,
@@ -982,7 +1005,8 @@ a seroconversion.
 */
 
 void draw_initial_infection(double t, individual* indiv, patch_struct *patch, int p,
-    all_partnerships *overall_partnerships, output_struct *output, file_struct *file_data_store){
+    all_partnerships *overall_partnerships, output_struct *output, file_struct *file_data_store, 
+	int t0, int t_step){
     
     // Run a couple of checks to begin with
     if(indiv->cd4 == DUMMYVALUE){
@@ -1023,10 +1047,12 @@ void draw_initial_infection(double t, individual* indiv, patch_struct *patch, in
         
         // Increment the number of newly infected
         patch[p].n_newly_infected_total++;
+        patch[p].n_newly_infected_total_by_risk[indiv->sex_risk]++;
         
         // PConly outputs
         if((t - indiv->DoB) > AGE_PC_MIN && (t - indiv->DoB) < (AGE_PC_MAX + 1)){
             patch[p].n_newly_infected_total_pconly++;
+            patch[p].n_newly_infected_total_by_risk_pconly[indiv->sex_risk]++;
         }
 
         // SPVL_infector stores the SPVL of the person doing the infecting. 
@@ -1046,9 +1072,20 @@ void draw_initial_infection(double t, individual* indiv, patch_struct *patch, in
         // (these are dummy outputs signifying that they are seed infections): */
         if(p == PHYLO_PATCH && WRITE_PHYLOGENETICS_OUTPUT == 1){
         store_phylogenetic_transmission_initial_cases(output, patch[p].param, 
-            indiv, file_data_store);
+            indiv, file_data_store, t0, t_step);
         }
         patch[p].DEBUG_NHIVPOS++;
+        
+        // Increment incident infections
+        int age = (int) floor(t - indiv->DoB);
+        int g = indiv->gender;
+        if(age >= MAX_AGE){
+            age = MAX_AGE;
+        }
+        int age_idx = FIND_AGE_GROUPS_UNPD[age - AGE_ADULT];
+        int year_idx = (int) floor(t - patch[p].param->start_time_simul);
+        
+        patch[p].calendar_outputs->N_calendar_infections[g][age_idx][year_idx]++;
     }
 }
 
@@ -1083,10 +1120,13 @@ Nothing;
 
 void next_hiv_event(individual* indiv, individual ***hiv_pos_progression, 
     long *n_hiv_pos_progression, long *size_hiv_pos_progression, parameters *param, double t,
-    cumulative_outputs_struct *cumulative_outputs){
+    cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs){
     
     double time_to_next_event;
     int t_step_event;
+    
+    // Find the current year as an index
+    int year_idx = (int) floor(t) - param->start_time_simul;
     
     if((indiv->cd4 < 0) || (indiv->cd4 > 3)){
         printf("ERROR: Unrecognised cd4  %i %li\n",indiv->cd4,indiv->id);
@@ -1168,6 +1208,7 @@ void next_hiv_event(individual* indiv, individual ***hiv_pos_progression,
                 time_to_next_event = time_emergency_start_ART; 
                 // Assume always a non-popart test.
                 cumulative_outputs->N_total_CD4_tests_nonpopart++;
+                calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx]++;
                 indiv->next_HIV_event = HIVEVENT_STARTART_LOWCD4;
                 
                 if(indiv->id == FOLLOW_INDIVIDUAL && indiv->patch_no == FOLLOW_PATCH){
@@ -1449,7 +1490,8 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 start_ART_process(indiv,patch[p].param, t, patch[p].cascade_events,
                     patch[p].n_cascade_events, patch[p].size_cascade_events,
                     patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression,
-                    patch[p].size_hiv_pos_progression,1, file_data_store);
+                    patch[p].size_hiv_pos_progression,1, file_data_store,
+                    patch[p].calendar_outputs);
             }else{
                 printf("ERROR: Unknown HIV event %i for ", indiv->next_HIV_event);
                 printf("id=%li in patch %d with indices %i %i %li %li. Exiting.\n",
@@ -1474,7 +1516,7 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 
                 next_hiv_event(indiv, patch[p].hiv_pos_progression, 
                     patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression,
-                    patch[p].param, t, patch[p].cumulative_outputs);
+                    patch[p].param, t, patch[p].cumulative_outputs, patch[p].calendar_outputs);
             }
         }
     }
@@ -1566,10 +1608,11 @@ integer : 0 means the individual drops out, 1 means the individual stays in pre-
 */
 
 int joins_preart_care(individual* indiv, parameters *param, double t, 
-    cumulative_outputs_struct *cumulative_outputs){
+    cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs){
         
     /* This tells us if the cd4 test is due to PopART (is_popart=1) or not (is_popart=0). */
     int is_popart = (indiv->next_cascade_event >= NCASCADEEVENTS_NONPOPART);
+    int year_idx = (int) floor(t) - param->start_time_simul;
     double p_collects_hiv_test; 
     
     // Check if this person is part of the background care cascade or not
@@ -1588,6 +1631,7 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
             // If an individual collects their HIV test results then they also 
             // have their first CD4 test
             cumulative_outputs->N_total_CD4_tests_nonpopart++;
+            calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx]++;
             
             // returns whether they drop out (0) or stays in cascade (1)
             return gsl_ran_bernoulli(rng, param->p_collect_cd4_test_results_cd4_nonpopart);
@@ -1600,6 +1644,7 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
         // Individual is in PopART.  
         // Assume everyone in PopART gets their HIV test and has a CD4 test
         cumulative_outputs->N_total_CD4_tests_popart++;
+        calendar_outputs->N_calendar_CD4_tests_popart[year_idx]++;
         
         // Divide probability of collecting CD4 results into CHiPs round 1 and later rounds. 
         // CHIPS_START_YEAR[1] is the start of round 2 (CHIPS_START_YEAR[0] is the start of R1):
@@ -1641,7 +1686,7 @@ integer: whether individual drops out (0) or remains (1) in cascade
 int remains_in_cascade(individual* indiv, parameters *param, int is_popart){
     
     // Assume individuals in PopART always remain in the cascade
-    if(is_popart == 1){
+    if(is_popart == POPART){
         return 1;
     }
     // Gets CD4 tested, determines of individual drops out (0) or stays in the cascade (1)
@@ -1877,7 +1922,7 @@ processes are triggered.
 void start_ART_process(individual* indiv, parameters *param, double t, 
     individual ***cascade_events, long *n_cascade_events, long *size_cascade_events, 
     individual ***hiv_pos_progression, long *n_hiv_pos_progression, long *size_hiv_pos_progression,
-    int is_emergency, file_struct *file_data_store){
+    int is_emergency, file_struct *file_data_store, calendar_outputs_struct *calendar_outputs){
     
     /* index for current time in this array: hiv_pos_progression, only used for debugging */
     int array_index_for_hiv_event = (int) round((t - param->start_time_hiv)*N_TIME_STEP_PER_YEAR);
@@ -1898,7 +1943,7 @@ void start_ART_process(individual* indiv, parameters *param, double t,
         remove_from_hiv_pos_progression(indiv,  hiv_pos_progression, 
             n_hiv_pos_progression, size_hiv_pos_progression,t, param, 2);
     }else{
-        /* The final '2' denotes that this is emergency ART. */
+        /* The final '4' denotes that this is emergency ART. */
         remove_from_hiv_pos_progression(indiv,  hiv_pos_progression, 
             n_hiv_pos_progression, size_hiv_pos_progression,t, param, 4);
     }
@@ -1945,6 +1990,39 @@ void start_ART_process(individual* indiv, parameters *param, double t,
     }
     
     indiv->ART_status = EARLYART;
+    
+    // Count the number of ART initiations
+    int year_idx = (int) floor(t) - param->start_time_simul;
+    calendar_outputs->N_calendar_started_ART_annual[year_idx]++;
+    
+    // Record the ART initiation for the TREATS output
+    if(WRITE_TREATS_OUTPUT){
+        int age = (int) floor(t - indiv->DoB);
+        if(age >= MAX_AGE){
+            age = MAX_AGE;
+        }
+    
+        int age_idx = FIND_AGE_GROUPS_UNPD[age - AGE_ADULT];
+        int cd4 = indiv->cd4;
+        int spvl = indiv->SPVL_cat;
+    
+        // For uninfected individuals (SPVL_cat == -1), make sure indexing is correct
+        spvl += 1;
+        if(spvl < 0){
+            printf("Error, SPVL_cat < 0\n");
+            fflush(stdout);
+            exit(1);
+        }
+    
+        // HIV uninfected inidividuals (CD4 == -1) have index of 0.  
+        cd4 += 1;
+        if(cd4 < 0){
+            printf("Error, cd4 category < 0\n");
+            fflush(stdout);
+            exit(1);
+        }
+        calendar_outputs->N_calendar_started_ART[indiv->gender][age_idx][cd4][spvl][year_idx]++;
+    }
     
     /* This tells us if the cd4 test is due to PopART (is_popart=1) or not (is_popart=0). */
     int is_popart = (indiv->next_cascade_event >= NCASCADEEVENTS_NONPOPART);
@@ -2419,34 +2497,16 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         printf("called before start of HIV testing.\n");
     }
     
-    if(country_setting == ZAMBIA){
-        if(year == COUNTRY_HIV_TEST_START){
-            /* This refers to the period [COUNTRY_HIV_TEST_START, 2006]. */
-            p_test[MALE] = 0.075;
-            p_test[FEMALE] = 0.158;
-            *t_gap = 2006 - COUNTRY_HIV_TEST_START;
-        }else{
-            p_test[MALE] = 0.104*param->HIV_background_testing_rate_multiplier;
-            p_test[FEMALE] = 0.135*param->HIV_background_testing_rate_multiplier;
-            *t_gap = 1;
-        }
-    }else if(country_setting == SOUTH_AFRICA){
-        if(year == COUNTRY_HIV_TEST_START){
-            p_test[MALE] = 0.1;
-            p_test[FEMALE] = 0.12;
-            *t_gap = 2006 - COUNTRY_HIV_TEST_START;
-        }else{
-            p_test[MALE] = 0.09*param->HIV_background_testing_rate_multiplier;
-            p_test[FEMALE] = 0.118*param->HIV_background_testing_rate_multiplier;
-            *t_gap = 1;
-        }
+    if(year == COUNTRY_HIV_TEST_START){
+        /* This refers to the period [COUNTRY_HIV_TEST_START, 2006]. */
+        p_test[MALE] = param->p_HIV_background_testing_female_pre2006 * param->RR_HIV_background_testing_male;
+        p_test[FEMALE] = param->p_HIV_background_testing_female_pre2006;
+        *t_gap = 2006 - COUNTRY_HIV_TEST_START;
     }else{
-        printf("Unknown country with code %d. ", country_setting);
-        printf("Exiting.\n");
-        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-        fflush(stdout);
-        exit(1);
-    } // if(country_setting ... )
+        p_test[MALE] = param->p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
+        p_test[FEMALE] = param->p_HIV_background_testing_female_current;
+        *t_gap = 1;
+    }
 }
 
 
@@ -2548,9 +2608,12 @@ void schedule_hiv_test_fixedtime(individual* indiv, parameters *param, int year,
  * */
 void hiv_test_process(individual* indiv, parameters *param, double t, individual ***cascade_events, 
         long *n_cascade_events, long *size_cascade_events, individual ***hiv_pos_progression, 
-        long *n_hiv_pos_progression, long *size_hiv_pos_progression, cumulative_outputs_struct *cumulative_outputs,
-        individual ***vmmc_events, long *n_vmmc_events, long *size_vmmc_events, patch_struct *patch, int p, debug_struct *debug){
+        long *n_hiv_pos_progression, long *size_hiv_pos_progression, 
+        cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs, 
+        individual ***vmmc_events, long *n_vmmc_events, long *size_vmmc_events, 
+        patch_struct *patch, int p, debug_struct *debug){
 
+    int year_idx = (int) floor(t) - param->start_time_simul;
     double time_new_cd4;
     double x_sensitivity;
     /* This tells us if the cd4 test is due to PopART (is_popart=1) or not (is_popart=0). */
@@ -2566,17 +2629,19 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
     indiv->time_last_hiv_test = t;
 
     /* Add one to the cumulative total of HIV tests carried out: */
-    if (is_popart==0)
+    if(is_popart == NOTPOPART){
         cumulative_outputs->N_total_HIV_tests_nonpopart++; // Test is not from CHiPs (ie this is a clinic-based test).
-    else
-        cumulative_outputs->N_total_HIV_tests_popart++;    // Home-based CHiPs test - note we distinguish as allows economists to distinguish home/facility-based testing costs
-
+        calendar_outputs->N_calendar_HIV_tests_nonpopart[year_idx]++;
+    }else{
+        cumulative_outputs->N_total_HIV_tests_popart++; // Home-based CHiPs test - note we distinguish as allows economists to distinguish home/facility-based testing costs
+        calendar_outputs->N_calendar_HIV_tests_popart[year_idx]++;
+    }
     /* HIV test window for someone who IS infected (NOTE - this is coded as >UNINFECTED):
      * NOTE: we call this first as what we want to know is their HIV test result (not HIV status). */
     if (indiv->HIV_status > UNINFECTED){
         WINDOWNEGATIVE = get_window_result(t-(indiv->t_sc), t, patch);
         /* Only draw rng if need to (ie <100% sensitivity). */
-        if (is_popart==1){
+        if (is_popart == POPART){
             if (WINDOWNEGATIVE==0 && param->HIV_rapid_test_sensitivity_CHIPS<1.0){
                 x_sensitivity = gsl_rng_uniform (rng);
                 if (x_sensitivity>(param->HIV_rapid_test_sensitivity_CHIPS))
@@ -2617,6 +2682,9 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
             indiv->next_cascade_event = NOEVENT;
             indiv->idx_cascade_event[0] = NOEVENT;
             indiv->idx_cascade_event[1] = -1;
+            
+            cumulative_outputs->N_total_HIV_tests_popart_negative++;
+            calendar_outputs->N_calendar_HIV_tests_popart_negative[year_idx]++;
         }
 
         if (indiv->gender==MALE)
@@ -2627,6 +2695,11 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
     }
 
     /* if get to here the individual tested HIV+ */
+
+    if(is_popart == POPART){
+        cumulative_outputs->N_total_HIV_tests_popart_positive++;
+        calendar_outputs->N_calendar_HIV_tests_popart_positive[year_idx]++;
+    }
 
     if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
         printf("Adult %ld tested positive at time %6.4f\n",indiv->id,t);
@@ -2646,10 +2719,12 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
         /* Only HIV+ diagnosed individuals remain in the function now. Three possible outcomes: */
         //printf("Need to schedule stuff for %ld\n",indiv->id);
         /* 1. Refuses to enter treatment/care. Next event will be determined by CD4 (e.g. wait until CD4<200), so add in code to update this as CD4 progression occurs. */
-        if (joins_preart_care(indiv,param,t,cumulative_outputs)<1){
+        if (joins_preart_care(indiv, param, t, cumulative_outputs, calendar_outputs) < 1){
             debug->art_vars[p].cascade_transitions[ARTNEG+1][CASCADEDROPOUT+1]++;
             /* Dropping out of the cascade is immediate once the HIV test is done. */
-            dropout_process(indiv,param,t, cascade_events, n_cascade_events, size_cascade_events, hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression, cumulative_outputs);
+            dropout_process(indiv,param,t, cascade_events, n_cascade_events, size_cascade_events,
+                hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression,
+                cumulative_outputs, calendar_outputs);
         }
         /* 2. Eligible for ART and starts (after a delay) - next event is starting ART. 
          * Note that delays between HIV testing and starting ART (including getting CD4, picking up results, drugs)
@@ -2697,9 +2772,9 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
      *  either get a CD4 test in the future, or drop out: */
     else{
         /* 1. Drops out Next event will be determined by CD4 (e.g. wait until CD4<200), so add in code to update this as CD4 progression occurs. */
-        if (!joins_preart_care(indiv,param,t,cumulative_outputs)){ /// SAME COMMENT AS BEFORE
+        if (!joins_preart_care(indiv,param,t,cumulative_outputs,calendar_outputs)){ /// SAME COMMENT AS BEFORE
             debug->art_vars[p].cascade_transitions[ARTNEG+1][CASCADEDROPOUT+1]++;
-            dropout_process(indiv,param,t, cascade_events, n_cascade_events, size_cascade_events, hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression, cumulative_outputs);
+            dropout_process(indiv,param,t, cascade_events, n_cascade_events, size_cascade_events, hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression, cumulative_outputs,calendar_outputs);
         }else{
             /* 2. Has a CD4 test after ART becomes available. */
             /* Has CD4 test param->t_cd4_whenartfirstavail_min to param->t_cd4_whenartfirstavail_min+param->t_cd4_whenartfirstavail_range 
@@ -2828,6 +2903,7 @@ void schedule_start_of_art(individual* indiv, parameters *param, double t,
         t_delay = TIME_STEP;
     }
     time_start_art = t + t_delay;
+    indiv->t_start_art = time_start_art;
 
     if(indiv->id == FOLLOW_INDIVIDUAL && indiv->patch_no == FOLLOW_PATCH){
         printf("Scheduling start of ART for adult %ld at time %6.4f\n", indiv->id, time_start_art);
@@ -2841,7 +2917,8 @@ void schedule_start_of_art(individual* indiv, parameters *param, double t,
 void cd4_test_process(individual* indiv, parameters *param, double t, individual ***cascade_events,
     long *n_cascade_events, long *size_cascade_events, individual ***hiv_pos_progression, 
     long *n_hiv_pos_progression, long *size_hiv_pos_progression, 
-    cumulative_outputs_struct *cumulative_outputs, patch_struct *patch, int p){
+    cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs,
+    patch_struct *patch, int p){
     /* 
     This is the process of repeated CD4 testing for someone who wasn't eligible for ART at
     their last CD4 test.  Note that the first CD4 test is carried out implicitly as part of
@@ -2892,12 +2969,15 @@ void cd4_test_process(individual* indiv, parameters *param, double t, individual
     
     // This tells us if the cd4 test is due to PopART (is_popart=1) or not (is_popart=0). 
     int is_popart = (indiv->next_cascade_event >= NCASCADEEVENTS_NONPOPART);
-
+    int year_idx = (int) floor(t) - param->start_time_simul;
+    
     // Count cumulative number of CD4 tests.  
     if(is_popart == NOTPOPART){
         cumulative_outputs->N_total_CD4_tests_nonpopart++;
+        calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx]++;
     }else{
         cumulative_outputs->N_total_CD4_tests_popart++;
+        calendar_outputs->N_calendar_CD4_tests_popart[year_idx]++;
     }
     
     // Print extra output if we're following a specific individual
@@ -2913,7 +2993,7 @@ void cd4_test_process(individual* indiv, parameters *param, double t, individual
         // event is this one and we are moving on in time. 
         dropout_process(indiv, param, t, cascade_events, n_cascade_events, size_cascade_events,
             hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression,
-            cumulative_outputs);
+            cumulative_outputs, calendar_outputs);
         return;
     
     // Case 2: Eligible for ART and starts (after a delay) - next event is starting ART. 
@@ -2957,7 +3037,6 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
             remove_from_hiv_pos_progression(indiv,  hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression,t, param,2);
         indiv->idx_hiv_pos_progression[0] = -1;
         indiv->idx_hiv_pos_progression[1] = -1;
-        //indiv->ART_status = EARLYART;
     }
 
     /* This tells us if the cd4 test is due to PopART (is_popart=1) or not (is_popart=0). */
@@ -2974,7 +3053,14 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
     }
     /* Now decide what happens next. 3 possible states: continues being virally suppressed, becomes unsuppressed, or drops out of ART entirely. */
     double x = gsl_rng_uniform (rng);
-    if (x<(param->p_stays_virally_suppressed)){
+    double p_stays_vs;
+    if(indiv->gender == MALE){
+        p_stays_vs = param->p_stays_virally_suppressed * param->p_stays_virally_suppressed_male;
+    }else{
+        p_stays_vs = param->p_stays_virally_suppressed;
+    }
+    
+    if(x < p_stays_vs){
         /* Patient stays virally suppressed, no future cascade events for now: */
         indiv->next_cascade_event= NOEVENT;
         /* Set to dummy values */
@@ -2987,8 +3073,7 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
             printf("Adult %ld will remain VS permanently with HIV status %i, ART status %i \n",indiv->id,indiv->HIV_status,indiv->ART_status);
             fflush(stdout);
         }
-    }
-    else if (x<((param->p_stays_virally_suppressed)+(param->p_stops_virally_suppressed))){
+    }else if(x < ((p_stays_vs) + (param->p_stops_virally_suppressed))){
         /* Patient eventually ceases being virally suppressed. Schedule a transition to being virally unsuppressed. */
 
         /* Assume: randomly picked this to be 3-6 years later. */
@@ -3031,7 +3116,7 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
 }
 
 /* This sets up everything when someone becomes virally unsuppressed and determines their next cascade event. */
-void virally_unsuppressed_process(individual* indiv, parameters *param, double t, individual ***cascade_events, long *n_cascade_events, long *size_cascade_events, individual ***hiv_pos_progression, long *n_hiv_pos_progression, long *size_hiv_pos_progression, cumulative_outputs_struct *cumulative_outputs){
+void virally_unsuppressed_process(individual* indiv, parameters *param, double t, individual ***cascade_events, long *n_cascade_events, long *size_cascade_events, individual ***hiv_pos_progression, long *n_hiv_pos_progression, long *size_hiv_pos_progression, cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs){
 
     /* This tells us if the cd4 test is due to PopART (is_popart=1) or not (is_popart=0). */
     int is_popart = (indiv->next_cascade_event>=NCASCADEEVENTS_NONPOPART);
@@ -3043,7 +3128,7 @@ void virally_unsuppressed_process(individual* indiv, parameters *param, double t
 
 
     /* Need to allow CD4 progression again. */
-    next_hiv_event(indiv, hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression, param, t, cumulative_outputs);
+    next_hiv_event(indiv, hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression, param, t, cumulative_outputs, calendar_outputs);
 
     if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
         printf("Adult %ld has become VU at time %6.4f. next_hiv_event = %i indices=%li %li \n",indiv->id,t,indiv->next_HIV_event,indiv->idx_hiv_pos_progression[0],indiv->idx_hiv_pos_progression[1]);
@@ -3098,7 +3183,7 @@ void virally_unsuppressed_process(individual* indiv, parameters *param, double t
 void dropout_process(individual* indiv, parameters *param, double t, individual ***cascade_events,
     long *n_cascade_events, long *size_cascade_events, individual ***hiv_pos_progression, 
     long *n_hiv_pos_progression, long *size_hiv_pos_progression, 
-    cumulative_outputs_struct *cumulative_outputs){
+    cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs){
     /* Process events when someone drops out of care (including restarting their CD4
     progression if needed) and determining their next cascade event. 
     
@@ -3132,7 +3217,30 @@ void dropout_process(individual* indiv, parameters *param, double t, individual 
             indiv->ART_status, indiv->next_cascade_event);
         fflush(stdout);
     }
-
+    
+    int g = indiv->gender, cd4 = indiv->cd4, spvl = indiv->SPVL_cat;
+    // Find age of the dead person when they died
+    int age = (int) floor(t - indiv->DoB);
+    int year_idx = (int) floor(t) - param->start_time_simul;
+    
+    // Find the age index of this person (>=80 is its own category)
+    // truncate >=80 to 80 so that indexing of FIND_AGE_GROUPS_UNPD works
+    if(age >= MAX_AGE){
+        age = MAX_AGE;
+    }
+    int age_idx = FIND_AGE_GROUPS_UNPD[age - AGE_ADULT];
+    
+    if( ( indiv->ART_status == EARLYART ) || 
+        ( indiv->ART_status == LTART_VS ) || 
+        ( indiv->ART_status == LTART_VU )
+    ){
+        calendar_outputs->N_calendar_AnnualDropoutOnART[g][age_idx][cd4][spvl][year_idx]++;
+    }
+    
+    if(WRITE_COST_EFFECTIVENESS_OUTPUT == 1){
+        calendar_outputs->N_calendar_dropout[year_idx]++;
+    }
+    
     indiv->ART_status = CASCADEDROPOUT;
     
     /* Need to allow CD4 progression again if they don't currently have CD4 progression event 
@@ -3140,7 +3248,7 @@ void dropout_process(individual* indiv, parameters *param, double t, individual 
     /* CHANGE 8/1/15. */
     if(indiv->next_HIV_event == NOEVENT){
         next_hiv_event(indiv, hiv_pos_progression, n_hiv_pos_progression, 
-            size_hiv_pos_progression, param, t, cumulative_outputs);
+            size_hiv_pos_progression, param, t, cumulative_outputs, calendar_outputs);
     }
     
     /* 
@@ -3228,12 +3336,12 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                     printf("Individual %li transitioning illegally in patch %i\n.",indiv->id,p);
                 /* Get their HIV test results and schedule the next cascade event accordingly. Note
                  * that the NOTPOPART indicates that this happens outside PopART. */
-                hiv_test_process(indiv, patch[p].param, t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch[p].vmmc_events, patch[p].n_vmmc_events, patch[p].size_vmmc_events, patch, p, debug);
+                hiv_test_process(indiv, patch[p].param, t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch[p].calendar_outputs, patch[p].vmmc_events, patch[p].n_vmmc_events, patch[p].size_vmmc_events, patch, p, debug);
 
             }
             else if ((indiv->next_cascade_event==CASCADEEVENT_CD4_TEST_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_CD4_TEST_POPART)){
                 //debug->art_vars[p].cascade_transitions[indiv->ART_status+1][ARTNAIVE+1]++;
-                cd4_test_process(indiv, patch[p].param, t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch, p);
+                cd4_test_process(indiv, patch[p].param, t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch[p].calendar_outputs, patch, p);
             }
             else if ((indiv->next_cascade_event==CASCADEEVENT_START_ART_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_START_ART_POPART)){
                 if (indiv->PANGEA_date_firstARTstart<0){
@@ -3241,7 +3349,7 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                     indiv->PANGEA_cd4atfirstART = PANGEA_get_cd4(indiv, t);
                 }
                 debug->art_vars[p].cascade_transitions[indiv->ART_status+1][EARLYART+1]++;
-                start_ART_process(indiv, patch[p].param, t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression,0, file_data_store);
+                start_ART_process(indiv, patch[p].param, t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression,0, file_data_store, patch[p].calendar_outputs);
             }
             else if ((indiv->next_cascade_event==CASCADEEVENT_VS_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_VS_POPART)){
                 /* Only record if this is the first date of viral suppression. */
@@ -3258,7 +3366,7 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                 if (indiv->ART_status==LTART_VS)
                     indiv->DEBUG_cumulative_time_on_ART_VS += (t-indiv->DEBUG_time_of_last_cascade_event);
                 indiv->DEBUG_time_of_last_cascade_event = t;
-                virally_unsuppressed_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs);
+                virally_unsuppressed_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch[p].calendar_outputs);
             }
             //get_virally_unsuppressed(indiv,param,t, cascade_events, n_cascade_events, size_cascade_events);
             else if ((indiv->next_cascade_event==CASCADEEVENT_DROPOUT_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_DROPOUT_POPART)){
@@ -3267,7 +3375,7 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                     indiv->DEBUG_cumulative_time_on_ART_VS += (t-indiv->DEBUG_time_of_last_cascade_event);
                 else if (indiv->ART_status==LTART_VU)
                     indiv->DEBUG_cumulative_time_on_ART_VU += (t-indiv->DEBUG_time_of_last_cascade_event);
-                dropout_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs);
+                dropout_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch[p].calendar_outputs);
             }
             else{
                 printf("ERROR: Unknown cascade event %i for id=%li in patch %i. Exiting.\n",indiv->next_cascade_event,indiv->id,p);

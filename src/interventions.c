@@ -495,6 +495,7 @@ void carry_out_chips_visits_per_timestep(int t0, int t_step, patch_struct *patch
                     /* Send the address (ie pointer) to this person. */
                     chips_visit_person(&(patch[p].individual_population[patch[p].chips_sample->list_ids_to_visit[g][ac][i]]), 
                         patch[p].cumulative_outputs,
+                        patch[p].calendar_outputs,
                         t0 + t_step*TIME_STEP,
                         patch[p].cascade_events,
                         patch[p].n_cascade_events,
@@ -517,12 +518,12 @@ void carry_out_chips_visits_per_timestep(int t0, int t_step, patch_struct *patch
 }
 
 
-void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative_outputs, double t, 
-    individual ***cascade_events, long *n_cascade_events, long *size_cascade_events, 
-    individual ***hiv_pos_progression, long *n_hiv_pos_progression, 
-    long *size_hiv_pos_progression, parameters *param, individual ***vmmc_events, 
-    long *n_vmmc_events, long *size_vmmc_events, patch_struct *patch, int p, int chips_round, 
-    debug_struct *debug, output_struct *output, int g, int ac){
+void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative_outputs,
+    calendar_outputs_struct *calendar_outputs, double t, individual ***cascade_events, 
+    long *n_cascade_events, long *size_cascade_events, individual ***hiv_pos_progression, 
+    long *n_hiv_pos_progression, long *size_hiv_pos_progression, parameters *param, 
+    individual ***vmmc_events, long *n_vmmc_events, long *size_vmmc_events, patch_struct *patch,
+    int p, int chips_round, debug_struct *debug, output_struct *output, int g, int ac){
     /* 
     Because of the way we draw CHiPs visits at the beginning of the year, it is possible some people
     die before they are visited. If this is the case then do nothing more. 
@@ -559,7 +560,8 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
     */
     
     /* We need a different variable as chips_round_including_end_trial is used as an array index. */
-    int chips_round_including_end_trial; 
+    int chips_round_including_end_trial;
+    int year_idx = (int) floor(t) - param->start_time_simul;
     
     if(chips_round >= 0 && chips_round < NCHIPSROUNDS){
         chips_round_including_end_trial = chips_round;
@@ -618,6 +620,9 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
     }
     indiv->NCHIPSVISITS++;
     
+    // Record that there was a chips visit this year
+    calendar_outputs->N_calendar_CHIPS_visits[year_idx]++;
+    
     /* Are we following specific individuals or patches? */
     if(indiv->id == FOLLOW_INDIVIDUAL && indiv->patch_no == FOLLOW_PATCH){
         printf("CHiPs visit for adult %ld from patch %d at time %lf with old_cascade_event %d\n",
@@ -637,7 +642,8 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
         
         hiv_test_process(indiv, param, t, cascade_events, n_cascade_events, size_cascade_events, 
             hiv_pos_progression, n_hiv_pos_progression, size_hiv_pos_progression, 
-            cumulative_outputs, vmmc_events, n_vmmc_events, size_vmmc_events, patch, p, debug);
+            cumulative_outputs, calendar_outputs, vmmc_events, n_vmmc_events, size_vmmc_events,
+            patch, p, debug);
         
         return;
     }else if(
@@ -652,6 +658,7 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
         * If in arm A and has not dropped out then schedule start of ART. */
         if (patch[p].trial_arm == ARM_A){
             cumulative_outputs->N_total_CD4_tests_popart++;
+            calendar_outputs->N_calendar_CD4_tests_popart[year_idx]++;
             indiv->ART_status = ARTNAIVE;
             indiv->next_cascade_event = CASCADEEVENT_START_ART_POPART;
             indiv->VISITEDBYCHIPS_TO_INIT_ART = 1;
@@ -670,6 +677,7 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
             
             indiv->ART_status = ARTNAIVE;
             cumulative_outputs->N_total_CD4_tests_popart++;
+            calendar_outputs->N_calendar_CD4_tests_popart[year_idx]++;
             indiv->next_cascade_event = CASCADEEVENT_START_ART_POPART;
             indiv->VISITEDBYCHIPS_TO_INIT_ART = 1;
             schedule_start_of_art(indiv, param, t, cascade_events, 
@@ -688,6 +696,7 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
             getting the HIV test and having the first CD4 test, and the time between consecutive
             CD4 tests. */
             cumulative_outputs->N_total_CD4_tests_popart++;
+            calendar_outputs->N_calendar_CD4_tests_popart[year_idx]++;
             indiv->ART_status = ARTNAIVE;
             
             /* Note that we have two events happening here - time to get the CD4 test (to determine
@@ -730,8 +739,8 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
                 
                 hiv_test_process(indiv, param, t, cascade_events, n_cascade_events,
                     size_cascade_events, hiv_pos_progression, n_hiv_pos_progression,
-                    size_hiv_pos_progression, cumulative_outputs, vmmc_events, n_vmmc_events,
-                    size_vmmc_events, patch, p, debug);
+                    size_hiv_pos_progression, cumulative_outputs, calendar_outputs, 
+                    vmmc_events, n_vmmc_events, size_vmmc_events, patch, p, debug);
             
             }else{
                 
@@ -757,6 +766,7 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
                     if(is_eligible_for_art(indiv, param, t, patch, p) > 0){
                         
                         cumulative_outputs->N_total_CD4_tests_popart++;
+                        calendar_outputs->N_calendar_CD4_tests_popart[year_idx]++;
                         indiv->next_cascade_event = CASCADEEVENT_START_ART_POPART;
                         indiv->ART_status = ARTNAIVE;
                         indiv->VISITEDBYCHIPS_TO_INIT_ART = 1;
@@ -769,6 +779,7 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
                         consecutive CD4 tests.
                         */
                         cumulative_outputs->N_total_CD4_tests_popart++;
+                        calendar_outputs->N_calendar_CD4_tests_popart[year_idx]++;
                         indiv->ART_status = ARTNAIVE;
                         /*
                         Note that we have two events happening here - time to get the CD4 test 
@@ -797,78 +808,78 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
 /* Determines if a man gets VMMC, and if so schedules the process: 
  * ASSUMPTION!!! - time is drawn with no data!!! */
 void draw_if_VMMC(individual *indiv, parameters *param, individual ***vmmc_events, long *n_vmmc_events, long *size_vmmc_events, double t, int is_popart){
-	double p_circ;
-	int year, t_step, chips_round;
+    double p_circ;
+    int year, t_step, chips_round;
 
-	/* For DEBUGGING: */
-	if (indiv->gender==FEMALE||(indiv->circ!=UNCIRC)) 
-	{
-		printf("ERROR: This person %ld is gender=%d with circ=%d is in draw_if_VMMC. Exiting\n",
+    /* For DEBUGGING: */
+    if (indiv->gender==FEMALE||(indiv->circ!=UNCIRC)) 
+    {
+        printf("ERROR: This person %ld is gender=%d with circ=%d is in draw_if_VMMC. Exiting\n",
             indiv->id, indiv->gender, indiv->circ);
-		printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-		fflush(stdout);
-		exit(1);
-	}
-	
-	/* Need to see if there is an HIV retest prior to VMMC. */
-	if (t <= (param->COUNTRY_VMMC_START)){
-		return;                       /* No VMMC so exit function. */
-	}
-	else{
-		if (is_popart==POPART){
-			year = (int) floor(t);
-			t_step = (int) round((t - year)*N_TIME_STEP_PER_YEAR);
-			chips_round = get_chips_round(param, year, t_step);
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    
+    /* Need to see if there is an HIV retest prior to VMMC. */
+    if (t <= (param->COUNTRY_VMMC_START)){
+        return;                       /* No VMMC so exit function. */
+    }
+    else{
+        if (is_popart==POPART){
+            year = (int) floor(t);
+            t_step = (int) round((t - year)*N_TIME_STEP_PER_YEAR);
+            chips_round = get_chips_round(param, year, t_step);
 
-			/* Note that get_chips_round() returns -1 if after trial. We need to use chips_round as an array index so fix this: */
-			if (chips_round==CHIPSROUNDPOSTTRIAL)
-				chips_round = NCHIPSROUNDS-1; /* VMMC parameters should be like last round. */
-			else if (chips_round<0 || chips_round>=NCHIPSROUNDS){
-				printf("ERROR: Unknown chips_round value =%d in draw_if_VMMC() at t=%lf. Exiting\n",chips_round,t);
-				printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-				fflush(stdout);
-				exit(1);
-			}
+            /* Note that get_chips_round() returns -1 if after trial. We need to use chips_round as an array index so fix this: */
+            if (chips_round==CHIPSROUNDPOSTTRIAL)
+                chips_round = NCHIPSROUNDS-1; /* VMMC parameters should be like last round. */
+            else if (chips_round<0 || chips_round>=NCHIPSROUNDS){
+                printf("ERROR: Unknown chips_round value =%d in draw_if_VMMC() at t=%lf. Exiting\n",chips_round,t);
+                printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                fflush(stdout);
+                exit(1);
+            }
 
-			//printf("Calling chips_sampling_frame() year=%d t_step=%d. chips_round=%d p=%lf\n",year,t_step,chips_round,param->p_circ_popart[chips_round]);
-			p_circ= param->p_circ_popart[chips_round];
+            //printf("Calling chips_sampling_frame() year=%d t_step=%d. chips_round=%d p=%lf\n",year,t_step,chips_round,param->p_circ_popart[chips_round]);
+            p_circ= param->p_circ_popart[chips_round];
 
-		}
-		else
-			p_circ= param->p_circ_nonpopart;
-		/* Assume that probability of VMMC is higher with PopART (hence the index for p_circ): */
+        }
+        else
+            p_circ= param->p_circ_nonpopart;
+        /* Assume that probability of VMMC is higher with PopART (hence the index for p_circ): */
 
-		if (gsl_ran_bernoulli(rng,p_circ)==1){
-			//printf("Decided VMMC t=%lf is_popart=%d p=%lf\n",t,is_popart,p_circ);
-			/* Schedule the person to get VMMC some time in the near future.
-			 * Note: we allow VMMC to happen quicker during PopART - hence pass is_popart to schedule_vmmc(): */
-			schedule_vmmc(indiv, param, vmmc_events, n_vmmc_events, size_vmmc_events, t, is_popart);
-		}
-	}
+        if (gsl_ran_bernoulli(rng,p_circ)==1){
+            //printf("Decided VMMC t=%lf is_popart=%d p=%lf\n",t,is_popart,p_circ);
+            /* Schedule the person to get VMMC some time in the near future.
+             * Note: we allow VMMC to happen quicker during PopART - hence pass is_popart to schedule_vmmc(): */
+            schedule_vmmc(indiv, param, vmmc_events, n_vmmc_events, size_vmmc_events, t, is_popart);
+        }
+    }
 }
 
 /* Function is called when a person has just had a -ve HIV test, and decides to get VMMC at some time in the future.
  * The function determines when in the future the person will get VMMC and schedules this in vmmc_events[]. */
 void schedule_vmmc(individual *indiv, parameters *param, individual ***vmmc_events, 
-		long *n_vmmc_events, long *size_vmmc_events, double t, int is_popart){
+        long *n_vmmc_events, long *size_vmmc_events, double t, int is_popart){
 
-	/* For DEBUGGING: */
-	if (indiv->gender==FEMALE||(indiv->circ!=UNCIRC)) 
-	{
-		printf("ERROR: not sure why this person %ld gender=%d with circ=%d is in schedule_VMMC. Exiting\n",indiv->id,indiv->gender,indiv->circ);
-		printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-		fflush(stdout);
-		exit(1);
-	}
-	
-	//printf("Individual %ld had been scheduled for VMMC at time %f, is_popart=%d\n",indiv->id,t,is_popart);
-	double time_vmmc = t + param->t_get_vmmc_min[is_popart] + param->t_get_vmmc_range[is_popart]*gsl_rng_uniform (rng);
-	//printf("Individual %ld had been scheduled for VMMC at t=%f for future time %f, is_popart=%d\n",indiv->id,t,time_vmmc,is_popart);
-	/* Set status to waiting for VMMC: */
-	indiv->circ = UNCIRC_WAITING_VMMC;
-	schedule_generic_vmmc_event(indiv,param,vmmc_events,n_vmmc_events,size_vmmc_events,t,time_vmmc);
-	/* Do we need to model people deciding more than once if they get VMMC? */
-	return;
+    /* For DEBUGGING: */
+    if (indiv->gender==FEMALE||(indiv->circ!=UNCIRC)) 
+    {
+        printf("ERROR: not sure why this person %ld gender=%d with circ=%d is in schedule_VMMC. Exiting\n",indiv->id,indiv->gender,indiv->circ);
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    
+    //printf("Individual %ld had been scheduled for VMMC at time %f, is_popart=%d\n",indiv->id,t,is_popart);
+    double time_vmmc = t + param->t_get_vmmc_min[is_popart] + param->t_get_vmmc_range[is_popart]*gsl_rng_uniform (rng);
+    //printf("Individual %ld had been scheduled for VMMC at t=%f for future time %f, is_popart=%d\n",indiv->id,t,time_vmmc,is_popart);
+    /* Set status to waiting for VMMC: */
+    indiv->circ = UNCIRC_WAITING_VMMC;
+    schedule_generic_vmmc_event(indiv,param,vmmc_events,n_vmmc_events,size_vmmc_events,t,time_vmmc);
+    /* Do we need to model people deciding more than once if they get VMMC? */
+    return;
 }
 
 
@@ -911,6 +922,7 @@ void schedule_vmmc_healing(individual *indiv, parameters *param, individual ***v
     
     // Change the individuals circumcision status to VMMC_HEALING
     indiv->circ = VMMC_HEALING;
+    indiv->t_vmmc = t;
     
     //printf("Scheduling healing for %ld at time %lf for future time %lf\n",indiv->id,t,time_heal);
     schedule_generic_vmmc_event(indiv, param, vmmc_events, n_vmmc_events, size_vmmc_events, 
@@ -922,21 +934,21 @@ void schedule_vmmc_healing(individual *indiv, parameters *param, individual ***v
 /* Once someone has reached the end of the VMMC healing period, this function is called.
  * Function sets the individual so they no longer have any VMMC event, and their circ status is "VMMC". */
 void finish_vmmc_healing(individual *indiv){
-	
-	/* For DEBUGGING: */
-		if (indiv->gender==FEMALE||(indiv->circ!=VMMC_HEALING)) 
-		{
-			printf("ERROR: not sure why this person %ld gender=%d with circ=%d is in finish_vmmc_healing. Exiting\n",indiv->id,indiv->gender,indiv->circ);
-			printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-			fflush(stdout);
-			exit(1);
-		}
-		
-	indiv->circ = VMMC;
-	/* Do not need to remove from vmmc_events[] array as this event is now in the past. */
-	indiv->idx_vmmc_event[0] = -1;
-	indiv->idx_vmmc_event[1] = -1;
-	return;
+    
+    /* For DEBUGGING: */
+        if (indiv->gender==FEMALE||(indiv->circ!=VMMC_HEALING)) 
+        {
+            printf("ERROR: not sure why this person %ld gender=%d with circ=%d is in finish_vmmc_healing. Exiting\n",indiv->id,indiv->gender,indiv->circ);
+            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+            fflush(stdout);
+            exit(1);
+        }
+        
+    indiv->circ = VMMC;
+    /* Do not need to remove from vmmc_events[] array as this event is now in the past. */
+    indiv->idx_vmmc_event[0] = -1;
+    indiv->idx_vmmc_event[1] = -1;
+    return;
 }
 
 
@@ -1117,7 +1129,12 @@ void carry_out_VMMC_events_per_timestep(int t_step, double t, patch_struct *patc
             //      indiv->id,indiv->circ);
             schedule_vmmc_healing(indiv, patch[p].param, patch[p].vmmc_events,
                 patch[p].n_vmmc_events, patch[p].size_vmmc_events, t);
-        
+            
+            // Count the number of VMMC procedures in the current year by counting the 
+            // time at which the VMMC procedure was performed.  
+            int year_idx = (int) floor(t) - patch[p].param->start_time_simul;
+            patch[p].calendar_outputs->N_calendar_VMMC[year_idx]++;
+            
         }else if (indiv->circ == VMMC_HEALING){
             /* If current status is healing, then finish healing. Note that this is the last event
             in the VMMC process for this individual. */

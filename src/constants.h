@@ -37,6 +37,7 @@
 /****** For switching on and off different parts of the code ************/
 /************************************************************************/
 
+#define VMMC_EFF_ZERO_AT_POPART_START 0 // Should the efficacy of VMMC be switched to zero after the start of PopART?  
 #define SIMPLE_PARTNERSHIP_CHECK 0 /* if 0 then normal simulation is run, otherwise check functions are run (checks certain outputs - partnership formations etc). */
 #define SWEEP_THROUGH_TO_CHECK_LISTS 0 /* if 1 then perform sweep through whole population once a year to check everyone is where they should be in list of susceptibles in serodiscordant partnerships and list of available partners
                                             NOTE THIS MAKES THE CODE VERY SLOW (because we sweep through every single every individual and their partners once a year for the whole simulation
@@ -63,7 +64,6 @@
                                                  */
 
 #define WRITE_ANNUAL_PARTNERSHIPS_OUTPUTS 0 // if 1 then writes files of the form Annual_partnerships_outputs_*.csv
-#define AGE_DISTRIBUTION_CHECK 0 // if 0 then normal simulation is run, otherwise print age distribution at some specified times.
 
 #define WRITE_HIVSURVIVAL_OUTPUT 0 /*  Generates the files HIVsurvival_individualdata.csv - containing DoB, DoD, gender, date first on ART etc for all HIV+ in simulation. */
 
@@ -88,12 +88,13 @@
 #define WRITE_DEBUG_HIV_STATES 0                  /* Generates the files  DEBUG_HIVstates_population*.csv used in cross-validation of model. */
 #define DEBUG_MAX_HIV_STATE_OUTPUT_TIME 2016
 #define WRITE_DEBUG_ART_STATE 0                   /* Generates the files DEBUG_ART_population_*.csv. These are then used by generate_art_distribution_files.py to make ART_distribution.csv and ART_transition_dist.csv files. */
-#define WRITE_DEBUG_CHIPS_STATES 0                /* Generates the files CHIPS_outputs_annual*.csv and CHIPS_outputs_visit*.csv containing the data on people when they are visited by CHiPs. */
+#define WRITE_ART_STATUS_BY_AGE_SEX 0 // Write totals of individuals in each ART_status stratified by sex and year of age.  Write these for each time step.
+#define WRITE_DEBUG_CHIPS_STATES 0                /* Generates the files CHIPS_outputs_annual*.csv containing the annual data on people when they are visited by CHiPs. */
 
 #define WRITE_CALIBRATION 1 /* Write Calibration*.csv files to disk */
 #define PRINT_ALL_RUNS 1 /* Use this if you want to print everything regardless of fitting. */
-#define PRINT_EACH_RUN_OUTPUT 0 /* 0 if don't want to generate an output file for every run (when calibrating at present this is the case), or 1 if we do. */
-#define WRITE_EVERYTIMESTEP 0 /* Generates the files Timestep_outputs*.csv */
+#define PRINT_EACH_RUN_OUTPUT 1 /* 0 if don't want to generate an output file for every run (when calibrating at present this is the case), or 1 if we do. */
+#define WRITE_EVERYTIMESTEP 1 /* Generates the files Timestep_outputs*.csv */
 #define TIMESTEP_AGE 0 /* Generates the files Timestep_age_outputs_*.csv */
 #define PHYLO_PATCH 0                        /* At present just print phylo information from one patch. */
 #define WRITE_PHYLOGENETICS_OUTPUT 0 // 1    /* if 1 print phylo output to file, otherwise do not print */
@@ -108,6 +109,9 @@
 #define FOLLOW_INDIVIDUAL -1 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
 
 #define FOLLOW_PATCH 0 //1
+
+#define WRITE_COST_EFFECTIVENESS_OUTPUT 0 /*  Generates a new file cost_effectiveness_$.csv */
+#define WRITE_TREATS_OUTPUT 0 // Generates output for aligning the model with that used in the TREATS clinical trial.
 
 /************************************************************************/
 /************************** Random number variables *********************/
@@ -135,6 +139,10 @@ gsl_rng * rng;
 #define MAX_N_YEARS 200 /* Maximum number of years the simulation will run for */
 
 #define T_ROLLOUT_CHIPS_EVERYWHERE 2020 /* When we want post-popart CHiPs to roll out in contaminating patches. */
+#define ROLL_OUT_CHIPS_INSIDE_PATCH 1
+#define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2100 /* When to stop roll out of CHiPs to inside patch */
+
+#define ALLOW_COUNTERFACTUAL_ROLLOUT 0 /* Should post-PopART rollout of CHiPs be allowed in counterfactual simulations?  Defaul is that it's switched off*/
 
 /************************************************************************/
 /***************************** Settings ***************************/
@@ -162,7 +170,7 @@ gsl_rng * rng;
 /************************************************************************/
 
 #define MAX_POP_SIZE 500000 /* the maximum population size for memory allocation */
-#define MAX_N_PER_AGE_GROUP MAX_POP_SIZE/4   /* This is the maximum number of people in each adult age year group (ie 13, 14, 15...). The denominator is chosen to be really conservative (each age year will be <<5% of adult population)- as this is used for static memory allocation. It is also the maximum number of people who can die in each age group in a given timestep. */
+#define MAX_N_PER_AGE_GROUP MAX_POP_SIZE/6   /* This is the maximum number of people in each adult age year group (ie 13, 14, 15...). The denominator is chosen to be really conservative (each age year will be <<5% of adult population)- as this is used for static memory allocation. It is also the maximum number of people who can die in each age group in a given timestep. */
 
 //// BE CAREFUL, MAY NEED TO BE UPDATED IF VERY LONG PROJECTIONS ////
 #define AGE_ADULT 13 /* age at which individuals enter the simulation */
@@ -184,6 +192,8 @@ gsl_rng * rng;
 #define NPC_ENROLMENTS 1 /* Number of rounds of PC enrolment (PC0 at present only, will add PC12N+PC24N). */
 #define AGE_PC_MIN 18 /* Min/Max ages at which PC enrollment can occur. */
 #define AGE_PC_MAX 44
+#define PC_AGE_RANGE_MAX 27  /* PC runs from 18-44 so 27 age groups. */
+
 #define MAX_N_TIMESTEPS_PER_PC_ROUND 72 /* No PC round can last >1.5 years (in fact longest from data is 66 timesteps in community 9). */
 #define N_PC_HIV_STRATA 3 /* This is the number of HIV-related categories we use for dividing up the PC sample - we want to include the right number of HIV-, HIV+ know status etc. */
 #define MAX_NUMBER_PC_PARTICIPANTS_PER_GROUP 200 /* Fixes size of list_ids_in_cohort[g][ap][i_pc_category][MAX_NUMBER_PC_PARTICIPANTS_PER_GROUP]; */
@@ -194,6 +204,7 @@ extern const int AGE_GROUPS_UNPD[N_AGE_UNPD+1];
 
 #define MAX_AGE 80 // Upper bound for age at start of simulation 
 
+extern const int FIND_AGE_GROUPS_UNPD[MAX_AGE-AGE_ADULT+1];
 extern const int FIND_AGE_GROUPS[MAX_AGE-AGE_ADULT+1]; /* Convert from (age-AGE_ADULT) to the AGE_GROUPS index. Each entry in the array is an AGE_GROUPS index. */
 
 #define N_GENDER 2 /* Number of genders. */
@@ -351,8 +362,6 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 #define TRADITIONAL_MC 4
 
 
-
-
 #define DEFAULT_N_HIV_PROGRESS_PER_TIME_STEP MAX_POP_SIZE/100   /* This is the default number of HIV+ people whose next progression event will happen in a given time step.
                                                                Taken to be moderately conservative - in a 50% prevalence population assume average of 1 HIV event per year. 
                                                                 At some point in the future we will tune this to avoid too many reallocs(). */
@@ -372,6 +381,7 @@ double PER_PARTNERSHIP_HAZARD_TEMPSTORE[MAX_PARTNERSHIPS_PER_INDIVIDUAL];
 /* This just is just the size for an array storing a single thing for a patch (prevalence, % know serostatus, % on ART). */
 #define SIZEOF_annual_outputs_tempstore 100000
 #define SIZEOF_calibration_outputs 3000000
+#define SIZEOF_cost_effectiveness_outputs_string 3000000
 /* To avoid excessive writing to disk, only write out these data every NRUNSPERWRITETOFILE runs. Don't set too big to avoid excessive memory usage. */
 #define NRUNSPERWRITETOFILE 100
 #define OUTPUTTIMESTEP 4 // Store data in timestep_outputs_string every OUTPUTTIMESTEP timestep to reduce size of file.

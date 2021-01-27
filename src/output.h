@@ -38,6 +38,8 @@ void print_number_by_age_grouped(age_list_struct *,population_size *, stratified
 void update_outputs_gender_veryshort(individual *, long *, long *, long *, long *, long *, long *);
 //void update_outputs_gender_veryshort(individual *, long *, long *, long *, long *, long *);
 void update_annual_outputs_gender(individual *, long *, long *, long *, long *, int );
+void update_annual_outputs_gender_cd4(individual *, long *, long *, long *, long *, 
+    long [NCD4], long [NCD4], long [NCD4], int );
 void update_calibration_outputs_gender(individual *, long *, long *, long *, long *);
 void update_annual_outputs_riskgp(individual *, long *, long *, long *, long *, long *, long *, 
     long *, long *, long *, long *);
@@ -49,9 +51,17 @@ void store_annual_outputs(patch_struct *, int , output_struct *, all_partnership
     int *, int , int );
 void store_annual_partnerships_outputs(patch_struct *, int , output_struct *, 
     all_partnerships *, int *, int , int );
-void store_timestep_outputs(patch_struct *, int , double , output_struct *, int);
+void store_timestep_outputs(patch_struct *, int , double , output_struct *, int, int, int);
 void store_timestep_age_outputs(patch_struct *, int , double , output_struct *, int);
 void store_calibration_outputs_dhs(patch_struct *, int , output_struct *, int );
+void store_cost_effectiveness_outputs(patch_struct *, int , output_struct *, all_partnerships *,
+    int *, int, int);
+void store_treats_outputs(patch_struct *, int, output_struct *, all_partnerships *, 
+        int *, int, int);
+void store_art_status_by_age_sex(patch_struct *, int , double , output_struct *);
+void save_calibration_outputs_pc(patch_struct *, int , output_struct *, int, int );
+void save_person_timesteps_pc(patch_struct *, int, output_struct *, int , int );
+void store_calibration_outputs_pc(patch_struct *, int , output_struct *);
 void store_calibration_outputs_chips(patch_struct *, int ,  output_struct *);
 void write_annual_outputs(file_struct *, output_struct *, int);
 void write_annual_partnerships_outputs(file_struct *, output_struct *, int);
@@ -60,9 +70,9 @@ void write_timestep_age_outputs(file_struct *, output_struct *, int, int);
 void blank_calibration_output_file(char *, int );
 void write_calibration_outputs(char *, output_struct *, int);
 void store_phylogenetic_transmission_output(output_struct *, double, individual*, 
-    individual*, file_struct *);
+    individual*, file_struct *, int, int);
 void store_phylogenetic_transmission_initial_cases(output_struct *, parameters *, 
-    individual*, file_struct *);
+    individual*, file_struct *, int, int);
 void blank_phylo_transmission_data_file(file_struct *);
 void write_phylo_transmission_data(file_struct *, char *);
 void write_phylo_individual_data(file_struct *, individual *,  long);
@@ -78,4 +88,7 @@ void write_distr_n_lifetime_partners_and_n_partners_lastyear(patch_struct *, fil
 void write_pc_data(patch_struct *, int , file_struct *);
 void write_chips_data_visit(patch_struct *, int , file_struct *, output_struct *);
 void write_chips_data_annual(patch_struct *, int , int , int , int , file_struct *);
+void write_cost_effectiveness_outputs(file_struct *, output_struct *, int);
+void write_treats_outputs(file_struct *, output_struct *, int);
+void write_art_status_by_age_sex(file_struct *, output_struct *, int);
 #endif /* OUTPUT_H_ */
