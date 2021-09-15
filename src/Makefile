@@ -44,7 +44,7 @@ else
 endif
 
 # Compilation options and libraries to be used
-CFLAGS = -g -Wall -fmessage-length=0 -I$(INC) -O0
+CFLAGS = -g -Wall -fmessage-length=0 -I$(INC) -O0 -fcommon
 
 # To compile
 all: ${OBJS}
