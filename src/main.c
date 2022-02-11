@@ -998,7 +998,7 @@ int main(int argc,char *argv[]){
     
     /* The fitting data array is allocated separately so free it separately: */
     for(p = 0; p < NPATCHES; p++){
-        free(fitting_data[p]);
+	//free(fitting_data[p]); //this causes segmentation fault if uncommented (FDL)
         
         if(WRITE_CALIBRATION == 1){
             free(calibration_output_filename[p]);
