@@ -3174,8 +3174,8 @@ void print_partnership_network(file_struct *file_data_store, char *output_file_d
     int n_partners, i_partner;
     long partner_id;
     int partner_patch;
-    double duration;
-
+    double duration; //duration and begin date in years
+    double begin; 
     FILE *PARTNERSHIP_NETWORK_OUTFILE;
     char partnership_network_outfilename[LONGSTRINGLENGTH];
     make_filenames_for_snapshot(partnership_network_outfilename, output_file_directory, file_labels, year, p, "Partnership_network");
@@ -3201,9 +3201,10 @@ void print_partnership_network(file_struct *file_data_store, char *output_file_d
                 partner_id = individual_population[n_id].partner_pairs[i_partner]->ptr[1-gender]->id;
                 partner_patch = individual_population[n_id].partner_pairs[i_partner]->ptr[1-gender]->patch_no;
                 duration = individual_population[n_id].partner_pairs[i_partner]->duration_in_time_steps * TIME_STEP;
+		begin = individual_population[n_id].partner_pairs[i_partner]->begin;
                 if (partner_id>=n_id){
                     //fprintf("%li %li %i %6.4f\n",n_id,partner_id,partner_patch==p,duration);
-                    fprintf(PARTNERSHIP_NETWORK_OUTFILE,"%li %li %i %6.4f\n",n_id,partner_id,partner_patch==p,duration);
+                    fprintf(PARTNERSHIP_NETWORK_OUTFILE,"%li %li %i %6.4f %6.4f\n",n_id,partner_id,partner_patch==p,duration,begin);
                 }
             }
         }

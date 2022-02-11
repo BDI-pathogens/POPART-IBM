@@ -122,7 +122,7 @@ void new_partnership(individual* ind1, individual* ind2, int t_form_partnership,
     }
 
     /* duration (in number of time steps) of the partnership */
-
+    pair->begin = t_form_partnership;
     pair->duration_in_time_steps = time_to_partnership_dissolution(param,ind1->sex_risk,ind2->sex_risk, ind1->patch_no, ind2->patch_no); //// IF WE WANT SOMETHING ASYMETRICAL ACCORDING TO GENDER WILL NEED TO SPECIFY WHICH IS THE MALE AND WHICH IS THE FEMALE
 
     if(DEBUG_PARTNERSHIP_DURATION ==1)

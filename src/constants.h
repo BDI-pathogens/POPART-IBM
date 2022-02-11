@@ -91,7 +91,7 @@
 #define WRITE_ART_STATUS_BY_AGE_SEX 0 // Write totals of individuals in each ART_status stratified by sex and year of age.  Write these for each time step.
 #define WRITE_DEBUG_CHIPS_STATES 0                /* Generates the files CHIPS_outputs_annual*.csv containing the annual data on people when they are visited by CHiPs. */
 
-#define WRITE_CALIBRATION 1 /* Write Calibration*.csv files to disk */
+#define WRITE_CALIBRATION 0 /* Write Calibration*.csv files to disk */
 #define PRINT_ALL_RUNS 1 /* Use this if you want to print everything regardless of fitting. */
 #define PRINT_EACH_RUN_OUTPUT 1 /* 0 if don't want to generate an output file for every run (when calibrating at present this is the case), or 1 if we do. */
 #define WRITE_EVERYTIMESTEP 1 /* Generates the files Timestep_outputs*.csv */
