@@ -74,9 +74,9 @@ void store_phylogenetic_transmission_output(output_struct *, double, individual*
 void store_phylogenetic_transmission_initial_cases(output_struct *, parameters *, 
     individual*, file_struct *, int, int);
 void blank_phylo_transmission_data_file(file_struct *);
-void write_phylo_transmission_data(file_struct *, char *);
-void write_phylo_individual_data(file_struct *, individual *,  long);
-void write_hivpos_individual_data(file_struct *, individual *, long );
+void write_phylo_transmission_data(file_struct *, char *, int);
+void write_phylo_individual_data(file_struct *, individual *,  long, int);
+void write_hivpos_individual_data(file_struct *, individual *, long, int );
 void print_partnership_network(file_struct *, char *, file_label_struct *, individual *, 
     long , int , int );
 void print_partners_outside_community(char *, individual *, long , int , int );

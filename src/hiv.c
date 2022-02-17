@@ -575,7 +575,7 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
         printf("-- infector->id %ld\n",susceptible -> partner_pairs_HIVpos[infector_index] -> ptr[partner_gender]->id);*/
 
         // Phylogenetic transmission outputs
-        if(p == PHYLO_PATCH && WRITE_PHYLOGENETICS_OUTPUT == 1){
+        if(WRITE_PHYLOGENETICS_OUTPUT ==1){ 
             store_phylogenetic_transmission_output(output, time_infect, susceptible, 
                 susceptible->partner_pairs_HIVpos[infector_index]->ptr[partner_gender], 
                 file_data_store, t0, t_step);
@@ -1070,7 +1070,7 @@ void draw_initial_infection(double t, individual* indiv, patch_struct *patch, in
         
         // Phylogenetics transmission outputs for seeded cases
         // (these are dummy outputs signifying that they are seed infections): */
-        if(p == PHYLO_PATCH && WRITE_PHYLOGENETICS_OUTPUT == 1){
+        if(WRITE_PHYLOGENETICS_OUTPUT == 1){ 
         store_phylogenetic_transmission_initial_cases(output, patch[p].param, 
             indiv, file_data_store, t0, t_step);
         }

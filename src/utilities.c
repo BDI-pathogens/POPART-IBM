@@ -1089,22 +1089,23 @@ void make_filenames_for_struct(file_label_struct *file_labels,
         join_strings_with_check(phylo_indiv_filename_temp, temp, 100, 
             "phylo_trans_filename_temp and temp in make_filenames_for_struct()");
     }
-    
-    concatenate_filename(file_data_store->filename_phylogenetic_transmission,
-        output_file_directory, file_labels->filename_label_bypatch[0],
+    for(p=0;p<NPATCHES;p++){    
+    	concatenate_filename(file_data_store->filename_phylogenetic_transmission[p],
+        output_file_directory, file_labels->filename_label_bypatch[p],
         phylo_trans_filename_temp);
-    concatenate_filename(file_data_store->filename_phylogenetic_individualdata,
-        output_file_directory, file_labels->filename_label_bypatch[0],
+    concatenate_filename(file_data_store->filename_phylogenetic_individualdata[p],
+        output_file_directory, file_labels->filename_label_bypatch[p],
         phylo_indiv_filename_temp);
 
-    concatenate_filename(file_data_store->filename_hivsurvival_individualdata,
-        output_file_directory, file_labels->filename_label_bypatch[0],
+    concatenate_filename(file_data_store->filename_hivsurvival_individualdata[p],
+        output_file_directory, file_labels->filename_label_bypatch[p],
         "HIVsurvival_individualdata");
-
+    }
     /* Output for hazards - note that we only want from patch 0. */
     concatenate_filename(file_data_store->filename_hazard_output,
         output_file_directory, file_labels->filename_label_bypatch[0],
         "Hazards");
+    
 }
 
 

@@ -863,7 +863,7 @@ typedef struct{ /* structure which contains all the strings that are outputted *
     char *pc_output_string[NPATCHES];
     char *calibration_outputs_combined_string[NPATCHES];
 
-    char *phylogenetics_output_string;
+    char *phylogenetics_output_string[NPATCHES];
 
     char *hazard_output_string; /* Stores hazard and other factors (e.g. age, risk gp, partner in/outside community) to allow us to examine whether the average hazard is credible. */
 
@@ -1014,14 +1014,14 @@ typedef struct{
 
 
     /* Phylogenetic outputs: */
-    FILE *PHYLOGENETIC_TRANSMISSION_FILE;
-    char filename_phylogenetic_transmission[LONGSTRINGLENGTH];
+    FILE *PHYLOGENETIC_TRANSMISSION_FILE[NPATCHES];
+    char filename_phylogenetic_transmission[NPATCHES][LONGSTRINGLENGTH];
 
-    FILE *PHYLOGENETIC_INDIVIDUALDATA_FILE;
-    char filename_phylogenetic_individualdata[LONGSTRINGLENGTH];
+    FILE *PHYLOGENETIC_INDIVIDUALDATA_FILE[NPATCHES];
+    char filename_phylogenetic_individualdata[NPATCHES][LONGSTRINGLENGTH];
 
-    FILE *HIVSURVIVAL_INDIVIDUALDATA_FILE;
-    char filename_hivsurvival_individualdata[LONGSTRINGLENGTH];
+    FILE *HIVSURVIVAL_INDIVIDUALDATA_FILE[NPATCHES];
+    char filename_hivsurvival_individualdata[NPATCHES][LONGSTRINGLENGTH];
     
     /* Cost-effectiveness outputs*/
     FILE *COST_EFFECTIVENESS_OUTPUT_FILE[NPATCHES];

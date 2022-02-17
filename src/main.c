@@ -769,21 +769,26 @@ int main(int argc,char *argv[]){
 
             /* Only output the full stuff if run successfully fitted data. */
             if(fit_flag == 1){
-                if(WRITE_PHYLOGENETICS_OUTPUT >= 1 && PRINT_EACH_RUN_OUTPUT == 1){
-                    /* call files to write individual data and transmission data to csv files: */
-                    write_phylo_transmission_data(file_data_store, 
-                        output->phylogenetics_output_string);
-                    
-                    write_phylo_individual_data(file_data_store, 
-                        patch[PHYLO_PATCH].individual_population, patch[PHYLO_PATCH].id_counter);
-                }
-            }
+                for(p=0;p<NPATCHES;p++){
+
+	                if(WRITE_PHYLOGENETICS_OUTPUT >= 1 && PRINT_EACH_RUN_OUTPUT == 1){
+        	            /* call files to write individual data and transmission data to csv files: */
+                	        write_phylo_transmission_data(file_data_store, 
+                        	output->phylogenetics_output_string[p],p);
+                        //printf("patch %d",p);
+                        	write_phylo_individual_data(file_data_store, 
+                            	patch[p].individual_population, patch[p].id_counter,p);   
+
+                	}
+            	
             
-            /* Write csv file of information to look at how long people live for when on ART. */
-            if(WRITE_HIVSURVIVAL_OUTPUT == 1 && PRINT_EACH_RUN_OUTPUT == 1){
-                write_hivpos_individual_data(file_data_store,
-                    patch[PHYLO_PATCH].individual_population, patch[PHYLO_PATCH].id_counter);
-            }
+            		/* Write csv file of information to look at how long people live for when on ART. */
+            		if(WRITE_HIVSURVIVAL_OUTPUT == 1 && PRINT_EACH_RUN_OUTPUT == 1){
+                		write_hivpos_individual_data(file_data_store,
+                    		patch[p].individual_population, patch[p].id_counter,p);
+			}
+            	}
+	}
 
             if(WRITE_DEBUG_HIV_DURATION_KM == 1 && PRINT_EACH_RUN_OUTPUT == 1){
                 write_hiv_duration_km_end_of_simulation(patch, 

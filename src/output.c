@@ -2932,12 +2932,14 @@ void store_phylogenetic_transmission_output(output_struct *output, double time, 
     
     //print_here_string(temp_string,0);
     /* The -2 is because in C the last character in any string of length n is "\0" - so we only have n-1 characters in the array we can write to. Make -2 instead of -1 to be a bit more sure! */
-    if((strlen(output->phylogenetics_output_string)+strlen(temp_string))>(PHYLO_OUTPUT_STRING_LENGTH-2)){
-        write_phylo_transmission_data(file_data_store, output->phylogenetics_output_string);
-        /* Empty output->phylogenetics_output_string. To do this we just need to set the first character to be '\0'. */
-        (output->phylogenetics_output_string)[0] = '\0';
+    int patch_no = infectee->patch_no;
+
+    if((strlen(output->phylogenetics_output_string[patch_no])+strlen(temp_string))>(PHYLO_OUTPUT_STRING_LENGTH-2)){
+        write_phylo_transmission_data(file_data_store, output->phylogenetics_output_string[patch_no], patch_no);
+	(output->phylogenetics_output_string[patch_no])[0] = '\0';
+
         // DEBUG - checks that string length is reset to zero.
-        //printf("New length = %lu\n",strlen(output->phylogenetics_output_string));
+        //printf("New length = %lu\n",strlen(output->phylogenetics_output_string[patch_no));
         //printf("Error - need to increase size of PHYLO_OUTPUT_STRING_LENGTH. Exiting\n");
         //printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         //fflush(stdout);
@@ -2945,8 +2947,7 @@ void store_phylogenetic_transmission_output(output_struct *output, double time, 
     }
     
     /* Add to existing phylogenetic output string. */
-    strcat(output->phylogenetics_output_string,temp_string);
-    
+   strcat(output->phylogenetics_output_string[patch_no],temp_string); 
 }
 
 
@@ -2980,24 +2981,27 @@ void store_phylogenetic_transmission_initial_cases(output_struct *output, parame
 		new_infectee_id,infectee->t_sc, t0, t_step,-1,infected_risk_text,infectee->DoB);
 	
     /* Add to existing phylogenetic output string. */
-    strcat(output->phylogenetics_output_string,temp_string);
+    int patch_no = infectee->patch_no;
+    strcat(output->phylogenetics_output_string[patch_no],temp_string);
 }
 
 void blank_phylo_transmission_data_file(file_struct *file_data_store){
-    file_data_store->PHYLOGENETIC_TRANSMISSION_FILE = fopen(file_data_store->filename_phylogenetic_transmission,"w");
-    fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE,"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB\n");
-    fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE);
+     for(int p=0;p<NPATCHES;p++){
+        file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p] = fopen(file_data_store->filename_phylogenetic_transmission[p],"w");
+        fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p],"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB\n");
+        fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p]);
+    }
 }
 
-
-void write_phylo_transmission_data(file_struct *file_data_store, char *phylogenetics_output_string){
-    file_data_store->PHYLOGENETIC_TRANSMISSION_FILE = fopen(file_data_store->filename_phylogenetic_transmission,"a");
-    fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE,"%s",phylogenetics_output_string);
-    fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE);
+void write_phylo_transmission_data(file_struct *file_data_store, char *phylogenetics_output_string, int patch_no){
+    file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[patch_no] = fopen(file_data_store->filename_phylogenetic_transmission[patch_no],"a");
+    fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[patch_no],"%s",phylogenetics_output_string);
+    fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[patch_no]);
 }
+
 
 /* Prints csv file of relevant demographic information for all individuals in population. */
-void write_phylo_individual_data(file_struct *file_data_store, individual *individual_population, long id_counter)
+void write_phylo_individual_data(file_struct *file_data_store, individual *individual_population, long id_counter,int p)
 {
     
     char riskstring[20];
@@ -3009,10 +3013,9 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
     long n_id;
     //printf("Phylo individual filename = %s\n",file_data_store->filename_phylogenetic_individualdata);
 
-    file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE = fopen(
-            file_data_store->filename_phylogenetic_individualdata,"w");
-    
-    fprintf(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE,
+    file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p] = fopen(
+            file_data_store->filename_phylogenetic_individualdata[p],"w"); 
+    fprintf(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p],
         "Id,Sex,DoB,DoD,HIV_pos,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop\n");
 
     for (n_id=0; n_id<id_counter; n_id++){
@@ -3073,11 +3076,11 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
 
         strcat(tempstring,"\n");
 
-        fprintf(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE,"%s",tempstring);
+        fprintf(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p],"%s",tempstring);
 
     }
 
-    fclose(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE);
+    fclose(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p]);
 }
 
 
@@ -3085,7 +3088,7 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
 
 
 /* Prints csv file of relevant demographic information for all HIV+ individuals in population to allow computation of life expectancy on/off ART. */
-void write_hivpos_individual_data(file_struct *file_data_store, individual *individual_population, long id_counter)
+void write_hivpos_individual_data(file_struct *file_data_store, individual *individual_population, long id_counter, int p)
 {
 
     char riskstring[20];
@@ -3096,10 +3099,10 @@ void write_hivpos_individual_data(file_struct *file_data_store, individual *indi
     memset(HIVSURVIVAL_STRING, '\0', sizeof(HIVSURVIVAL_STRING));
 
     long n_id;
-    printf("HIV survival individual filename = %s\n",file_data_store->filename_hivsurvival_individualdata);
+    printf("HIV survival individual filename = %s\n",file_data_store->filename_hivsurvival_individualdata[p]);
 
-    file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE = fopen(file_data_store->filename_hivsurvival_individualdata,"w");
-    fprintf(file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE,"Id,Sex,DoB,DoD,HIV_pos,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop,SPVL\n");
+    file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE[p] = fopen(file_data_store->filename_hivsurvival_individualdata[p],"w");
+    fprintf(file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE[p],"Id,Sex,DoB,DoD,HIV_pos,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop,SPVL\n");
 
     for (n_id=0; n_id<id_counter; n_id++){
         //if (individual_population[n_id].HIV_status>UNINFECTED){
@@ -3160,11 +3163,11 @@ void write_hivpos_individual_data(file_struct *file_data_store, individual *indi
 
         strcat(tempstring,"\n");
 
-        fprintf(file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE,"%s",tempstring);
+        fprintf(file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE[p],"%s",tempstring);
     }
 //  }
 
-    fclose(file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE);
+    fclose(file_data_store->HIVSURVIVAL_INDIVIDUALDATA_FILE[p]);
 }
 
 
@@ -3517,7 +3520,7 @@ void sweep_through_all_and_compute_distribution_lifetime_and_lastyear_partners(p
     individual temp_ind;
     int age_gp;
 
-    for(p=0 ; p<NPATCHES; p++)
+    for(int p=0 ; p<NPATCHES; p++)
     {
         /* initialising to zero */
         for(g=0 ; g<N_GENDER; g++)

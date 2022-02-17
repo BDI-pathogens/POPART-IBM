@@ -167,7 +167,7 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
     //memset(output->annual_outputs_string_knowserostatus[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
     //memset(output->annual_outputs_string_knowserostatusandonart[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
     /* Note we only blank calibration_outputs_combined_string every NRUNSPERWRITETOFILE runs - this is done in main.c at present. */
-    memset(output->phylogenetics_output_string, '\0', PHYLO_OUTPUT_STRING_LENGTH*sizeof(char));
+    memset(output->phylogenetics_output_string[p], '\0', PHYLO_OUTPUT_STRING_LENGTH*sizeof(char));
     memset(output->hazard_output_string, '\0', HAZARD_OUTPUT_STRING_LENGTH*sizeof(char));
     memset(output->cost_effectiveness_outputs_string[p], '\0',
         SIZEOF_cost_effectiveness_outputs_string*sizeof(char));
@@ -194,10 +194,10 @@ void alloc_output_memory(output_struct **output)
 {
     *output = malloc(sizeof(output_struct));
     int p;
-    (*output)->phylogenetics_output_string = (char *)calloc(PHYLO_OUTPUT_STRING_LENGTH,sizeof(char));
     (*output)->hazard_output_string = (char *)calloc(HAZARD_OUTPUT_STRING_LENGTH,sizeof(char));
     for (p=0;p<NPATCHES;p++){
-        (*output)->annual_outputs_string[p] = (char *)calloc(SIZEOF_annual_outputs_string, sizeof(char));
+        (*output)->phylogenetics_output_string[p] = (char *)calloc(PHYLO_OUTPUT_STRING_LENGTH,sizeof(char));
+	(*output)->annual_outputs_string[p] = (char *)calloc(SIZEOF_annual_outputs_string, sizeof(char));
         (*output)->annual_outputs_string_pconly[p] = (char *)calloc(SIZEOF_annual_outputs_string_pconly, sizeof(char));
         (*output)->annual_partnerships_outputs_string[p] = (char *)calloc(SIZEOF_annual_outputs_string, sizeof(char));
         (*output)->annual_partnerships_outputs_string_pconly[p] = (char *)calloc(SIZEOF_annual_outputs_string_pconly, sizeof(char));
@@ -1210,8 +1210,8 @@ void free_output_memory(output_struct *output){
         free(output->cost_effectiveness_outputs_string[p]);
         free(output->treats_outputs_string[p]);
         free(output->art_status_by_age_sex_outputs_string[p]);
+    	free(output->phylogenetics_output_string[p]);
     }
-    free(output->phylogenetics_output_string);
     free(output->hazard_output_string);
 
     free(output);
