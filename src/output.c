@@ -2986,7 +2986,8 @@ void store_phylogenetic_transmission_initial_cases(output_struct *output, parame
 }
 
 void blank_phylo_transmission_data_file(file_struct *file_data_store){
-     for(int p=0;p<NPATCHES;p++){
+    int p; 
+    for(p=0;p<NPATCHES;p++){
         file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p] = fopen(file_data_store->filename_phylogenetic_transmission[p],"w");
         fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p],"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB\n");
         fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p]);
@@ -3520,7 +3521,7 @@ void sweep_through_all_and_compute_distribution_lifetime_and_lastyear_partners(p
     individual temp_ind;
     int age_gp;
 
-    for(int p=0 ; p<NPATCHES; p++)
+    for(p=0 ; p<NPATCHES; p++)
     {
         /* initialising to zero */
         for(g=0 ; g<N_GENDER; g++)
