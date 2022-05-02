@@ -983,7 +983,6 @@ int main(int argc,char *argv[]){
         
     } // else if SIMPLE_PARTNERSHIP_CHECK == 1
     
-            printf("fit %d",patch[0].i_fit);
     
     /*****************************************************/
     /*** FREEING MEMORY                                ***/
