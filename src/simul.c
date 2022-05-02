@@ -372,7 +372,7 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
     /* This function calls a range of processes used in the simulation
     
     In the following order, this function calls the following processes: 
-        1. Set up PC sample
+        1. Set up PC sample //we are not using this really (supposed to be a representative sample, not working correctly - the real sample is biased!)
         2. Set up CHiPs sample
         3. HIV testing
         4. Births and deaths
@@ -948,7 +948,7 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
     // Function determines if there are any things we need to fit to at the current timestep, 
     // and carries out any fitting needed.
     fit_flag = fit_data(t0, t_step, fitting_data, patch, p);
-    
+    //printf("fitta %d",fitting_data[0].fit_year);
     // If run did not fit given data, then return from this function - stops any further timesteps,
     // and this run is then terminated in main.c.
     

@@ -197,7 +197,7 @@ void alloc_output_memory(output_struct **output)
     (*output)->hazard_output_string = (char *)calloc(HAZARD_OUTPUT_STRING_LENGTH,sizeof(char));
     for (p=0;p<NPATCHES;p++){
         (*output)->phylogenetics_output_string[p] = (char *)calloc(PHYLO_OUTPUT_STRING_LENGTH,sizeof(char));
-	(*output)->annual_outputs_string[p] = (char *)calloc(SIZEOF_annual_outputs_string, sizeof(char));
+        (*output)->annual_outputs_string[p] = (char *)calloc(SIZEOF_annual_outputs_string, sizeof(char));
         (*output)->annual_outputs_string_pconly[p] = (char *)calloc(SIZEOF_annual_outputs_string_pconly, sizeof(char));
         (*output)->annual_partnerships_outputs_string[p] = (char *)calloc(SIZEOF_annual_outputs_string, sizeof(char));
         (*output)->annual_partnerships_outputs_string_pconly[p] = (char *)calloc(SIZEOF_annual_outputs_string_pconly, sizeof(char));
@@ -1210,7 +1210,7 @@ void free_output_memory(output_struct *output){
         free(output->cost_effectiveness_outputs_string[p]);
         free(output->treats_outputs_string[p]);
         free(output->art_status_by_age_sex_outputs_string[p]);
-    	free(output->phylogenetics_output_string[p]);
+        free(output->phylogenetics_output_string[p]);
     }
     free(output->hazard_output_string);
 

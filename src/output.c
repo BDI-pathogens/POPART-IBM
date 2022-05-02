@@ -2936,10 +2936,10 @@ void store_phylogenetic_transmission_output(output_struct *output, double time, 
 
     if((strlen(output->phylogenetics_output_string[patch_no])+strlen(temp_string))>(PHYLO_OUTPUT_STRING_LENGTH-2)){
         write_phylo_transmission_data(file_data_store, output->phylogenetics_output_string[patch_no], patch_no);
-	(output->phylogenetics_output_string[patch_no])[0] = '\0';
-
+        /* Empty output->phylogenetics_output_string. To do this we just need to set the first character to be '\0'. */
+        (output->phylogenetics_output_string[patch_no])[0] = '\0';
         // DEBUG - checks that string length is reset to zero.
-        //printf("New length = %lu\n",strlen(output->phylogenetics_output_string[patch_no));
+        //printf("New length = %lu\n",strlen(output->phylogenetics_output_string));
         //printf("Error - need to increase size of PHYLO_OUTPUT_STRING_LENGTH. Exiting\n");
         //printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         //fflush(stdout);
@@ -2947,7 +2947,9 @@ void store_phylogenetic_transmission_output(output_struct *output, double time, 
     }
     
     /* Add to existing phylogenetic output string. */
-   strcat(output->phylogenetics_output_string[patch_no],temp_string); 
+
+    strcat(output->phylogenetics_output_string[patch_no],temp_string);
+    
 }
 
 
@@ -2986,13 +2988,13 @@ void store_phylogenetic_transmission_initial_cases(output_struct *output, parame
 }
 
 void blank_phylo_transmission_data_file(file_struct *file_data_store){
-    int p; 
-    for(p=0;p<NPATCHES;p++){
+    for(int p=0;p<NPATCHES;p++){
         file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p] = fopen(file_data_store->filename_phylogenetic_transmission[p],"w");
         fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p],"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB\n");
         fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p]);
     }
 }
+
 
 void write_phylo_transmission_data(file_struct *file_data_store, char *phylogenetics_output_string, int patch_no){
     file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[patch_no] = fopen(file_data_store->filename_phylogenetic_transmission[patch_no],"a");
@@ -3000,9 +3002,8 @@ void write_phylo_transmission_data(file_struct *file_data_store, char *phylogene
     fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[patch_no]);
 }
 
-
 /* Prints csv file of relevant demographic information for all individuals in population. */
-void write_phylo_individual_data(file_struct *file_data_store, individual *individual_population, long id_counter,int p)
+void write_phylo_individual_data(file_struct *file_data_store, individual *individual_population, long id_counter, int p)
 {
     
     char riskstring[20];
@@ -3015,7 +3016,8 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
     //printf("Phylo individual filename = %s\n",file_data_store->filename_phylogenetic_individualdata);
 
     file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p] = fopen(
-            file_data_store->filename_phylogenetic_individualdata[p],"w"); 
+            file_data_store->filename_phylogenetic_individualdata[p],"w");
+    
     fprintf(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p],
         "Id,Sex,DoB,DoD,HIV_pos,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop\n");
 
@@ -3173,13 +3175,17 @@ void write_hivpos_individual_data(file_struct *file_data_store, individual *indi
 
 
 
-void print_partnership_network(file_struct *file_data_store, char *output_file_directory, file_label_struct *file_labels, individual *individual_population, long id_counter, int year, int p){
+void print_partnership_network(file_struct *file_data_store, char *output_file_directory, file_label_struct *file_labels,  patch_struct *patch,  int year, int p){
     long n_id, gender;
+    float ageid, agepart;
     int n_partners, i_partner;
     long partner_id;
     int partner_patch;
-    double duration; //duration and begin date in years
-    double begin; 
+    double duration;
+    double begin;
+
+    long id_counter;
+    individual *individual_population;
     FILE *PARTNERSHIP_NETWORK_OUTFILE;
     char partnership_network_outfilename[LONGSTRINGLENGTH];
     make_filenames_for_snapshot(partnership_network_outfilename, output_file_directory, file_labels, year, p, "Partnership_network");
@@ -3192,23 +3198,39 @@ void print_partnership_network(file_struct *file_data_store, char *output_file_d
         fflush(stdout);
         exit(1);
     }
+    fprintf(PARTNERSHIP_NETWORK_OUTFILE, "n_id,partner_id,id_patch,partner_patch,duration,begin,DoB_1,DoB_2\n");
+    int patchno=0;
+    for (patchno=0;patchno<2;patchno++){
+        individual_population=patch[patchno].individual_population; 
+        id_counter=patch[patchno].id_counter;
+        for (n_id=0; n_id<id_counter; n_id++){
+            /* Check that the person is not dead: */
+            if (individual_population[n_id].cd4!=DEAD){
 
-    for (n_id=0; n_id<id_counter; n_id++){
-        /* Check that the person is not dead: */
-        if (individual_population[n_id].cd4!=DEAD){
+                gender = individual_population[n_id].gender;
 
-            gender = individual_population[n_id].gender;
+                n_partners = individual_population[n_id].n_partners;
 
-            n_partners = individual_population[n_id].n_partners;
+                ageid = individual_population[n_id].DoB;
+                for(i_partner=0;i_partner<n_partners;i_partner++){
 
-            for(i_partner=0;i_partner<n_partners;i_partner++){
-                partner_id = individual_population[n_id].partner_pairs[i_partner]->ptr[1-gender]->id;
-                partner_patch = individual_population[n_id].partner_pairs[i_partner]->ptr[1-gender]->patch_no;
-                duration = individual_population[n_id].partner_pairs[i_partner]->duration_in_time_steps * TIME_STEP;
-		begin = individual_population[n_id].partner_pairs[i_partner]->begin;
-                if (partner_id>=n_id){
-                    //fprintf("%li %li %i %6.4f\n",n_id,partner_id,partner_patch==p,duration);
-                    fprintf(PARTNERSHIP_NETWORK_OUTFILE,"%li %li %i %6.4f %6.4f\n",n_id,partner_id,partner_patch==p,duration,begin);
+                    partner_id = individual_population[n_id].partner_pairs[i_partner]->ptr[1-gender]->id;
+                    partner_patch = individual_population[n_id].partner_pairs[i_partner]->ptr[1-gender]->patch_no;
+                    agepart = individual_population[n_id].partner_pairs[i_partner]->ptr[1-gender]->DoB;
+
+                    duration = individual_population[n_id].partner_pairs[i_partner]->duration_in_time_steps * TIME_STEP;
+                    begin = individual_population[n_id].partner_pairs[i_partner]->begin;
+
+                    if (gender==MALE){
+                            fprintf(PARTNERSHIP_NETWORK_OUTFILE, "%li,%li,%i,%i,%6.4f,%6.4f,%.4f,%.4f\n",n_id,partner_id,individual_population[n_id].patch_no,partner_patch,duration,begin,ageid,agepart);
+                    }                
+                    //if (partner_id>=n_id){
+                        //fprintf("%li %li %i %6.4f\n",n_id,partner_id,partner_patch==p,duration);
+                        //fprintf(PARTNERSHIP_NETWORK_OUTFILE,"%li %li %i %6.4f\n",n_id,partner_id,partner_patch==p,duration);
+                        //if (individual_population[n_id].patch_no==partner_patch){
+                        //    fprintf(PARTNERSHIP_NETWORK_OUTFILE,"%li %li %i %6.4f\n",n_id,partner_id,partner_patch==p,duration);
+                        //}
+                    
                 }
             }
         }
@@ -3521,7 +3543,7 @@ void sweep_through_all_and_compute_distribution_lifetime_and_lastyear_partners(p
     individual temp_ind;
     int age_gp;
 
-    for(p=0 ; p<NPATCHES; p++)
+    for(int p=0 ; p<NPATCHES; p++)
     {
         /* initialising to zero */
         for(g=0 ; g<N_GENDER; g++)

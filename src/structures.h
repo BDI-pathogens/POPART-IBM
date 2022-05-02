@@ -42,7 +42,7 @@ typedef struct partnership partnership;
 
 struct partnership{
     /* Structure partnership contains one pointer to a list of 2 persons, 
-    the time after which break-up occurs (in the absence of death), and the time when the partnership started: */
+    and the time after which break-up occurs (in the absence of death), and a double for when the relationship begins: */
     individual* ptr[2];
     int duration_in_time_steps;
     double begin;

@@ -279,10 +279,8 @@ void check_partnership_formation_and_HIV_acquisition(patch_struct *patch, int p,
     printf("-------------------------------------\n");
     printf("Phylogenetic output:\n");
     printf("IdInfector IdInfected IsInfectorAcute\n");
-    //printf("%s\n", output->phylogenetics_output_string);
-    for(i=0; i<NPATCHES;i++)
-    {
-	    printf("%s\n", output->phylogenetics_output_string[i]);
+    for(int p=0; p<NPATCHES; p++){
+        printf("%s\n", output->phylogenetics_output_string[p]);
     }
     printf("-------------------------------------\n");
 

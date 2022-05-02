@@ -419,38 +419,6 @@ class ParameterSet(object):
         # Flatten list
         return [p for ps in params_list for p in ps]
     
-    ##################################
-    # METHODS FOR MODIFYING PARAMETERS
-    # --------------------------------
-    def generate_replicates(self, nreps, seed, **kwargs):
-        """
-        Generate additional replicates by repeating lines of parameters files and adding randomly generated
-        random seeds (used by the GSL rng) to the *init* csv files.  This method assumes the parameter files
-        have a length of one line.  
-
-        Arguments
-        ---------
-        nreps [int]: 
-            Number of rows of the output file
-        seed [int]: 
-            Seed for hte random number generator in numpy
-        
-        """
-        # For the files of interest (HIV, cascade, init, times, PC, demographics, etc, expand to have additional replicates)
-        for f in FILE_NAMES_LINELIST:
-            # For ease of reading
-            colnames = self.params[f].columns
-            values = self.params[f].values
-
-            df_repeated = pd.DataFrame(np.repeat(values, nreps, axis = 0), columns = colnames)
-
-            # Assign repeated data frame back to the dictionary of files
-            self.params[f] = df_repeated
-        
-        # Assign random numbers for seeds
-        np.random.seed(seed)
-        self.params["init"].rng_seed = np.random.randint(1E9, 1E10, nreps)
-    
     #####################
     # METHODS FOR WRITING
     # -------------------

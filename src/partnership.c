@@ -106,6 +106,7 @@ void new_partnership(individual* ind1, individual* ind2, double t_form_partnersh
 
         risk_f = ind1->sex_risk;
         risk_m = ind2->sex_risk;
+
     }else
     {
         age_f = get_age_group(ind2->DoB,t_form_partnership, AGE_GROUPS, N_AGE);
@@ -114,6 +115,7 @@ void new_partnership(individual* ind1, individual* ind2, double t_form_partnersh
         risk_f = ind2->sex_risk;
         risk_m = ind1->sex_risk;
     }
+    pair->begin = t_form_partnership; /*current time in years*/
 
     if(CHECK_AGE_AND_RISK_ASSORTATIVITY == 1)
     {
@@ -122,9 +124,9 @@ void new_partnership(individual* ind1, individual* ind2, double t_form_partnersh
     }
 
     /* duration (in number of time steps) of the partnership */
-    pair->begin = t_form_partnership;
-    pair->duration_in_time_steps = time_to_partnership_dissolution(param,ind1->sex_risk,ind2->sex_risk, ind1->patch_no, ind2->patch_no); //// IF WE WANT SOMETHING ASYMETRICAL ACCORDING TO GENDER WILL NEED TO SPECIFY WHICH IS THE MALE AND WHICH IS THE FEMALE
 
+    pair->duration_in_time_steps = time_to_partnership_dissolution(param,ind1->sex_risk,ind2->sex_risk, ind1->patch_no, ind2->patch_no); //// IF WE WANT SOMETHING ASYMETRICAL ACCORDING TO GENDER WILL NEED TO SPECIFY WHICH IS THE MALE AND WHICH IS THE FEMALE
+    
     if(DEBUG_PARTNERSHIP_DURATION ==1)
     {
 
@@ -642,8 +644,8 @@ void draw_n_new_partnerships(double time, long n, parameters *param, int ag_f, i
     
     Parameters
     ----------
-    time : double 
-        the time of partnership formation in years
+    time : double
+        the time of partnership formation
     
     n : long
         the number of partnerships to form
@@ -952,7 +954,7 @@ void draw_new_partnerships(double time, all_partnerships *overall_partnerships, 
 
     Arguments
     ---------
-    time : double 
+    time : double
         the time of partnership formation in years
     overall_partnerships : pointer to all_partnerships struct
     
