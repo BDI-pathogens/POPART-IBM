@@ -15,7 +15,7 @@
 #	./popart-simul.exe Zambia
 
 GSLFLAGS= -lgsl -lgslcblas -lm -O3
-LFLAGS = ${GSLFLAGS}
+LFLAGS = ${GSLFLAGS} $(shell gsl-config --libs)
 
 # all the C files (*.c)
 SRCS = constants.c demographics.c hiv.c init.c input.c interventions.c output.c partnership.c utilities.c checks.c memory.c fitting.c debug.c pc.c simul.c main.c 
@@ -44,7 +44,7 @@ else
 endif
 
 # Compilation options and libraries to be used
-CFLAGS = -g -fcommon -Wall -fmessage-length=0 -I$(INC) -O0
+CFLAGS = -g -fcommon -Wall -fmessage-length=0 -I$(INC) $(shell gsl-config --cflags) 
 
 # To compile
 all: ${OBJS}
