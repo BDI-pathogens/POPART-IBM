@@ -39,7 +39,7 @@
 data/RAW_PRIORS/community_dictionary_withtrialarm.csv
 data/GENERATED_PRIORS/
 data/SAMPLED_PARAMETERS/
-
+generate_network/
 # eclipse related
 /Debug/
 .cproject

@@ -36,10 +36,10 @@ endif
 
 # For compilation on Rescomp
 ifeq ($(location),rescomp)
-	INC = /apps/well/gsl/2.2.1-gcc4.9.3/include
-	LIB = /apps/well//gsl/2.2.1-gcc4.9.3/lib
+	INC = $EBROOTGSL/include
+	LIB = $EBROOTGSL/lib	
 else
-        INC = /usr/local/include
+	INC = /usr/local/include
 	LIB = /usr/local/lib
 endif
 
