@@ -79,11 +79,7 @@ def compile_popart_ibm(request):
     macro_file = join(c.IBM_DIR_TEST, "constants.h")
     [adjust_macros(macro_file, macro, "1", macro_file) for macro in macros_one]
     
-    # Generate output for phylo patch 0 (the "inside"/PopART patch)
-    macros_zero = ["PHYLO_PATCH"]
-    
-    [adjust_macros(macro_file, macro, "0", macro_file) for macro in macros_zero]
-    
+
     # Construct the compilation command and compile
     compile_command = "make clean; make all"
     completed_compilation = subprocess.run([compile_command], 
