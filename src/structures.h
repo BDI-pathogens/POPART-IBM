@@ -728,8 +728,11 @@ typedef struct{
     long *death_dummylist;
 
     population_size_one_year_age *n_infected;
+    population_size_one_year_age *n_art;
     population_size_one_year_age *n_infected_cumulative;
     population_size_one_year_age *n_newly_infected;
+    population_size_one_year_age *n_virallysuppressed;
+
     population_size *n_infected_wide_age_group;
     population_size *n_newly_infected_wide_age_group;
 

@@ -34,7 +34,7 @@
 
 # R-related files
 .Rhistory
-
+.vscode
 # Files associated with the trial
 data/RAW_PRIORS/community_dictionary_withtrialarm.csv
 data/GENERATED_PRIORS/

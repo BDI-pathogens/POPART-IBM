@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "structures.h": "c",
+        "__locale": "c",
+        "ios": "c",
+        "random": "c"
+    }
+}

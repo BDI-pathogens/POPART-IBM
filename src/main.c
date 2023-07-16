@@ -527,7 +527,7 @@ int main(int argc,char *argv[]){
                         write_cd4_spvl_states(patch, year, file_data_store);
                     }
                 }
-                
+                //printf("YEAR: %d\n\n",year);
                 fit_flag = carry_out_processes(year, *fitting_data, patch, overall_partnerships,
                     output, rng_seed_offset, rng_seed_offset_PC, debug, file_data_store,
                     is_counterfactual);
@@ -558,8 +558,10 @@ int main(int argc,char *argv[]){
                     /* Now update age_list: */
                     age_population_by_one_year(patch[p].age_list);
 
-                    /* Ageing by 1 year HIV positive people (update n_infected) */
+                    /* Ageing by 1 year HIV positive people (update n_infected, ART, virallysuppressed) */
                     age_population_size_one_year_age_by_one_year(patch[p].n_infected);
+                    age_population_size_one_year_age_by_one_year(patch[p].n_art);
+                    age_population_size_one_year_age_by_one_year(patch[p].n_virallysuppressed);
 
                     /* Age the 1-year age group population by 1 year: */
                         age_population_size_one_year_age_by_one_year(
@@ -1027,7 +1029,7 @@ int main(int argc,char *argv[]){
     }
     
     free(debug);
-
+   
     /***** Free GSL rng memory *****/
     gsl_rng_free(rng);
 

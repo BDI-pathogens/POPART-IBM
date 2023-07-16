@@ -1366,9 +1366,9 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
         
         if(indiv->id == FOLLOW_INDIVIDUAL && indiv->patch_no == FOLLOW_PATCH){
             printf("Calling carry_out_HIV_events_per_timestep() for ");
-            printf("%ld in patch %d at t=%6.4f, index = %i %i. Indiv indices are %li %li\n",
+            printf("\n %ld in patch %d at t=%6.4f, index = %i %i. Indiv indices are %li %li ART status is %d \n\n",
                 indiv->id, indiv->patch_no, t, array_index_for_hiv_event, n,
-                indiv->idx_hiv_pos_progression[0], indiv->idx_hiv_pos_progression[1]);
+                indiv->idx_hiv_pos_progression[0], indiv->idx_hiv_pos_progression[1], indiv->ART_status );
             fflush(stdout);
         }
         
@@ -1388,8 +1388,8 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
         if(indiv->next_HIV_event == HIVEVENT_AIDSDEATH){
             
             if(indiv->id == FOLLOW_INDIVIDUAL && indiv->patch_no == FOLLOW_PATCH){
-                printf("Individual %ld from patch %d dies from AIDS at t=%6.4f\n", 
-                    indiv->id, indiv->patch_no, t);
+                printf("Individual %ld from patch %d dies from AIDS at t=%6.4f, with ART status %d\n", 
+                    indiv->id, indiv->patch_no, t,indiv->ART_status);
                 fflush(stdout);
             }
             
@@ -1403,6 +1403,7 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
             // Function removes person from everything except the cascade event list:
             individual_death_AIDS(patch[p].age_list, indiv, patch[p].n_population,
                 patch[p].n_population_oneyearagegroups, patch[p].n_infected,
+                patch[p].n_art,patch[p].n_virallysuppressed,
                 patch[p].n_population_stratified, t, patch[p].param,
                 overall_partnerships->susceptible_in_serodiscordant_partnership,
                 overall_partnerships->n_susceptible_in_serodiscordant_partnership,
@@ -1487,12 +1488,20 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 // Start indiv on ART at low CD4.  
                 // The second-to-last parameter in start_ART_process() states that this 
                 // individual started ART because of AIDS symptoms (set to 1).  
+                if (indiv->ART_status < EARLYART || indiv->ART_status > LTART_VU ){
+                    //printf("a");
+                    increase_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
+                }
+                                
+
                 start_ART_process(indiv,patch[p].param, t, patch[p].cascade_events,
                     patch[p].n_cascade_events, patch[p].size_cascade_events,
                     patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression,
                     patch[p].size_hiv_pos_progression,1, file_data_store,
                     patch[p].calendar_outputs);
-            }else{
+
+            }
+            else{
                 printf("ERROR: Unknown HIV event %i for ", indiv->next_HIV_event);
                 printf("id=%li in patch %d with indices %i %i %li %li. Exiting.\n",
                     indiv->id, indiv->patch_no, array_index_for_hiv_event, n,
@@ -3265,8 +3274,8 @@ void dropout_process(individual* indiv, parameters *param, double t, individual 
     if(indiv->id == FOLLOW_INDIVIDUAL && indiv->patch_no == FOLLOW_PATCH){
         printf("Adult %ld has dropped out at time %6.4f. ", indiv->id, t);
         printf("After dropping out next HIV event is %i. ", indiv->next_HIV_event);
-        printf("hiv_pos_progression indices %li %li\n", 
-            indiv->idx_hiv_pos_progression[0], indiv->idx_hiv_pos_progression[1]);
+        printf("hiv_pos_progression indices %li %li, art status is %d\n", 
+            indiv->idx_hiv_pos_progression[0], indiv->idx_hiv_pos_progression[1], indiv->ART_status);
         fflush(stdout);
     }
 }
@@ -3312,8 +3321,12 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
             exit(1);
         }
 
-
+        if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
+            printf("\n\nindiv->next_cascade_event is %d, and t is %f, individual ART status is %d \n\n",indiv->next_cascade_event, t, indiv->ART_status);
+            fflush(stdout);
+        }
         /* Decide if we kill this person: */
+        //if(indiv->id==34808 && indiv->patch_no==0) printf("Individual cascade event =%d\n",indiv->next_cascade_event);
 
         if ((indiv->next_cascade_event==CASCADEEVENT_ARTDEATH_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_ARTDEATH_POPART)){
             /* Update counters of cascade transitions first as these depend on the current state (they get modified by the subsequent function): */
@@ -3323,11 +3336,14 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
             /* Note that the last argument '3' indicates that this is an AIDS-related death. */
             remove_from_hiv_pos_progression(indiv,  patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression,t, patch[p].param,3);
             /* Function removes person from everything except the cascade event list: */
-            individual_death_AIDS(patch[p].age_list, indiv, patch[p].n_population, patch[p].n_population_oneyearagegroups, patch[p].n_infected, patch[p].n_population_stratified, t, patch[p].param,
+            individual_death_AIDS(patch[p].age_list, indiv, patch[p].n_population, patch[p].n_population_oneyearagegroups, patch[p].n_infected,patch[p].n_art,patch[p].n_virallysuppressed, patch[p].n_population_stratified, t, patch[p].param,
                     overall_partnerships->susceptible_in_serodiscordant_partnership, overall_partnerships->n_susceptible_in_serodiscordant_partnership, overall_partnerships->pop_available_partners, overall_partnerships->n_pop_available_partners, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch, p, file_data_store);
+            decrease_population_count_art_or_virallysuppressed(patch[p].n_art,  indiv, t);
+            //individual cannot die of AIDS while Virally Suppressed so no need to check if it is
         }
 
         else{
+            int aux_ART_STATUS = indiv -> ART_status;
             /* At this point "indiv->next_cascade_event" is what happens to them now. We then draw a new "next event" after. */
             if((indiv->next_cascade_event==CASCADEEVENT_HIV_TEST_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_HIV_TEST_POPART)){
                 /* Counters get modified in the function hiv_test_process. */
@@ -3359,22 +3375,30 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                 if (indiv->ART_status==LTART_VU)
                     indiv->DEBUG_cumulative_time_on_ART_VU += (t-indiv->DEBUG_time_of_last_cascade_event);
                 indiv->DEBUG_time_of_last_cascade_event = t;
+
+            
                 virally_suppressed_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression);
+
             }
             else if ((indiv->next_cascade_event==CASCADEEVENT_VU_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_VU_POPART)){
                 debug->art_vars[p].cascade_transitions[indiv->ART_status+1][LTART_VU+1]++;
-                if (indiv->ART_status==LTART_VS)
+                if (indiv->ART_status==LTART_VS){
                     indiv->DEBUG_cumulative_time_on_ART_VS += (t-indiv->DEBUG_time_of_last_cascade_event);
+                }
                 indiv->DEBUG_time_of_last_cascade_event = t;
                 virally_unsuppressed_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch[p].calendar_outputs);
+
             }
             //get_virally_unsuppressed(indiv,param,t, cascade_events, n_cascade_events, size_cascade_events);
             else if ((indiv->next_cascade_event==CASCADEEVENT_DROPOUT_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_DROPOUT_POPART)){
                 debug->art_vars[p].cascade_transitions[indiv->ART_status+1][ARTDROPOUT+1]++;
-                if (indiv->ART_status==LTART_VS)
+                if (indiv->ART_status==LTART_VS){
                     indiv->DEBUG_cumulative_time_on_ART_VS += (t-indiv->DEBUG_time_of_last_cascade_event);
-                else if (indiv->ART_status==LTART_VU)
+                }
+                else if (indiv->ART_status==LTART_VU){
                     indiv->DEBUG_cumulative_time_on_ART_VU += (t-indiv->DEBUG_time_of_last_cascade_event);
+                }
+
                 dropout_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression, patch[p].cumulative_outputs, patch[p].calendar_outputs);
             }
             else{
@@ -3382,8 +3406,44 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                 printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
                 fflush(stdout);
                 exit(1);
-            }
+            } 
+            //update population counts depending on what happened
 
+            // big if to exclude events that would lead to no changes in population of vs or art
+            if (aux_ART_STATUS!= ARTNEG && !(aux_ART_STATUS== EARLYART && indiv->ART_status==LTART_VU) && aux_ART_STATUS!=indiv->ART_status && !(aux_ART_STATUS==ARTNAIVE &&indiv->ART_status==CASCADEDROPOUT ) ){
+                if(aux_ART_STATUS==ARTNAIVE  &&( indiv->ART_status>= EARLYART && indiv->ART_status<=LTART_VU)){
+                    //individual started art
+                    increase_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
+                    if(indiv->ART_status == LTART_VS) increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                }
+                else if (aux_ART_STATUS==EARLYART && indiv->ART_status== LTART_VS){
+                    increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                }
+                else if (aux_ART_STATUS==EARLYART && indiv->ART_status > LTART_VU) {
+                    decrease_population_count_art_or_virallysuppressed( patch[p].n_art, indiv, t);
+                }
+                else if (aux_ART_STATUS == LTART_VS && indiv->ART_status>=LTART_VU){
+                    decrease_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                    if (indiv->ART_status>LTART_VU)
+                    {
+                        decrease_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
+                   }
+                }
+                else if (aux_ART_STATUS == LTART_VU && indiv->ART_status==LTART_VS ){
+                    increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                }
+                else if (aux_ART_STATUS == LTART_VU && indiv->ART_status>LTART_VU ){
+                    decrease_population_count_art_or_virallysuppressed( patch[p].n_art, indiv, t);
+                }
+                else if (aux_ART_STATUS > LTART_VU  && indiv->ART_status>= EARLYART &&  indiv->ART_status<= LTART_VU){
+                    increase_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
+                    if (indiv -> ART_status == LTART_VS)
+                    increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                }
+                else{
+                    printf("This event in cascade was not accounted for: %d -> %d, for individual %ld in patch %d, at time %f\n", aux_ART_STATUS ,indiv->ART_status, indiv->id, indiv->patch_no, t);
+                }
+            }
         }
     }
     /* We don't need this any more so free the memory: */
