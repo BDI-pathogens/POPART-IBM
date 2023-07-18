@@ -1644,8 +1644,8 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
             calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx]++;
             
             // returns whether they drop out (0) or stays in cascade (1)
-            // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
-            if (t >= 2030) {
+            // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2026
+            if (t >= 2026) {
                 p_collect_cd4_test_results_cd4_nonpopart = 0.95;
             }
             else if (t > 2023) {
@@ -1708,8 +1708,8 @@ int remains_in_cascade(individual* indiv, parameters *param, double t, int is_po
         return 1;
     }
     // Gets CD4 tested, determines of individual drops out (0) or stays in the cascade (1)
-    // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
-    if (t >= 2030) {
+    // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2026
+    if (t >= 2026) {
         p_collect_cd4_test_results_cd4_nonpopart = 0.95;
     }
     else if (t > 2023) {
@@ -2531,7 +2531,7 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         *t_gap = 2006 - COUNTRY_HIV_TEST_START;
     }else{
         if (year > 2023) {
-            if (year >= 2030) {
+            if (year >= 2026) {
                 RR_HIV_background_testing_male = 0.9;
             }
             else {
@@ -3092,11 +3092,11 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
     double x = gsl_rng_uniform (rng);
     double p_stays_vs;
     double p_stays_virally_suppressed = param->p_stays_virally_suppressed;
-    // scaling p_stays_virally_suppressed after 2024
-    if (t >= 2030) {
+    // scaling p_stays_virally_suppressed after 2023
+    if (t >= 2026) {
         p_stays_virally_suppressed = 0.95;
     }
-    else if (t > 2024) {
+    else if (t > 2023) {
         p_stays_virally_suppressed = scaling_p_stays_virally_suppressed((int)floor(t), p_stays_virally_suppressed);
     }
     if(indiv->gender == MALE){
