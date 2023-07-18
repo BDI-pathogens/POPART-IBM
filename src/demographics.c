@@ -333,6 +333,7 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
     new_adult->DoB = t - AGE_ADULT - (N_TIME_STEP_PER_YEAR-1)/(1.0*N_TIME_STEP_PER_YEAR);      
     new_adult->DoD = -1;
     new_adult->DEBUGTOTALTIMEHIVPOS = 0;
+    new_adult->is_aware=-1;
     /* Assign a sex risk group: */
     new_adult->sex_risk = draw_sex_risk(new_adult->gender,param);  
     new_adult->n_lifetime_partners = 0;

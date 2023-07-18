@@ -1020,8 +1020,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                     N_men_MC++;
                 }
                 if(patch[p].individual_population[n_id].HIV_status > UNINFECTED){                
-                    if(patch[p].individual_population[n_id].ART_status >= ARTNAIVE && 
-                        patch[p].individual_population[n_id].ART_status < ARTDEATH){
+                    if(patch[p].individual_population[n_id].is_aware == 1){
  
                             nmale_aware+=1;
                             
@@ -1058,8 +1057,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 update_annual_outputs_gender(&(patch[p].individual_population[n_id]), &npop_f,
                     &npositive_f, &NNeedART_f, &NArt_f, current_cd4_guidelines);
                 if(patch[p].individual_population[n_id].HIV_status > UNINFECTED){                
-                    if(patch[p].individual_population[n_id].ART_status >= ARTNAIVE && 
-                        patch[p].individual_population[n_id].ART_status < ARTDEATH){
+                    if(patch[p].individual_population[n_id].is_aware == 1){
                             nfemale_aware+=1;
                             
                             naware_tot+=1;

@@ -2530,9 +2530,9 @@ void check_if_parameters_plausible(parameters *param){
 
 double scaling_p_HIV_backgorund_testing_female_current(int year, double p_HIV_backgorund_testing_female_current) {
     double scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current;
-    scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current * (1 + (year - 2023) * 0.25);
-    if (scaled_p_HIV_backgorund_testing_female_current >= 0.7) {
-        scaled_p_HIV_backgorund_testing_female_current = 0.7;
+    scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current * (1 + (year - 2023) * 1.6);
+    if (scaled_p_HIV_backgorund_testing_female_current >= 0.55) {
+        scaled_p_HIV_backgorund_testing_female_current = 0.55;
     }
     return scaled_p_HIV_backgorund_testing_female_current;
 }
@@ -2551,6 +2551,6 @@ double scaling_p_collect_cd4_test_results_cd4_nonpopart(int year, double p_colle
 
 double scaling_p_stays_virally_suppressed(int year, double p_stays_virally_suppressed) {
     // same amount of yearly increase until 2026 to reach 0.95
-    double yearly_increase = (0.95 - p_stays_virally_suppressed) / (2026 - 2023);
+    double yearly_increase = (0.89 - p_stays_virally_suppressed) / (2026 - 2023);
     return p_stays_virally_suppressed + yearly_increase * (year - 2023);
 }
