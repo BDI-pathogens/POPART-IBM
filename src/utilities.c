@@ -2528,6 +2528,15 @@ void check_if_parameters_plausible(parameters *param){
     }
 }
 
+double scaling_p_HIV_backgorund_testing_female_current(int year, double p_HIV_backgorund_testing_female_current) {
+    double scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current;
+    scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current * (1 + (year - 2018) * 0.1);
+    if (scaled_p_HIV_backgorund_testing_female_current >= 1) {
+        scaled_p_HIV_backgorund_testing_female_current = 1;
+    }
+    return scaled_p_HIV_backgorund_testing_female_current;
+}
+
 double scaling_p_collect_cd4_test_results_cd4_nonpopart(int year, double p_collect_cd4_test_results_cd4_nonpopart) {
     // same amount of yearly increase until 2030 to reach 0.95
     int yearly_increase = (0.95 - p_collect_cd4_test_results_cd4_nonpopart) / (2030 - 2018);

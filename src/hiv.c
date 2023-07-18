@@ -2517,6 +2517,7 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     */
     
     // Check that HIV testing has started
+    double p_HIV_background_testing_female_current = param->p_HIV_background_testing_female_current;
     if(year < COUNTRY_HIV_TEST_START){
         printf("probability_get_hiv_test_in_next_window() ");
         printf("called before start of HIV testing.\n");
@@ -2528,8 +2529,9 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         p_test[FEMALE] = param->p_HIV_background_testing_female_pre2006;
         *t_gap = 2006 - COUNTRY_HIV_TEST_START;
     }else{
-        p_test[MALE] = param->p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
-        p_test[FEMALE] = param->p_HIV_background_testing_female_current;
+        p_HIV_background_testing_female_current = scaling_p_HIV_backgorund_testing_female_current(year, p_HIV_background_testing_female_current);
+        p_test[MALE] = p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
+        p_test[FEMALE] = p_HIV_background_testing_female_current;
         *t_gap = 1;
     }
 }
