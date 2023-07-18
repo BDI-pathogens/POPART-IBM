@@ -1644,11 +1644,11 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
             calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx]++;
             
             // returns whether they drop out (0) or stays in cascade (1)
-            // after 2018, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
+            // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
             if (t >= 2030) {
                 p_collect_cd4_test_results_cd4_nonpopart = 0.95;
             }
-            else if (t > 2018) {
+            else if (t > 2023) {
                 p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart);
             }
             return gsl_ran_bernoulli(rng, p_collect_cd4_test_results_cd4_nonpopart);
@@ -1708,11 +1708,11 @@ int remains_in_cascade(individual* indiv, parameters *param, double t, int is_po
         return 1;
     }
     // Gets CD4 tested, determines of individual drops out (0) or stays in the cascade (1)
-    // after 2018, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
+    // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
     if (t >= 2030) {
         p_collect_cd4_test_results_cd4_nonpopart = 0.95;
     }
-    else if (t > 2018) {
+    else if (t > 2023) {
         p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart);
     }
     return gsl_ran_bernoulli(rng, p_collect_cd4_test_results_cd4_nonpopart);
@@ -2518,6 +2518,7 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     
     // Check that HIV testing has started
     double p_HIV_background_testing_female_current = param->p_HIV_background_testing_female_current;
+    double RR_HIV_background_testing_male = param->RR_HIV_background_testing_male;
     if(year < COUNTRY_HIV_TEST_START){
         printf("probability_get_hiv_test_in_next_window() ");
         printf("called before start of HIV testing.\n");
@@ -2529,8 +2530,17 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         p_test[FEMALE] = param->p_HIV_background_testing_female_pre2006;
         *t_gap = 2006 - COUNTRY_HIV_TEST_START;
     }else{
-        p_HIV_background_testing_female_current = scaling_p_HIV_backgorund_testing_female_current(year, p_HIV_background_testing_female_current);
-        p_test[MALE] = p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
+        if (year > 2023) {
+            if (year >= 2030) {
+                RR_HIV_background_testing_male = 0.9;
+            }
+            else {
+                RR_HIV_background_testing_male = scaling_RR_HIV_background_testing_male(year, RR_HIV_background_testing_male);
+            }
+            p_HIV_background_testing_female_current = scaling_p_HIV_backgorund_testing_female_current(year, p_HIV_background_testing_female_current);
+        }
+        
+        p_test[MALE] = p_HIV_background_testing_female_current*RR_HIV_background_testing_male;
         p_test[FEMALE] = p_HIV_background_testing_female_current;
         *t_gap = 1;
     }
