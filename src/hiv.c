@@ -1623,6 +1623,7 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
     int is_popart = (indiv->next_cascade_event >= NCASCADEEVENTS_NONPOPART);
     int year_idx = (int) floor(t) - param->start_time_simul;
     double p_collects_hiv_test; 
+    double p_collect_cd4_test_results_cd4_nonpopart = param->p_collect_cd4_test_results_cd4_nonpopart;
     
     // Check if this person is part of the background care cascade or not
     if(is_popart == NOTPOPART){
@@ -1643,7 +1644,14 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
             calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx]++;
             
             // returns whether they drop out (0) or stays in cascade (1)
-            return gsl_ran_bernoulli(rng, param->p_collect_cd4_test_results_cd4_nonpopart);
+            // after 2018, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
+            if (t >= 2030) {
+                p_collect_cd4_test_results_cd4_nonpopart = 0.95;
+            }
+            else if (t > 2018) {
+                p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart);
+            }
+            return gsl_ran_bernoulli(rng, p_collect_cd4_test_results_cd4_nonpopart);
         }else{
             // If the individual does not collect HIV test results then assume they
             // drop out of the care cascade (return 0)
@@ -1692,14 +1700,22 @@ Returns
 integer: whether individual drops out (0) or remains (1) in cascade
 */
 
-int remains_in_cascade(individual* indiv, parameters *param, int is_popart){
+int remains_in_cascade(individual* indiv, parameters *param, double t, int is_popart){
     
+    double p_collect_cd4_test_results_cd4_nonpopart = param->p_collect_cd4_test_results_cd4_nonpopart;
     // Assume individuals in PopART always remain in the cascade
     if(is_popart == POPART){
         return 1;
     }
     // Gets CD4 tested, determines of individual drops out (0) or stays in the cascade (1)
-    return gsl_ran_bernoulli(rng, param->p_collect_cd4_test_results_cd4_nonpopart);
+    // after 2018, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2030
+    if (t >= 2030) {
+        p_collect_cd4_test_results_cd4_nonpopart = 0.95;
+    }
+    else if (t > 2018) {
+        p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart);
+    }
+    return gsl_ran_bernoulli(rng, p_collect_cd4_test_results_cd4_nonpopart);
 }
 
 
@@ -2996,7 +3012,7 @@ void cd4_test_process(individual* indiv, parameters *param, double t, individual
     }
     
     // Case 1: Refuses to enter treatment/care - next event will be determined by CD4 (see above)
-    if(remains_in_cascade(indiv, param, is_popart) == 0){ 
+    if(remains_in_cascade(indiv, param, t, is_popart) == 0){
         // If individual drops out, do nothing - wait until CD4 drops below 200.
         // Note that we do not need to unschedule this indiv from the cascade_event[] list as the
         // event is this one and we are moving on in time. 
@@ -3063,10 +3079,18 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
     /* Now decide what happens next. 3 possible states: continues being virally suppressed, becomes unsuppressed, or drops out of ART entirely. */
     double x = gsl_rng_uniform (rng);
     double p_stays_vs;
+    double p_stays_virally_suppressed = param->p_stays_virally_suppressed;
+    // scaling p_stays_virally_suppressed after 2024
+    if (t >= 2030) {
+        p_stays_virally_suppressed = 0.95;
+    }
+    else if (t > 2024) {
+        p_stays_virally_suppressed = scaling_p_stays_virally_suppressed((int)floor(t), p_stays_virally_suppressed);
+    }
     if(indiv->gender == MALE){
-        p_stays_vs = param->p_stays_virally_suppressed * param->p_stays_virally_suppressed_male;
+        p_stays_vs = p_stays_virally_suppressed * param->p_stays_virally_suppressed_male;
     }else{
-        p_stays_vs = param->p_stays_virally_suppressed;
+        p_stays_vs = p_stays_virally_suppressed;
     }
     
     if(x < p_stays_vs){

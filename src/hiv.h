@@ -49,7 +49,7 @@ void carry_out_HIV_events_per_timestep(double , patch_struct *, int , all_partne
 int get_window_result(double ,double , patch_struct *);
 int joins_preart_care(individual* , parameters *, double , cumulative_outputs_struct *,
     calendar_outputs_struct *);
-int remains_in_cascade(individual* , parameters *, int);
+int remains_in_cascade(individual* , parameters *, double , int);
 int measured_cd4_cat(parameters *, int );
 int art_cd4_eligibility_group(parameters *, double);
 int is_eligible_for_art(individual* , parameters *, double , patch_struct *, int );
