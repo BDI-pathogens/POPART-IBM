@@ -316,6 +316,15 @@ typedef struct {
 
     double breakup_scale_lambda_between_patch[N_RISK];
 
+    /********** scaling **********/
+    double yearly_increase_backgorund_testing_female;
+    double max_backgorund_testing_female;
+    double max_RR_HIV_background_testing_male;
+    double max_p_collect_cd4_test_results_cd4_nonpopart;
+    double max_p_stays_virally_suppressed;
+    double ramp_up_start_year;
+    double ramp_up_end_year;
+
     /********************************************************************/
     /* the following ones are not read in a file as their values change
      * as the population size and structure change ; they will be updated

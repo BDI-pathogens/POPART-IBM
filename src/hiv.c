@@ -1625,6 +1625,7 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
     double p_collects_hiv_test; 
     double p_collect_cd4_test_results_cd4_nonpopart = param->p_collect_cd4_test_results_cd4_nonpopart;
     
+    indiv->is_aware =1;
     // Check if this person is part of the background care cascade or not
     if(is_popart == NOTPOPART){
         
@@ -1634,11 +1635,11 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
         }else{
             p_collects_hiv_test = param->p_collect_hiv_test_results_cd4_under200;
         }
-        if (t >= 2026) {
+        if (t >= param->ramp_up_end_year) {
                 p_collect_cd4_test_results_cd4_nonpopart = 0.95;
             }
-        else if (t > 2023) {
-                p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart);
+        else if (t > param->ramp_up_start_year) {
+                p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart, param);
             }
         // Check if the individual collects HIV test results
         if(gsl_ran_bernoulli(rng, p_collects_hiv_test) == 1){
@@ -1647,7 +1648,6 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
             // have their first CD4 test
             cumulative_outputs->N_total_CD4_tests_nonpopart++;
             calendar_outputs->N_calendar_CD4_tests_nonpopart[year_idx]++;
-            indiv->is_aware =1;
             // returns whether they drop out (0) or stays in cascade (1)
             // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2026
 
@@ -1658,7 +1658,6 @@ int joins_preart_care(individual* indiv, parameters *param, double t,
             return 0;
         }
     }else{
-        indiv->is_aware =1;
         // Individual is in PopART.  
         // Assume everyone in PopART gets their HIV test and has a CD4 test
         cumulative_outputs->N_total_CD4_tests_popart++;
@@ -1710,11 +1709,11 @@ int remains_in_cascade(individual* indiv, parameters *param, double t, int is_po
     }
     // Gets CD4 tested, determines of individual drops out (0) or stays in the cascade (1)
     // after 2023, number of people gets cd4 test results increases year by year, and reaches 0.95 in 2026
-    if (t >= 2026) {
+    if (t >= param->ramp_up_end_year) {
         p_collect_cd4_test_results_cd4_nonpopart = 0.95;
     }
-    else if (t > 2023) {
-        p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart);
+    else if (t > param->ramp_up_start_year) {
+        p_collect_cd4_test_results_cd4_nonpopart = scaling_p_collect_cd4_test_results_cd4_nonpopart((int)floor(t), p_collect_cd4_test_results_cd4_nonpopart, param);
     }
     return gsl_ran_bernoulli(rng, p_collect_cd4_test_results_cd4_nonpopart);
 }
@@ -2558,13 +2557,13 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         *t_gap = 2006 - COUNTRY_HIV_TEST_START;
     }else{
         if (year > 2018) {
-            if (year >= 2026) {
+            if (year >= param->ramp_up_end_year) {
                 RR_HIV_background_testing_male = 0.9;
             }
             else {
-                RR_HIV_background_testing_male = scaling_RR_HIV_background_testing_male(year, RR_HIV_background_testing_male);
+                RR_HIV_background_testing_male = scaling_RR_HIV_background_testing_male(year, RR_HIV_background_testing_male, param);
             }
-            p_HIV_background_testing_female_current = scaling_p_HIV_backgorund_testing_female_current(year, p_HIV_background_testing_female_current);
+            p_HIV_background_testing_female_current = scaling_p_HIV_backgorund_testing_female_current(year, p_HIV_background_testing_female_current, param);
         }
         
         p_test[MALE] = p_HIV_background_testing_female_current*RR_HIV_background_testing_male;
@@ -3120,11 +3119,11 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
     double p_stays_vs;
     double p_stays_virally_suppressed = param->p_stays_virally_suppressed;
     // scaling p_stays_virally_suppressed after 2023
-    if (t >= 2026) {
+    if (t >= param->ramp_up_end_year) {
         p_stays_virally_suppressed = 0.95;
     }
-    else if (t > 2023) {
-        p_stays_virally_suppressed = scaling_p_stays_virally_suppressed((int)floor(t), p_stays_virally_suppressed);
+    else if (t > param->ramp_up_start_year) {
+        p_stays_virally_suppressed = scaling_p_stays_virally_suppressed((int)floor(t), p_stays_virally_suppressed, param);
     }
     if(indiv->gender == MALE){
         p_stays_vs = p_stays_virally_suppressed * param->p_stays_virally_suppressed_male;

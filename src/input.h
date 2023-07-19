@@ -27,6 +27,7 @@ void read_hiv_params(char *, parameters *, int, int);
 void read_partnership_params(char *, parameters *, int);
 void read_time_params(char *, parameters *, int, int);
 void read_cascade_params(char *, parameters *, int);
+void read_scaling_params(char *, parameters *, int);
 void read_chips_uptake_params(char *, parameters *);
 void copy_chips_params(parameters **, int );
 void read_pc0_enrolment_params(char *, int , parameters *, int , int );

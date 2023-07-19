@@ -40,6 +40,8 @@ read_time_params()
     param_processed_patch$p_times.csv
 read_cascade_params()
     Read in HIV cascade-related parameters from param_processed_patch$p_cascade.csv
+read_scaling_params()
+    Read in scaling-related parameters from param_processed_patch$p_scaling.csv
 read_initial_params()
     Read in initial conditions (population size, etc) from param_processed_patch1_init.csv
 
@@ -91,6 +93,7 @@ void read_param(char *file_directory, parameters **param, int n_runs, patch_stru
         read_partnership_params(patch_tag, param[p], n_runs);
         read_time_params(patch_tag, param[p], n_runs, p);
         read_cascade_params(patch_tag, param[p], n_runs);
+        read_scaling_params(patch_tag, param[p], n_runs);
         
         /* Note that this MUST be called after read_cascade_params(). */
         read_chips_uptake_params(patch_tag, param[p]);
@@ -1339,6 +1342,84 @@ void read_cascade_params(char *patch_tag, parameters *allrunparameters, int n_ru
         //      }
     }
     /******************* closing parameter file ********************/
+    fclose(param_file);
+    return;
+}
+
+
+void read_scaling_params(char *patch_tag, parameters *allrunparameters, int n_runs){
+    /* Read scaling related parameters
+    
+    Read in scaling parameters for use after 2023 to achive 95/95/95 goal.
+    
+    Arguments
+    ---------
+    patch_tag : pointer to a character array
+    
+    allrunparameters : pointer to an array of parameters structures
+        Structure for storing all parameter values
+    n_runs : int
+        Number of runs in the simulation
+    
+    Returns
+    -------
+    Nothing; 
+    
+    */
+    
+    FILE * param_file;
+    int checkreadok, i_run;
+    char param_file_name[LONGSTRINGLENGTH];
+    
+    // This is a temporary var so as not to keep writing allparameters+i_run
+    // (or equivalently &allparameters[i_run]). 
+    parameters *param_local;
+    
+    strncpy(param_file_name, patch_tag, LONGSTRINGLENGTH);
+    strcat(param_file_name, "scaling.csv");
+
+    // Open parameter file
+    if((param_file = fopen(param_file_name, "r")) == NULL){
+        printf("Cannot open %s\n", param_file_name);
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }else{
+        if(VERBOSE_OUTPUT == 1){
+            printf("Partnership parameters read from: %s:\n", param_file_name);
+        }
+    }
+
+    // Throw away the first line (the header file)
+    fscanf(param_file, "%*[^\n]\n");
+
+    // Read parameters from each line (i_run), one for each simulation run
+    for(i_run = 0; i_run < n_runs; i_run++){
+
+        param_local = allrunparameters + i_run;
+        
+        checkreadok = fscanf(param_file,"%lg", &(param_local->yearly_increase_backgorund_testing_female));
+        check_if_cannot_read_param(checkreadok, "param_local->yearly_increase_backgorund_testing_female");
+
+        checkreadok = fscanf(param_file,"%lg", &(param_local->max_backgorund_testing_female));
+        check_if_cannot_read_param(checkreadok, "param_local->max_backgorund_testing_female");
+
+        checkreadok = fscanf(param_file,"%lg", &(param_local->max_RR_HIV_background_testing_male));
+        check_if_cannot_read_param(checkreadok, "param_local->max_RR_HIV_background_testing_male");
+
+        checkreadok = fscanf(param_file,"%lg", &(param_local->max_p_collect_cd4_test_results_cd4_nonpopart));
+        check_if_cannot_read_param(checkreadok, "param_local->max_p_collect_cd4_test_results_cd4_nonpopart");
+
+        checkreadok = fscanf(param_file,"%lg", &(param_local->max_p_stays_virally_suppressed));
+        check_if_cannot_read_param(checkreadok, "param_local->max_p_stays_virally_suppressed");
+
+        checkreadok = fscanf(param_file,"%lg", &(param_local->ramp_up_start_year));
+        check_if_cannot_read_param(checkreadok, "param_local->ramp_up_start_year");
+
+        checkreadok = fscanf(param_file,"%lg", &(param_local->ramp_up_end_year));
+        check_if_cannot_read_param(checkreadok, "param_local->ramp_up_end_year");
+    }
+    // Close parameter file
     fclose(param_file);
     return;
 }

@@ -65,9 +65,9 @@ void make_calibration_output_filename(char *, char *, long , patch_struct *, int
 void add_commas_to_calibration_output(char *,int );
 void print_param_struct(parameters *);
 void check_if_parameters_plausible(parameters *);
-double scaling_p_HIV_backgorund_testing_female_current(int, double);
-double scaling_RR_HIV_background_testing_male(int, double);
-double scaling_p_collect_cd4_test_results_cd4_nonpopart(int, double);
-double scaling_p_stays_virally_suppressed(int, double);
+double scaling_p_HIV_backgorund_testing_female_current(int, double, parameters *);
+double scaling_RR_HIV_background_testing_male(int, double, parameters *);
+double scaling_p_collect_cd4_test_results_cd4_nonpopart(int, double, parameters *);
+double scaling_p_stays_virally_suppressed(int, double, parameters *);
 
 #endif /* UTILITIES_H_ */
