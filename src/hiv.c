@@ -2286,7 +2286,7 @@ void draw_hiv_tests(parameters *param, age_list_struct *age_list, int year,
             for(k = 0; k < age_list->age_list_by_gender[g]->number_per_age_group[aa]; k++){
                 
                 // Only schedule tests for people who are not "HIV+ and aware of serostatus"
-                if(year <= 2023){
+                if(year <= 2020){
                     if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG  ){
 
                     schedule_hiv_test_fixedtime(age_list->age_list_by_gender[g]->age_group[aa][k],
@@ -2557,7 +2557,7 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         p_test[FEMALE] = param->p_HIV_background_testing_female_pre2006;
         *t_gap = 2006 - COUNTRY_HIV_TEST_START;
     }else{
-        if (year > 2023) {
+        if (year > 2018) {
             if (year >= 2026) {
                 RR_HIV_background_testing_male = 0.9;
             }

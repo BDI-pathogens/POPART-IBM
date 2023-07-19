@@ -2530,27 +2530,27 @@ void check_if_parameters_plausible(parameters *param){
 
 double scaling_p_HIV_backgorund_testing_female_current(int year, double p_HIV_backgorund_testing_female_current) {
     double scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current;
-    scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current * (1 + (year - 2023) * 1.6);
-    if (scaled_p_HIV_backgorund_testing_female_current >= 0.55) {
-        scaled_p_HIV_backgorund_testing_female_current = 0.55;
+    scaled_p_HIV_backgorund_testing_female_current = p_HIV_backgorund_testing_female_current * (1 + (year - 2018) * 1);
+    if (scaled_p_HIV_backgorund_testing_female_current >= 0.5) {
+        scaled_p_HIV_backgorund_testing_female_current = 0.5;
     }
     return scaled_p_HIV_backgorund_testing_female_current;
 }
 
 double scaling_RR_HIV_background_testing_male(int year, double RR_HIV_background_testing_male){
     // same amount of yearly increase until 2026 to reach 0.95
-    double yearly_increase = (0.95 - RR_HIV_background_testing_male) / (2026 - 2023);
-    return RR_HIV_background_testing_male + yearly_increase * (year - 2023);
+    double yearly_increase = (0.90 - RR_HIV_background_testing_male) / (2028 - 2018);
+    return RR_HIV_background_testing_male + yearly_increase * (year - 2018);
 }
 
 double scaling_p_collect_cd4_test_results_cd4_nonpopart(int year, double p_collect_cd4_test_results_cd4_nonpopart) {
     // same amount of yearly increase until 2026 to reach 0.95
-    double yearly_increase = (0.95 - p_collect_cd4_test_results_cd4_nonpopart) / (2026 - 2023);
-    return p_collect_cd4_test_results_cd4_nonpopart + yearly_increase * (year - 2023);
+    double yearly_increase = (0.90 - p_collect_cd4_test_results_cd4_nonpopart) / (2028 - 2018);
+    return p_collect_cd4_test_results_cd4_nonpopart + yearly_increase * (year - 2018);
 }
 
 double scaling_p_stays_virally_suppressed(int year, double p_stays_virally_suppressed) {
     // same amount of yearly increase until 2026 to reach 0.95
-    double yearly_increase = (0.89 - p_stays_virally_suppressed) / (2026 - 2023);
-    return p_stays_virally_suppressed + yearly_increase * (year - 2023);
+    double yearly_increase = (0.9 - p_stays_virally_suppressed) / (2028 - 2018);
+    return p_stays_virally_suppressed + yearly_increase * (year - 2018);
 }
