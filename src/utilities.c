@@ -2538,19 +2538,36 @@ double scaling_p_HIV_backgorund_testing_female_current(int year, double p_HIV_ba
 }
 
 double scaling_RR_HIV_background_testing_male(int year, double RR_HIV_background_testing_male, parameters * param){
-    // same amount of yearly increase until 2026 to reach 0.95
+    // same amount of yearly increase until ramp_up_end_year to reach max_RR_HIV_background_testing_male
     double yearly_increase = (param->max_RR_HIV_background_testing_male - RR_HIV_background_testing_male) / (param->ramp_up_end_year - param->ramp_up_start_year);
-    return RR_HIV_background_testing_male + yearly_increase * (year - param->ramp_up_start_year);
+    if (yearly_increase > 0) {
+        return RR_HIV_background_testing_male + yearly_increase * (year - param->ramp_up_start_year);
+    }
+    else {
+        return RR_HIV_background_testing_male;
+    }
+    
 }
 
 double scaling_p_collect_cd4_test_results_cd4_nonpopart(int year, double p_collect_cd4_test_results_cd4_nonpopart, parameters * param) {
-    // same amount of yearly increase until 2026 to reach 0.95
+    // same amount of yearly increase until ramp_up_end_year to reach max_p_collect_cd4_test_results_cd4_nonpopart
     double yearly_increase = (param->max_p_collect_cd4_test_results_cd4_nonpopart - p_collect_cd4_test_results_cd4_nonpopart) / (param->ramp_up_end_year - param->ramp_up_start_year);
-    return p_collect_cd4_test_results_cd4_nonpopart + yearly_increase * (year - param->ramp_up_start_year);
+    if (yearly_increase > 0) {
+        return p_collect_cd4_test_results_cd4_nonpopart + yearly_increase * (year - param->ramp_up_start_year);
+    }
+    else {
+        return p_collect_cd4_test_results_cd4_nonpopart;
+    }
+    
 }
 
 double scaling_p_stays_virally_suppressed(int year, double p_stays_virally_suppressed, parameters * param) {
-    // same amount of yearly increase until 2026 to reach 0.95
+    // same amount of yearly increase until ramp_up_end_year to reach max_p_stays_virally_suppressed
     double yearly_increase = (param->max_p_stays_virally_suppressed - p_stays_virally_suppressed) / (param->ramp_up_end_year - param->ramp_up_start_year);
-    return p_stays_virally_suppressed + yearly_increase * (year - param->ramp_up_start_year);
+    if (yearly_increase > 0) {
+        return p_stays_virally_suppressed + yearly_increase * (year - param->ramp_up_start_year);
+    }
+    else {
+        return p_stays_virally_suppressed;
+    }
 }
