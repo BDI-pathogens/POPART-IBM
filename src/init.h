@@ -26,6 +26,7 @@
 
 void get_initial_population_distribution(population_size *, parameters *);
 int set_max_n_partners(int , int, int, parameters *);
+int set_max_n_clients(int);
 double make_DoB(int , double, int *);
 void set_population_count_zero(population_size*);
 void set_population_count_one_year_zero(population_size_one_year_age *n_population);

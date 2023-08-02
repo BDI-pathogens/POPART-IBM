@@ -293,12 +293,15 @@ double natural_death_rate(int age, int g, parameters *param, double t){
 
 
 /* Function does: Assign new individuals to a specific risk group. As it stands the number of new individuals in a given risk class is fixed over time.
- * Function arguments: gender and pointer to param structure.
+ * Function arguments: gender, sexual worker status and pointer to param structure.
  * Function returns: the index of the risk group (currently 0,1,2). */
-int draw_sex_risk(int gender, parameters *param){
+int draw_sex_risk(int gender, int sexual_worker_status, parameters *param){
     double x;
     x = gsl_rng_uniform (rng);
-    if (x<=(param->initial_prop_gender_risk[gender][LOW]))
+    // Sexual workers have high risk
+    if (sexual_worker_status == SEXUAL_WORKER)
+        return HIGH;
+    else if (x<=(param->initial_prop_gender_risk[gender][LOW]))
         return LOW;
     else if (x<=(param->initial_prop_gender_risk[gender][LOW]+param->initial_prop_gender_risk[gender][MEDIUM]))
         return MEDIUM;
@@ -322,11 +325,19 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
         fflush(stdout);
     }
 
+    new_adult->sexual_worker_status = NON_SEXUAL_WORKER;
     /* Determine gender based on sex ratio parameter (which is kept fixed for all time): */
-    if (gsl_ran_bernoulli(rng,(param->sex_ratio))==1)   /* Assume that the M/F sex ratio is unchanged over time. */
+    if (gsl_ran_bernoulli(rng,(param->sex_ratio))==1) {
+        /* Assume that the M/F sex ratio is unchanged over time. */
         new_adult->gender = MALE;
-    else
+    }   
+    else {
         new_adult->gender = FEMALE;
+        /* Assume that the sexual worker ratio is unchanged over time. In the current setting, only female sexual workers are allowed. */
+        if (SEXUAL_WORKER_STRUCTURE==1 && gsl_ran_bernoulli(rng,(param->sexual_worker_ratio))==1) {
+            new_adult->sexual_worker_status = SEXUAL_WORKER;
+        }
+    }
 
     /* Assign a date of birth. Note: we currently assume that people do not enter the adult population aged 13.0, but instead 13.99, otherwise there are problems when ageing. 
      * As it is we ensure this way that someone who enters the population at the last timestep is aged 14.0 when they are aged to the next year-group one timestep later. */
@@ -334,7 +345,7 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
     new_adult->DoD = -1;
     new_adult->DEBUGTOTALTIMEHIVPOS = 0;
     /* Assign a sex risk group: */
-    new_adult->sex_risk = draw_sex_risk(new_adult->gender,param);  
+    new_adult->sex_risk = draw_sex_risk(new_adult->gender, new_adult->sexual_worker_status, param);  
     new_adult->n_lifetime_partners = 0;
     new_adult->n_lifetimeminusoneyear_partners = 0;
     new_adult->n_lifetime_partners_outside = 0;
@@ -432,14 +443,17 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
 
 
     /* Set up partnerships later on, so initialize to zero here:. */
+    new_adult->n_clients = 0;
     new_adult->n_partners = 0;         
     new_adult->n_HIVpos_partners = 0;
 
 
 
+    /* set_max_n_clients() draws max number of clients for a sexual worker */
+    new_adult->max_n_clients = set_max_n_clients(new_adult->sexual_worker_status);
     // At present set_max_n_partners() does not actually use age group or gender.
-    /* set_max_n_partners() depends on gender, age group and risk group. This is a new adult so age group is 0. */
-    new_adult->max_n_partners = set_max_n_partners(new_adult->gender, 0, new_adult->sex_risk, param);  
+    /* set_max_n_partners() depends on gender, age group and risk group. This is a new adult so age group is 0. It includes the max number of clients this individual can have */
+    new_adult->max_n_partners = set_max_n_partners(new_adult->gender, 0, new_adult->sex_risk, param) + new_adult->max_n_clients;  
 
     /* Number of sexual partners outside cluster: */
     new_adult->n_partners_outside = 0;
@@ -1399,7 +1413,11 @@ void remove_dead_persons_partners(individual *dead_person, population_partners *
         /* Move the last (ie n_partners-1) partnership to the jth partnership - note if j=n_partners-1 this does nothing but that's OK. */
         a_partner->partner_pairs[j] = a_partner->partner_pairs[a_partner->n_partners-1];
         /* Now reduce partnerships by 1. */
-        a_partner->n_partners--;    
+        a_partner->n_partners--;
+        /* If this partnership is related to sexual worker, then also reduce the sexual worker's number of client by 1*/
+        if ((a_partnership_ptr->sexual_worker_related == SEXUAL_WORKER_RELATED) && (a_partner->sexual_worker_status == SEXUAL_WORKER)) {
+            a_partner->n_clients--;
+        }    
         if(a_partner->patch_no != dead_person->patch_no)
         {
             a_partner->n_partners_outside--;

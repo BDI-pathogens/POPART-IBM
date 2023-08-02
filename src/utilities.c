@@ -1280,6 +1280,7 @@ void print_param_struct(parameters *param){
         for (ag = 0; ag<N_AGE_UNPD_MORTALITY; ag++)
             printf("param->mortality_rate_by_gender_age_slope[%i][%i]=%lg\n",g,ag,param->mortality_rate_by_gender_age_slope[g][ag]);
     printf("param->sex_ratio=%lg\n",param->sex_ratio);
+    printf("param->sexual_worker_ratio=%lg\n",param->sexual_worker_ratio);
     printf("param->p_child_circ=%lg\n",param->p_child_circ);
     printf("param->eff_circ_vmmc=%lg\n",param->eff_circ_vmmc);
     printf("param->eff_circ_tmc=%lg\n",param->eff_circ_tmc);
@@ -1492,6 +1493,12 @@ void check_if_parameters_plausible(parameters *param){
 
     if(param->sex_ratio < 0.4 || param->sex_ratio > 0.6){
         printf("Error: param->sex_ratio is outside expected range [0.4,0.6]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    if(param->sexual_worker_ratio < 0 || param->sexual_worker_ratio > 0.05){
+        printf("Error: param->sexual_worker_ratio is outside expected range [0,0.05]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);

@@ -53,6 +53,7 @@ void blank_individual_array(individual *individual_population, int id_counter){
     blank_person_template.idx_cascade_event[1] = DUMMYVALUE;
     blank_person_template.debug_last_cascade_event_index = DUMMYVALUE;
     blank_person_template.time_to_delivery = DUMMYVALUE;
+    blank_person_template.n_clients = DUMMYVALUE;
     blank_person_template.n_partners = DUMMYVALUE;
     blank_person_template.circ = DUMMYVALUE;
     blank_person_template.idx_vmmc_event[0] = DUMMYVALUE;

@@ -97,6 +97,7 @@
 | `t_get_vmmc_popart_max` | 1.0 | Maximum time (in years) between CHiPs HIV- test and getting VMMC | cascade | - |
 | `t_vmmc_healing` | 0.038 | Time (in years) for VMMC wound to heal | cascade | - |
 | `sex_ratio` | 0.5073892 | Fraction of new adults that are male | demographics | - |
+| `sexual_worker_ratio` | 0.00663 | Fraction of new adults that are sexual worker | demographics | - |
 | `p_child_circ` | 0.0618 | Proportion of male children who have undergone traditional circumcision | HIV | - |
 | `eff_circ_vmmc` | 0.6 | Effectiveness of voluntary male medical circumcision in reducing susceptibility to HIV infection | HIV | - |
 | `eff_circ_tmc` | 0.0 | Effectiveness of traditional male circumcision in reducing susceptibility to HIV infection | HIV | - |

@@ -39,6 +39,7 @@
 
 #define VMMC_EFF_ZERO_AT_POPART_START 0 // Should the efficacy of VMMC be switched to zero after the start of PopART?  
 #define SIMPLE_PARTNERSHIP_CHECK 0 /* if 0 then normal simulation is run, otherwise check functions are run (checks certain outputs - partnership formations etc). */
+#define SEXUAL_WORKER_STRUCTURE 1 /* if 1 then female sexual worker could exist to form short partnership, otherwise normal simulation is run */
 #define SWEEP_THROUGH_TO_CHECK_LISTS 0 /* if 1 then perform sweep through whole population once a year to check everyone is where they should be in list of susceptibles in serodiscordant partnerships and list of available partners
                                             NOTE THIS MAKES THE CODE VERY SLOW (because we sweep through every single every individual and their partners once a year for the whole simulation
                                             this doesn't produce any specific outputs, but stops with an error message if someone is not in a list it should belong to
@@ -211,6 +212,14 @@ extern const int FIND_AGE_GROUPS[MAX_AGE-AGE_ADULT+1]; /* Convert from (age-AGE_
 #define MALE 0
 #define FEMALE 1
 
+#define NON_SEXUAL_WORKER 0
+#define SEXUAL_WORKER 1
+#define SEXUAL_WORKER_RELATED 1 /* 1 if the formed partnership is related to sexual worker activity */
+
+#define MAX_N_CLIENT 100 /* Maximum number of clients a sexual worker can have */
+#define MIN_N_CLIENT 1 /* Minimum number of clients a sexual worker can have */
+#define SCALING_POWER_LAW 3 /* Scaling factor in power law distribution */
+
 #define DEAD -2 /* used as CD4 value to identify that people are dead */
 #define DIEDBEFORECHIPSVISIT -2 /* Used to identify people who were scheduled to be visited by chips in current round but died beforehand. */
 
@@ -231,8 +240,8 @@ extern int POPART_SAMPLING_FRAME_ESTABLISHED;
 /***************************** Partnership ***************************/
 /************************************************************************/
 
-#define MAX_PARTNERSHIPS_PER_INDIVIDUAL 15 /* An individual can belong to up to MAX_PARTNERSHIPS_PER_INDIVIDUAL partnerships at any time point. */
-#define MAX_N_PARTNERS_IN_OUTPUTS 100 /* the outputed distributions of partners will be written cumulatively from MAX_N_PARTNERS_IN_OUTPUTS onwards  */
+#define MAX_PARTNERSHIPS_PER_INDIVIDUAL 115 /* An individual can belong to up to MAX_PARTNERSHIPS_PER_INDIVIDUAL partnerships at any time point. Maximum of 15 normal relationship and 100 sexual worker related activity */
+#define MAX_N_PARTNERS_IN_OUTPUTS 500 /* the outputed distributions of partners will be written cumulatively from MAX_N_PARTNERS_IN_OUTPUTS onwards  */
 
 #define MAX_BREAKUPS_PER_TIME_STEP MAX_PARTNERSHIPS_PER_INDIVIDUAL*MAX_POP_SIZE/2000 /* This is the maximum number of breakups that can happen in a given time step. Taken to be VERY conservative */
 

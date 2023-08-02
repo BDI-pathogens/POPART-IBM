@@ -244,6 +244,9 @@ void read_demographic_params(char *patch_tag, parameters *allrunparameters, int 
         param_local = allrunparameters + i_run;
         checkreadok = fscanf(param_file, "%lg", &(param_local->sex_ratio));
         check_if_cannot_read_param(checkreadok, "param_local->sex_ratio");
+
+        checkreadok = fscanf(param_file, "%lg", &(param_local->sexual_worker_ratio));
+        check_if_cannot_read_param(checkreadok, "param_local->sexual_worker_ratio");
     }
     fclose(param_file);     // Closing demographics parameter file
     

@@ -87,13 +87,13 @@ void check_partnership_formation(all_partnerships *overall_partnerships, paramet
     print_partners(indiv4);
 
     /* forming partnership between them and checking things are OK */
-    new_partnership( indiv1, indiv3,param->start_time_simul, 
+    new_partnership( indiv1, indiv3, !SEXUAL_WORKER_RELATED, param->start_time_simul, 
         overall_partnerships, param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
-    new_partnership( indiv1, indiv4, param->start_time_simul, 
+    new_partnership( indiv1, indiv4, !SEXUAL_WORKER_RELATED, param->start_time_simul, 
         overall_partnerships, param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
-    new_partnership( indiv2, indiv4, param->start_time_simul, 
+    new_partnership( indiv2, indiv4, !SEXUAL_WORKER_RELATED, param->start_time_simul, 
         overall_partnerships, param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
 
@@ -207,13 +207,13 @@ void check_partnership_formation_and_HIV_acquisition(patch_struct *patch, int p,
     print_HIV_status(indiv4);
 
     /* forming partnership between them and checking things are OK */
-    new_partnership(indiv1, indiv3, patch[p].param->start_time_simul, 
+    new_partnership(indiv1, indiv3, !SEXUAL_WORKER_RELATED, patch[p].param->start_time_simul, 
         overall_partnerships, patch[p].param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
-    new_partnership(indiv1, indiv4, patch[p].param->start_time_simul, 
+    new_partnership(indiv1, indiv4, !SEXUAL_WORKER_RELATED, patch[p].param->start_time_simul, 
         overall_partnerships, patch[p].param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
-    new_partnership(indiv2, indiv4, patch[p].param->start_time_simul, 
+    new_partnership(indiv2, indiv4, !SEXUAL_WORKER_RELATED, patch[p].param->start_time_simul, 
         overall_partnerships, patch[p].param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
 
@@ -346,13 +346,13 @@ void check_partnership_dissolution(all_partnerships *overall_partnerships, param
     indiv4->n_HIVpos_partners = 0;
 
     /* forming partnership between them and checking things are OK */
-    new_partnership(indiv1, indiv3, param->start_time_simul, 
+    new_partnership(indiv1, indiv3, !SEXUAL_WORKER_RELATED, param->start_time_simul, 
         overall_partnerships, param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
-    new_partnership(indiv1, indiv4, param->start_time_simul, 
+    new_partnership(indiv1, indiv4, !SEXUAL_WORKER_RELATED, param->start_time_simul, 
         overall_partnerships, param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
-    new_partnership(indiv2, indiv4, param->start_time_simul, 
+    new_partnership(indiv2, indiv4, !SEXUAL_WORKER_RELATED, param->start_time_simul, 
         overall_partnerships, param, debug, file_data_store);
     (*overall_partnerships->n_partnerships) ++;
 

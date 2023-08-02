@@ -46,12 +46,14 @@ struct partnership{
     individual* ptr[2];
     int duration_in_time_steps;
     double begin;
+    int sexual_worker_related; /* 1 if this partnership is related to sexual worker activity */
 };
 
 
 struct individual{
     long id; /* Unique identifier for each individual. */
     int gender; /* 0 = M, 1 = F. */
+    int sexual_worker_status; /* 0 if non-sexual worker, 1 if sexual worker*/
     double DoB;  /* Date of birth (stored as double). */
     double DoD;  /* Date of death (stored as double). */
     //////// think about comparative efficiency of DoB versus age ////////
@@ -105,6 +107,7 @@ struct individual{
     double DEBUG_time_of_last_cascade_event;   /* Use to calculate time VS/VU/early. */
 
     int n_partners; /* current number of partners of this individual (who are in OR out of the community) */
+    int n_clients; /* current number of clients of this individual (who are in OR out of the community), should always be 0 for non-sexual workers */
     partnership* partner_pairs[MAX_PARTNERSHIPS_PER_INDIVIDUAL]; /* This is a list of the partnership pairs (with someone in the community) that this individual is in at a certain time. */
 
     /* The two following are only updated for HIV- individuals (who are in the community) */
@@ -114,6 +117,7 @@ struct individual{
 
     int sex_risk; /* 0, 1, 2 for LOW, MEDIUM, HIGH risk */
     int max_n_partners; /* maximum number of partners this individual can have at a certain time point */
+    int max_n_clients; /* maximum number of clients this individual can have at a certain time point, should always be 0 for non-sexual individuals */
     int n_partners_outside; /* number of partners living outside the community at a certain time point */
 
     long idx_serodiscordant; // this is -1 if the individual is in no serodiscordant partnership, otherwise it is the index of this individual in the list susceptible_in_serodiscordant_partnership
@@ -205,6 +209,7 @@ typedef struct {
     double mortality_rate_by_gender_age_slope[N_GENDER][N_AGE_UNPD_MORTALITY];
     //double scale_fertility_param;
     double sex_ratio;     /* Proportion of new sexually active population who are male. */
+    double sexual_worker_ratio; /* Proportion of new sexually active population who are sexual worker */
 
 
     /********** times **********/

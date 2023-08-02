@@ -23,7 +23,7 @@ double per_woman_fertility_rate(int , parameters *, int, double);
 void get_unpd_time_indices(double , int *, double *);
 double childhood_mortality(parameters *, double );
 double natural_death_rate(int , int , parameters *, double );
-int draw_sex_risk(int, parameters *);
+int draw_sex_risk(int, int, parameters *);
 void create_new_individual(individual *, double , parameters *, int, 
     population_size_one_year_age *, patch_struct *, int, all_partnerships *);
 void update_population_size_new_adult(individual *, population_size *, 
