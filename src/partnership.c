@@ -792,6 +792,13 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
                                 maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients;
                             }
                         }
+                        // If can't find a available sexual worker with vacant normal partnership, skip this run
+                        if (overall_partnerships->new_partners_f_sorted[0] == initial_selected_female) {
+                            overall_partnerships->new_partners_f_non_matchable[*n_non_matchable] = k;
+                            (*n_non_matchable)++;
+                            flag = 0;
+                            continue;
+                        }
                     }
                 }
             }
