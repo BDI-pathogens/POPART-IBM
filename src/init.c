@@ -506,15 +506,7 @@ void set_up_population(int p, patch_struct *patch, population *pop){
                 /* Set up parts of template which are specific to this age/sex/risk group: */
                 person_template.gender = g;
                 person_template.sex_risk = r;  /* 0, 1, 2 for LOW, MEDIUM, HIGH risk */
-
-                /* In the current setting, only female sexual workers are allowed. Assign them to high risk group at the start of the simulation */
-                if ((SEXUAL_WORKER_STRUCTURE==1) && (person_template.gender == FEMALE)  && (gsl_ran_bernoulli(rng,(patch[p].param->sexual_worker_ratio))==1)) {
-                    person_template.sexual_worker_status = SEXUAL_WORKER;
-                    person_template.sex_risk = HIGH;
-                }
-                else {
-                    person_template.sexual_worker_status = NON_SEXUAL_WORKER; 
-                }
+                person_template.sexual_worker_status = NON_SEXUAL_WORKER; 
 
                 for (i_x = 0; i_x < patch[p].n_population->pop_size_per_gender_age_risk[g][ag][r]; i_x++){
 
@@ -574,7 +566,7 @@ void set_up_population(int p, patch_struct *patch, population *pop){
 
                         patch[p].n_population_oneyearagegroups->pop_size_oldest_age_group_gender_risk[g][r] += 1;
                     }
-
+                
                     /* Draw max number of clients of a sexual worker */
                     patch[p].individual_population[patch[p].id_counter].max_n_clients = set_max_n_clients(person_template.sexual_worker_status);
                     /* Draw max number of sexual partners based on gender, age, risk group: it includes the max number of clients a sexual worker can have */
