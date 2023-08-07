@@ -167,8 +167,14 @@ void initialize_child_population(parameters *param, child_population_struct *chi
  * Function does: This is a placeholder - should return a number of partners based on some data.
  * Function returns: The maximum number of partners that an individual can have in that risk group (exclude the number of clients of sexual worker)
  * (may also depend on age/gender?). */
-int set_max_n_partners(int g, int ag, int r, parameters *param){
-    return param->max_n_part_noage[r];
+int set_max_n_partners(int g, int ag, int r, int sexual_worker_status, parameters *param){
+    // assume the max normal partnership for a sexual worker is 1
+    if (sexual_worker_status == SEXUAL_WORKER) {
+        return 1;
+    }
+    else {
+        return param->max_n_part_noage[r];
+    }
 }
 
 
@@ -571,7 +577,7 @@ void set_up_population(int p, patch_struct *patch, population *pop){
                     patch[p].individual_population[patch[p].id_counter].max_n_clients = set_max_n_clients(person_template.sexual_worker_status);
                     /* Draw max number of sexual partners based on gender, age, risk group: it includes the max number of clients a sexual worker can have */
                     // Note: set_max_n_partners() is currently a placeholder function.
-                    patch[p].individual_population[patch[p].id_counter].max_n_partners = set_max_n_partners(g,ag,r,patch[p].param) + patch[p].individual_population[patch[p].id_counter].max_n_clients;
+                    patch[p].individual_population[patch[p].id_counter].max_n_partners = set_max_n_partners(g,ag,r,person_template.sexual_worker_status,patch[p].param) + patch[p].individual_population[patch[p].id_counter].max_n_clients;
 
                     /* This is a list of pointers to all individuals of a given g, ag, r: */
                     (pop->pop_per_gender_age_risk[g][ag][r])[id_counter_per_gender_age_risk[g][ag][r]] = &patch[p].individual_population[patch[p].id_counter];
