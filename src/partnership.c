@@ -736,7 +736,7 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
         for(k = 0; k < n; k++){
 
             // flag to indicate if this partnership successfully forms
-            flag = 1;
+            flag = 0;
 
             /* draw the female partner */
             gsl_ran_choose(rng, 
@@ -867,6 +867,7 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
                             popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]], sexual_worker_related_flag,
                             time, overall_partnerships, param, debug, file_data_store);
                     
+                    flag = 1;
                     (*overall_partnerships->n_partnerships) ++;
 
                     /* remove the corresponding idx_available_partnership right away, for females */
@@ -913,6 +914,8 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
             {
                 /* form a partnership */
                 new_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]], sexual_worker_related_flag, time, overall_partnerships, param, debug, file_data_store);
+                
+                flag = 1;
                 (*overall_partnerships->n_partnerships)++;
                 /* remove the corresponding idx_available_partnership right away, for females */
                 idx_found = 0;
