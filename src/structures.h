@@ -809,11 +809,13 @@ typedef struct{
     long *n_partnerships;
     population_partners* pop_available_partners;
     population_size_all_patches *n_pop_available_partners;
+    long *new_partners_f;
     long *new_partners_f_sorted;
     long *shuffled_idx;
     long *new_partners_f_non_matchable;
     long *new_partners_m;
     long *new_partners_m_sorted;
+    long *new_partners_m_non_matchable;
     long *partner_dummylist;
 
     partnership*** planned_breakups;

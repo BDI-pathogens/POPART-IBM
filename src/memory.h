@@ -30,7 +30,7 @@ void alloc_partnership_memoryv2(all_partnerships *);
 void free_all_partnership_memory(partnership *, long *, individual **, long *,
         population_partners* , population_size_all_patches *,
         partnership ***, long *, long *,
-        long *, long *, long *, long *, long *, long *);
+        long *, long *, long *, long *, long *, long *, long *, long *);
 void free_all_patch_memory(parameters *, individual *, population_size *, 
         population_size_one_year_age *, stratified_population_size *, age_list_struct *, 
         child_population_struct *, individual ***, long *, long *, individual ***, 

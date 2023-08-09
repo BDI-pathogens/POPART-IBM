@@ -700,9 +700,10 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
     long initial_selected_female;
     int tmp;
     int idx_found;
-    int flag;
     int current_n_normal_partnership;
     int maximum_n_normal_partnership;
+    int current_n = 0;
+    int f_n_non_matchable = 0;
 
 
     /* initialising n_non_matchable to zero: this will then be incremented to output the 
@@ -723,167 +724,264 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
     
     /* Only run this if we draw 1 or more partnerships. */
     if(n > 0){
-        
-        /* draw the male partners */
+
+        /* draw the female partners */
         gsl_ran_choose(rng, 
-            overall_partnerships->new_partners_m, 
+            overall_partnerships->new_partners_f, 
             n, 
             overall_partnerships->partner_dummylist, 
-            popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m], 
+            popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f], 
             sizeof(long));
-        
-        // Loop through partnerships to be drawn
-        for(k = 0; k < n; k++){
 
-            // flag to indicate if this partnership successfully forms
-            flag = 0;
 
-            /* draw the female partner */
-            gsl_ran_choose(rng, 
-                overall_partnerships->new_partners_f_sorted, 
-                1, 
-                overall_partnerships->partner_dummylist, 
-                popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f], 
-                sizeof(long));
-
-            
-            // If it is not sexual worker related activity, then non-sexual worker involved partnership formation has priority
+        for (k = 0; k < n; k++) {
+            // If it is not sexual worker related activity, then form normal partnership
             if (sexual_worker_related_flag == !SEXUAL_WORKER_RELATED) {
 
-                // Prefer to form normal female partnership first (replace selected female sexual workers with normal females if possible)
-                if (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]] -> sexual_worker_status == SEXUAL_WORKER) {
-                    initial_selected_female = overall_partnerships->new_partners_f_sorted[0];
-                    // Take the next one in the list that is not female sexual worker with free partnerships
-                    if(overall_partnerships->new_partners_f_sorted[0] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) {
+                // Check whether this individual is available for normal partnership (only unavailable when she is sexual worker and reach the maximum normal partnership)
+                current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients;
+                maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients;
+
+                if ((popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]] -> sexual_worker_status == SEXUAL_WORKER) && (current_n_normal_partnership == maximum_n_normal_partnership)) {
+                    initial_selected_female = overall_partnerships->new_partners_f[k];
+                    // Take the next one in the list that has free normal partnerships
+                    if(overall_partnerships->new_partners_f[k] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) {
                         do {
-                            overall_partnerships->new_partners_f_sorted[0]++;
-                        }while((overall_partnerships->new_partners_f_sorted[0] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) && (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]] -> sexual_worker_status == SEXUAL_WORKER));
+                            overall_partnerships->new_partners_f[k]++;
+                            current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients;
+                            maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients;
+                        }while((overall_partnerships->new_partners_f[k] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) && (((popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]] -> sexual_worker_status == SEXUAL_WORKER) && (current_n_normal_partnership == maximum_n_normal_partnership)) || (is_already_selected(overall_partnerships->new_partners_f, k, n)==1)));
                     }
 
                     // If not possible, starting from the first female until the initially selected one
-                    if(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]] -> sexual_worker_status == SEXUAL_WORKER) {
-                        overall_partnerships->new_partners_f_sorted[0] = 0;
-                        while ((overall_partnerships->new_partners_f_sorted[0] < initial_selected_female) && (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]] -> sexual_worker_status == SEXUAL_WORKER)) {
-                            overall_partnerships->new_partners_f_sorted[0]++;
+                    if (((popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]] -> sexual_worker_status == SEXUAL_WORKER) && (current_n_normal_partnership == maximum_n_normal_partnership)) || (is_already_selected(overall_partnerships->new_partners_f, k, n)==1)) {
+                        overall_partnerships->new_partners_f[k] = 0;
+                        current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients;
+                        maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients;
+                        while ((overall_partnerships->new_partners_f[k] < initial_selected_female) && (((popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]] -> sexual_worker_status == SEXUAL_WORKER) && (current_n_normal_partnership == maximum_n_normal_partnership)) || (is_already_selected(overall_partnerships->new_partners_f, k, n)==1))) {
+                            overall_partnerships->new_partners_f[k]++;
+                            current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients;
+                            maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients;
                         }
                     }
 
-                    // If no more non-sexual workers are available, then consider to select sexual worker to form normal partnership
-                    current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients;
-                    maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients;
-                    // If the selected sexual worker doesn't have enough normal partnership, loop through the next one
-                    if ((overall_partnerships->new_partners_f_sorted[0] == initial_selected_female) && (current_n_normal_partnership == maximum_n_normal_partnership)) {
-                        if(overall_partnerships->new_partners_f_sorted[0] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) {
-                            do {
-                                overall_partnerships->new_partners_f_sorted[0]++;
-                                current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients;
-                                maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients;
-                            }while((overall_partnerships->new_partners_f_sorted[0] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) && (current_n_normal_partnership == maximum_n_normal_partnership));
-                        }
-
-                        // If not possible, starting from the first female until the initially selected one
-                        if(current_n_normal_partnership == maximum_n_normal_partnership) {
-                            overall_partnerships->new_partners_f_sorted[0] = 0;
-                            current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients;
-                            maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients;
-                            while ((overall_partnerships->new_partners_f_sorted[0] < initial_selected_female) && (current_n_normal_partnership == maximum_n_normal_partnership)) {
-                                overall_partnerships->new_partners_f_sorted[0]++;
-                                current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients;
-                                maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients;
-                            }
-                        }
-                        // If can't find a available sexual worker with vacant normal partnership, skip this run
-                        if (overall_partnerships->new_partners_f_sorted[0] == initial_selected_female) {
-                            overall_partnerships->new_partners_f_non_matchable[*n_non_matchable] = k;
-                            (*n_non_matchable)++;
-                            flag = 0;
-                            continue;
-                        }
+                    // If can't find a available sexual worker with vacant normal partnership, skip this run
+                    if (overall_partnerships->new_partners_f[k] == initial_selected_female) {
+                        overall_partnerships->new_partners_f_non_matchable[f_n_non_matchable] = k;
+                        f_n_non_matchable++;
                     }
                 }
             }
 
             // If it is sexual worker related activity, then selected female sexual worker whose n_cilents < max_cilents (also n_partners < max_partners)
             else {
-                if (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients) {
-                    initial_selected_female = overall_partnerships->new_partners_f_sorted[0];
+                
+                if (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients) {
+                    initial_selected_female = overall_partnerships->new_partners_f[k];
                     // Take the next one in the list that is female sexual worker with free sexual worker related partnerships
-                    if(overall_partnerships->new_partners_f_sorted[0] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) {
+                    if(overall_partnerships->new_partners_f[k] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) {
                         do {
-                            overall_partnerships->new_partners_f_sorted[0]++;
-                        }while((overall_partnerships->new_partners_f_sorted[0] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) && (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients));
+                            overall_partnerships->new_partners_f[k]++;
+                        }while((overall_partnerships->new_partners_f[k] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1) && ((popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients) || (is_already_selected(overall_partnerships->new_partners_f, k, n)==1)));
                     }
 
                     // If not possible, starting from the first female until the initially selected one
-                    if(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients) {
-                        overall_partnerships->new_partners_f_sorted[0] = 0;
-                        while ((overall_partnerships->new_partners_f_sorted[0] < initial_selected_female) && (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_clients)) {
-                            overall_partnerships->new_partners_f_sorted[0]++;
+                    if((popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients) || (is_already_selected(overall_partnerships->new_partners_f, k, n)==1)) {
+                        overall_partnerships->new_partners_f[k] = 0;
+                        while ((overall_partnerships->new_partners_f[k] < initial_selected_female) && ((popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f[k]]->max_n_clients) || (is_already_selected(overall_partnerships->new_partners_f, k, n)==1))) {
+                            overall_partnerships->new_partners_f[k]++;
                         }
                     }
 
                     // If can't find a available sexual worker, skip this run
-                    if (overall_partnerships->new_partners_f_sorted[0] == initial_selected_female) {
-                        overall_partnerships->new_partners_f_non_matchable[*n_non_matchable] = k;
-                        (*n_non_matchable)++;
-                        flag = 0;
-                        continue;
+                    if (overall_partnerships->new_partners_f[k] == initial_selected_female) {
+                        overall_partnerships->new_partners_f_non_matchable[f_n_non_matchable] = k;
+                        (f_n_non_matchable)++;
                     }
                 }
             }
+        }
 
-            /* Check that individuals are not already in a partnership with each other */
-            if(
-                are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]], 
-                    popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) == 1){
-                
-                // If finding this male already as a partner, 
-                // then choose a different one in the same age/risk group:
-                initial_selected_male = overall_partnerships->new_partners_m[k];
-                
-                // Take the next one in the list that is not yet in a partnership with this female
-                // and has free partnerships
-                if(overall_partnerships->new_partners_m[k] < popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1){
-                    do
-                    {
-                        overall_partnerships->new_partners_m[k]++;
-                    }while((overall_partnerships->new_partners_m[k] < popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1) && ((are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) ==1) || (is_already_selected(overall_partnerships->new_partners_m, k, n)==1)));
+
+        // /* Remove unmacthed females from the list of available partnerships */
+        // for (i=0; i < n ; i++) {
+        //     int count = 0;
+        //     for (j=0; j < f_n_non_matchable; j++) {
+        //         if (overall_partnerships->new_partners_f_non_matchable[j] != overall_partnerships->new_partners_f[i]) {
+        //             count += 1;
+        //         }
+        //     }
+        //     if (count == f_n_non_matchable) {
+        //         overall_partnerships->new_partners_f_sorted[current_n] = overall_partnerships->new_partners_f[i];
+        //         current_n += 1;
+        //     }
+        // }
+
+        // /* sort new_partners_f_sorted*/
+        // qsort(overall_partnerships->new_partners_f_sorted, current_n, sizeof(long), compare_longs);
+
+
+        /* copies new_partners_m into new_partners_f_sorted */
+        copy_array_long(overall_partnerships->new_partners_f_sorted, overall_partnerships->new_partners_f, n);
+        /* sort new_partners_f_sorted*/
+        qsort(overall_partnerships->new_partners_f_sorted, n, sizeof(long), compare_longs);
+
+        /* Remove unmacthed females from the list of available partnerships */
+        for(k=n - 1 ; k>=0 ; k--) {
+            for(i=(f_n_non_matchable) - 1; i >= 0 ; i--) {
+                if(overall_partnerships->new_partners_f_sorted[k]==overall_partnerships->new_partners_f[overall_partnerships->new_partners_f_non_matchable[i]]) {
+                    if (k != current_n - 1) {
+                        overall_partnerships->new_partners_f_sorted[k] = overall_partnerships->new_partners_f_sorted[current_n - 1];
+                    }
+                    current_n -= 1;
+                    break;
                 }
+            }
+        }
 
-                /* If not possible, start back from male 0 in that group */
-                if((are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) ==1) || (is_already_selected(overall_partnerships->new_partners_m, k, n)==1))
-                {
-                    overall_partnerships->new_partners_m[k] = 0;
-                    /* if not possible, take the next one in the list that is not yet in a partnership with this female and has a free partnership, up to the initially selected one */
-                    while( (overall_partnerships->new_partners_m[k] < initial_selected_male) && ((are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) ==1) || (is_already_selected(overall_partnerships->new_partners_m, k, n)==1)))
-                    {
-                        overall_partnerships->new_partners_m[k]++;
+        /* sort new_partners_f_sorted again */
+        qsort(overall_partnerships->new_partners_f_sorted, current_n, sizeof(long), compare_longs);
+
+        
+        if (current_n > 0) {
+
+            // Copy partner_dummylist into shuffled_idx
+            copy_array_long(
+                overall_partnerships->shuffled_idx, 
+                overall_partnerships->partner_dummylist, 
+                current_n);
+
+            /* draw the male partners */
+            gsl_ran_choose(rng, 
+                overall_partnerships->new_partners_m, 
+                current_n, 
+                overall_partnerships->partner_dummylist, 
+                popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m], 
+                sizeof(long));
+
+            // Shuffle female partners (since gsl_ran_choose sorts them by increasing index) 
+            // to allow real random mixing with males who are also sorted by increasing index 
+            gsl_ran_shuffle(rng, overall_partnerships->shuffled_idx, current_n, sizeof(long));
+
+            // Loop through partnerships to be drawn
+            for(k = 0; k < current_n; k++){
+                
+                // Check whether the female have enough normal / sexual free partnership
+                if (sexual_worker_related_flag == !SEXUAL_WORKER_RELATED) {
+                    current_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_clients;
+                    maximum_n_normal_partnership = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_clients;
+                    if (current_n_normal_partnership == maximum_n_normal_partnership) {
+                        overall_partnerships->new_partners_m_non_matchable[*n_non_matchable] = k;
+                        (*n_non_matchable)++;
+                        continue;
+                    }
+                }
+                else {
+                    if (popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_clients == popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_clients) {
+                        overall_partnerships->new_partners_m_non_matchable[*n_non_matchable] = k;
+                        (*n_non_matchable)++;
+                        continue;
                     }
                 }
 
-                if(popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->id != popn_pgar[patch_m][MALE][ag_m][r_m][initial_selected_male]->id) /* if able to find an available male in this group which is not already in a partnership with this female */
-                {
-                    new_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]],
-                            popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]], sexual_worker_related_flag,
-                            time, overall_partnerships, param, debug, file_data_store);
+                /* Check that individuals are not already in a partnership with each other */
+                if(
+                    are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]], 
+                        popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) == 1){
                     
-                    flag = 1;
-                    (*overall_partnerships->n_partnerships) ++;
+                    // If finding this male already as a partner, then choose a different one in the same age/risk group:
+                    initial_selected_male = overall_partnerships->new_partners_m[k];
+                    
+                    // Take the next one in the list that is not yet in a partnership with this female and has free partnerships
+                    if(overall_partnerships->new_partners_m[k] < popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1){
+                        do
+                        {
+                            overall_partnerships->new_partners_m[k]++;
+                        }while((overall_partnerships->new_partners_m[k] < popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1) && ((are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) ==1) || (is_already_selected(overall_partnerships->new_partners_m, k, n)==1)));
+                    }
 
+                    /* If not possible, start back from male 0 in that group */
+                    if((are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) ==1) || (is_already_selected(overall_partnerships->new_partners_m, k, n)==1))
+                    {
+                        overall_partnerships->new_partners_m[k] = 0;
+                        /* if not possible, take the next one in the list that is not yet in a partnership with this female and has a free partnership, up to the initially selected one */
+                        while( (overall_partnerships->new_partners_m[k] < initial_selected_male) && ((are_in_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]) ==1) || (is_already_selected(overall_partnerships->new_partners_m, k, n)==1)))
+                        {
+                            overall_partnerships->new_partners_m[k]++;
+                        }
+                    }
+
+                    if(popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->id != popn_pgar[patch_m][MALE][ag_m][r_m][initial_selected_male]->id) /* if able to find an available male in this group which is not already in a partnership with this female */
+                    {
+
+                        new_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]],
+                                popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]], sexual_worker_related_flag,
+                                time, overall_partnerships, param, debug, file_data_store);
+                        
+                        (*overall_partnerships->n_partnerships) ++;
+
+                        /* remove the corresponding idx_available_partnership right away, for females */
+                        idx_found = 0;
+                        for(i = 0; i <= popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_partners; i++){
+                            if(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[i] == overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]){
+                                idx_found = 1;
+                                break;
+                            }
+                        }
+                        if(idx_found == 0){
+                            printf("problem a here, idx should have been found that has not (female indirectly chosen)\n");
+                            fflush(stdout);
+                        }
+                        popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[i] = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_partners];
+                        popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_partners] = -1;
+                        /* and for males */
+                        idx_found = 0;
+                        for(i=0 ; i<=popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners ; i++)
+                        {
+                            if(popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[i] == overall_partnerships->new_partners_m[k])
+                            {
+                                idx_found = 1;
+                                break;
+                            }
+                        }
+                        if(idx_found==0)
+                        {
+                            printf("problem a here, idx should have been found that has not (male indirectly chosen)\n");
+                            fflush(stdout);
+                        }
+                        popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[i] = popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners];
+                        popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners] = -1;
+
+
+                    }
+                    else
+                    {
+                        overall_partnerships->new_partners_m_non_matchable[*n_non_matchable] = k;
+                        (*n_non_matchable)++;
+                    }
+                }else /* if the initially selected male was not already in a partnership with this female */
+                {
+                    /* form a partnership */
+                    new_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]], sexual_worker_related_flag, time, overall_partnerships, param, debug, file_data_store);
+                    
+                    (*overall_partnerships->n_partnerships)++;
                     /* remove the corresponding idx_available_partnership right away, for females */
                     idx_found = 0;
-                    for(i = 0; i <= popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners; i++){
-                        if(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[i] == overall_partnerships->new_partners_f_sorted[0]){
+                    for(i=0 ; i<=popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_partners ; i++)
+                    {
+                        if(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[i] == overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]])
+                        {
                             idx_found = 1;
                             break;
                         }
                     }
-                    if(idx_found == 0){
-                        printf("problem a here, idx should have been found that has not (female indirectly chosen)\n");
+                    if(idx_found==0)
+                    {
+                        printf("problem b here, idx should have been found that has not (female indirectly chosen)\n");
                         fflush(stdout);
                     }
-                    popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[i] = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners];
-                    popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners] = -1;
+                    popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[i] = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_partners];
+                    popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[overall_partnerships->shuffled_idx[k]]]->n_partners] = -1;
                     /* and for males */
                     idx_found = 0;
                     for(i=0 ; i<=popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners ; i++)
@@ -896,128 +994,93 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
                     }
                     if(idx_found==0)
                     {
-                        printf("problem a here, idx should have been found that has not (male indirectly chosen)\n");
+                        printf("problem here b, idx should have been found that has not (male directly chosen)\n");
                         fflush(stdout);
                     }
                     popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[i] = popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners];
                     popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners] = -1;
 
+                }
+            }
 
-                }
-                else
-                {
-                    overall_partnerships->new_partners_f_non_matchable[*n_non_matchable] = k;
-                    (*n_non_matchable)++;
-                    flag = 0;
-                }
-            }else /* if the initially selected male was not already in a partnership with this female */
+            /* copies new_partners_m into new_partners_m_sorted */
+            copy_array_long(overall_partnerships->new_partners_m_sorted, overall_partnerships->new_partners_m, current_n);
+
+            /* sort new_partners_m_sorted (which can be not sorted if initial selected man was not selected in the end) */
+            //qsort(new_partners_m_sorted, n, sizeof(long), (compfn) compare_longs);
+
+            qsort(overall_partnerships->new_partners_m_sorted, current_n, sizeof(long), compare_longs);
+
+            /* Remove individuals from the list of available partnerships, starting by the last ones, excluding those that we weren't able to match */
+            for(k=current_n - 1 ; k>=0 ; k--)
             {
-                /* form a partnership */
-                new_partnership(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]], popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]], sexual_worker_related_flag, time, overall_partnerships, param, debug, file_data_store);
-                
-                flag = 1;
-                (*overall_partnerships->n_partnerships)++;
-                /* remove the corresponding idx_available_partnership right away, for females */
-                idx_found = 0;
-                for(i=0 ; i<=popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners ; i++)
+                /* removing females */
+                tmp = 0;
+                for(i=0 ; i<(*n_non_matchable) ; i++)
                 {
-                    if(popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[i] == overall_partnerships->new_partners_f_sorted[0])
+                    if(k==overall_partnerships->shuffled_idx[overall_partnerships->new_partners_m_non_matchable[i]])
                     {
-                        idx_found = 1;
+                        tmp = 1;
                         break;
                     }
                 }
-                if(idx_found==0)
+                if(tmp==0)
                 {
-                    fflush(stdout);
-                }
-                popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[i] = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners];
-                popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners] = -1;
-                /* and for males */
-                idx_found = 0;
-                for(i=0 ; i<=popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners ; i++)
-                {
-                    if(popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[i] == overall_partnerships->new_partners_m[k])
+                    /* removing this partnership with this female from the list of available partnerships */
+                    if(overall_partnerships->new_partners_f_sorted[k] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1)
                     {
-                        idx_found = 1;
+                        popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]] = popn_pgar[patch_f][FEMALE][ag_f][r_f][popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1]; /* pointing to the last female instead of the current one */
+                        j = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->n_partners - 1;
+                        while(j>=0 && popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->idx_available_partner[j] != popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1)
+                        {
+                            j--;
+                        }
+                        if(j<0)
+                        {
+                            printf("n_clients = %d, n_partners = %d, max_n_partners = %d, max_n_clients =%d\n", popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->n_clients, popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->n_partners, popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->max_n_partners, popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->max_n_clients);
+                            printf("not found id = %ld, patch = %d\n", popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->id, popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->patch_no);
+                            printf("Problem here j negative1\n");
+                            fflush(stdout);
+                        }
+                        popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[k]]->idx_available_partner[j] = overall_partnerships->new_partners_f_sorted[k]; /* telling the person that has moved that they have. */
+                    }
+                    popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f]--; /* decreasing the number of available females in that group by 1 */
+                }
+                /* removing males */
+                tmp = 0;
+                for(i=0 ; i<(*n_non_matchable) ; i++)
+                {
+                    if(overall_partnerships->new_partners_m_sorted[k]==overall_partnerships->new_partners_m[overall_partnerships->new_partners_m_non_matchable[i]])
+                    {
+                        tmp = 1;
                         break;
                     }
                 }
-                if(idx_found==0)
+                if(tmp==0)
                 {
-                    printf("problem here b, idx should have been found that has not (male directly chosen)\n");
-                    fflush(stdout);
-                }
-                popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[i] = popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners];
-                popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->idx_available_partner[popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m[k]]->n_partners] = -1;
-
-            }
-            
-            /* If we are able to match current selected female to a male, then remove this female */
-            if (flag == 1) {
-
-                /* removing this partnership with this female from the list of available partnerships */
-                if(overall_partnerships->new_partners_f_sorted[0] < popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1)
-                {
-                    popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]] = popn_pgar[patch_f][FEMALE][ag_f][r_f][popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1]; /* pointing to the last female instead of the current one */
-                    j = popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->max_n_partners - popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->n_partners - 1;
-                    while(j>=0 && popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[j] != popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f] - 1)
+                    /* removing this male from the list of available partnerships */
+                    if(overall_partnerships->new_partners_m_sorted[k] < popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1)
                     {
-                        j--;
+                        popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]] = popn_pgar[patch_m][MALE][ag_m][r_m][popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1]; /* pointing to the last male instead of the current one */
+                        j = popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->n_partners - 1;
+                        while(j>=0 && popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->idx_available_partner[j] != popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1)
+                        {
+                            j--;
+                        }
+                        if(j<0)
+                        {
+                            printf("Problem here j negative2\n");
+                            fflush(stdout);
+                        }
+                        popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->idx_available_partner[j] = overall_partnerships->new_partners_m_sorted[k]; /* telling the person that has moved that they have. */
                     }
-                    if(j<0)
-                    {
-                        printf("Problem here j negative1\n");
-                        fflush(stdout);
-                    }
-                    popn_pgar[patch_f][FEMALE][ag_f][r_f][overall_partnerships->new_partners_f_sorted[0]]->idx_available_partner[j] = overall_partnerships->new_partners_f_sorted[0]; /* telling the person that has moved that they have. */
+                    popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m]--; /* decreasing the number of available males in that group by 1 */
                 }
-                popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f]--; /* decreasing the number of available females in that group by 1 */
             }
-            // printf("after:%d\n", popn_f->pop_size_per_gender_age_risk[FEMALE][ag_f][r_f]);
+
         }
 
-        /* copies new_partners_m into new_partners_m_sorted */
-        copy_array_long(overall_partnerships->new_partners_m_sorted, overall_partnerships->new_partners_m, n);
-
-        /* sort new_partners_m_sorted (which can be not sorted if initial selected man was not selected in the end) */
-        //qsort(new_partners_m_sorted, n, sizeof(long), (compfn) compare_longs);
-
-        qsort(overall_partnerships->new_partners_m_sorted, n, sizeof(long), compare_longs);
-
-        /* Remove individuals from the list of available partnerships, starting by the last ones, excluding those that we weren't able to match */
-        for(k=n - 1 ; k>=0 ; k--)
-        {
-            tmp = 0;
-            for(i=0 ; i<(*n_non_matchable) ; i++)
-            {
-                if(overall_partnerships->new_partners_m_sorted[k]==overall_partnerships->new_partners_m[overall_partnerships->new_partners_f_non_matchable[i]])
-                {
-                    tmp = 1;
-                    break;
-                }
-            }
-            if(tmp==0)
-            {
-                /* removing this male from the list of available partnerships */
-                if(overall_partnerships->new_partners_m_sorted[k] < popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1)
-                {
-                    popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]] = popn_pgar[patch_m][MALE][ag_m][r_m][popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1]; /* pointing to the last male instead of the current one */
-                    j = popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->max_n_partners - popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->n_partners - 1;
-                    while(j>=0 && popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->idx_available_partner[j] != popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m] - 1)
-                    {
-                        j--;
-                    }
-                    if(j<0)
-                    {
-                        printf("Problem here j negative2\n");
-                        fflush(stdout);
-                    }
-                    popn_pgar[patch_m][MALE][ag_m][r_m][overall_partnerships->new_partners_m_sorted[k]]->idx_available_partner[j] = overall_partnerships->new_partners_m_sorted[k]; /* telling the person that has moved that they have. */
-                }
-                popn_m->pop_size_per_gender_age_risk[MALE][ag_m][r_m]--; /* decreasing the number of available males in that group by 1 */
-            }
-        }
+        *n_non_matchable = *n_non_matchable + f_n_non_matchable;
     }
 }
 
@@ -1094,11 +1157,11 @@ void draw_new_partnerships(double time, all_partnerships *overall_partnerships, 
                     ////////////////////////////////////////
 
                     draw_n_new_partnerships(time, param->balanced_nb_f_to_m[ag_f][r_f][ag_m][r_m], !SEXUAL_WORKER_RELATED,
-                        param, ag_f, r_f, ag_m, r_m, &n_non_matchable, overall_partnerships, patch, 
-                        patch_f, patch_m, debug, file_data_store);
+                    param, ag_f, r_f, ag_m, r_m, &n_non_matchable, overall_partnerships, patch, 
+                    patch_f, patch_m, debug, file_data_store);
                     tmp = n_non_matchable;
                     /* if some of the pairs could not be formed because they were already in a partnership together and we couldn't find another suitable male for that female, we redraw the corresponding number of pairs */
-                    while(tmp > 0 && index < 10){ /// HERE THE CONDITION index<10 is to avoid an infinite loop, think better about how to deal with the case where it's just impossible to form a new partnership (e.g. 1 available partner in each group but they are already in partnership)
+                    while((tmp > 0 && index < 10) && (n_non_matchable <= overall_partnerships->n_pop_available_partners->pop_per_patch[patch_m].pop_size_per_gender_age_risk[MALE][ag_m][r_m]) && (n_non_matchable <= overall_partnerships->n_pop_available_partners->pop_per_patch[patch_f].pop_size_per_gender_age_risk[FEMALE][ag_f][r_f])) { /// HERE THE CONDITION index<10 is to avoid an infinite loop, think better about how to deal with the case where it's just impossible to form a new partnership (e.g. 1 available partner in each group but they are already in partnership)
                         index++;
                         draw_n_new_partnerships(time, n_non_matchable, !SEXUAL_WORKER_RELATED, param, ag_f, r_f, ag_m, r_m,
                             &tmp, overall_partnerships, patch, patch_f, patch_m, debug, 
@@ -1128,7 +1191,7 @@ void draw_new_partnerships(double time, all_partnerships *overall_partnerships, 
                                 patch_f, patch_m, debug, file_data_store);
                             tmp = n_sexual_worker_non_matchable;
                             /* if some of the pairs could not be formed because they were already in a partnership together and we couldn't find another suitable male for that female sexual worker, we redraw the corresponding number of pairs */
-                            while(tmp > 0 && index < 10  && (n_relationship_sexual_worker <= overall_partnerships->n_pop_available_partners->pop_per_patch[patch_m].pop_size_per_gender_age_risk[MALE][ag_m][r_m]) && (overall_partnerships->n_pop_available_partners->pop_per_patch[patch_f].pop_size_per_gender_age_risk[FEMALE][ag_f][r_f])){ /// HERE THE CONDITION index<10 is to avoid an infinite loop, think better about how to deal with the case where it's just impossible to form a new partnership (e.g. 1 available partner in each group but they are already in partnership)
+                            while(tmp > 0 && index < 10  && (n_sexual_worker_non_matchable <= overall_partnerships->n_pop_available_partners->pop_per_patch[patch_m].pop_size_per_gender_age_risk[MALE][ag_m][r_m]) && (n_sexual_worker_non_matchable <= overall_partnerships->n_pop_available_partners->pop_per_patch[patch_f].pop_size_per_gender_age_risk[FEMALE][ag_f][r_f])){ /// HERE THE CONDITION index<10 is to avoid an infinite loop, think better about how to deal with the case where it's just impossible to form a new partnership (e.g. 1 available partner in each group but they are already in partnership)
                                 index++;
                                 draw_n_new_partnerships(time, n_sexual_worker_non_matchable, SEXUAL_WORKER_RELATED, param, ag_f, r_f, ag_m, r_m,
                                     &tmp, overall_partnerships, patch, patch_f, patch_m, debug, 

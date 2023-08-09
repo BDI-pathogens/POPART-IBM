@@ -815,6 +815,14 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
     long m;
 
 
+    overall_partnerships->new_partners_f = malloc(MAX_N_PER_AGE_GROUP*MAX_PARTNERSHIPS_PER_INDIVIDUAL*sizeof(long));
+    if(overall_partnerships->new_partners_f==NULL)
+    {
+        printf("Unable to allocate new_partners_f in alloc_all_memory. Execution aborted.");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
 
     overall_partnerships->new_partners_f_sorted = malloc(MAX_N_PER_AGE_GROUP*MAX_PARTNERSHIPS_PER_INDIVIDUAL*sizeof(long));
     if(overall_partnerships->new_partners_f_sorted==NULL)
@@ -856,6 +864,15 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
     if(overall_partnerships->new_partners_m_sorted==NULL)
     {
         printf("Unable to allocate new_partners_m_sorted in alloc_all_memory. Execution aborted.");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+
+    overall_partnerships->new_partners_m_non_matchable = malloc(MAX_N_PER_AGE_GROUP*MAX_PARTNERSHIPS_PER_INDIVIDUAL*sizeof(long));
+    if(overall_partnerships->new_partners_m_non_matchable==NULL)
+    {
+        printf("Unable to allocate new_partners_m_non_matchable in alloc_all_memory. Execution aborted.");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
@@ -1110,7 +1127,7 @@ void free_all_patch_memory(parameters *param, individual *individual_population,
 void free_all_partnership_memory(partnership *partner_pairs, long *n_partnerships, individual **susceptible_in_serodiscordant_partnership, long *n_susceptible_in_serodiscordant_partnership,
         population_partners* pop_available_partners, population_size_all_patches *n_pop_available_partners,
         partnership ***planned_breakups, long *n_planned_breakups, long *size_planned_breakups,
-        long *new_partners_f_sorted, long *shuffled_idx, long *new_partners_f_non_matchable, long *new_partners_m, long *new_partners_m_sorted, long *partner_dummylist)
+        long *new_partners_f, long *new_partners_f_sorted, long *shuffled_idx, long *new_partners_f_non_matchable, long *new_partners_m, long *new_partners_m_sorted, long *new_partners_m_non_matchable, long *partner_dummylist)
 {
     int i,j,k,l;
     long m;
@@ -1136,11 +1153,13 @@ void free_all_partnership_memory(partnership *partner_pairs, long *n_partnership
     free(pop_available_partners->pop_per_patch_gender_age_risk);
     free(pop_available_partners);
 
+    free(new_partners_f);
     free(new_partners_f_sorted);
     free(shuffled_idx);
     free(new_partners_f_non_matchable);
     free(new_partners_m);
     free(new_partners_m_sorted);
+    free(new_partners_m_non_matchable);
     free(partner_dummylist);
 
     free(partner_pairs);
@@ -1190,8 +1209,8 @@ void free_partnership_memory(all_partnerships *overall_partnerships){
             overall_partnerships->pop_available_partners, overall_partnerships->n_pop_available_partners,
             overall_partnerships->planned_breakups, overall_partnerships->n_planned_breakups,
             overall_partnerships->size_planned_breakups,
-            overall_partnerships->new_partners_f_sorted, overall_partnerships->shuffled_idx, overall_partnerships->new_partners_f_non_matchable,
-            overall_partnerships->new_partners_m, overall_partnerships->new_partners_m_sorted, overall_partnerships->partner_dummylist);
+            overall_partnerships->new_partners_f, overall_partnerships->new_partners_f_sorted, overall_partnerships->shuffled_idx, overall_partnerships->new_partners_f_non_matchable,
+            overall_partnerships->new_partners_m, overall_partnerships->new_partners_m_sorted, overall_partnerships->new_partners_m_non_matchable, overall_partnerships->partner_dummylist);
 
 }
 
