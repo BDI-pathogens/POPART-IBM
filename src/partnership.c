@@ -702,7 +702,7 @@ void draw_n_new_partnerships(double time, long n, long sexual_worker_related_fla
     int idx_found;
     int current_n_normal_partnership;
     int maximum_n_normal_partnership;
-    int current_n = 0;
+    int current_n = n;
     int f_n_non_matchable = 0;
 
 
