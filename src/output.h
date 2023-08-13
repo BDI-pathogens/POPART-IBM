@@ -35,7 +35,7 @@ void print_number_by_age(age_list_struct *);
 void print_IDs_by_age(age_list_struct *);
 void print_specific_IDs_by_age(long , age_list_struct *, int);
 void print_number_by_age_grouped(age_list_struct *,population_size *, stratified_population_size*);
-void update_outputs_gender_veryshort(individual *, long *, long *, long *, long *, long *, long *);
+void update_outputs_gender_veryshort(individual *, long *, long *, long *, long *, long *, long *, long *);
 //void update_outputs_gender_veryshort(individual *, long *, long *, long *, long *, long *);
 void update_annual_outputs_gender(individual *, long *, long *, long *, long *, int );
 void update_annual_outputs_gender_cd4(individual *, long *, long *, long *, long *, 

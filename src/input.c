@@ -1121,6 +1121,9 @@ void read_cascade_params(char *patch_tag, parameters *allrunparameters, int n_ru
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_stops_virally_suppressed));
         check_if_cannot_read_param(checkreadok,"param_local->p_stops_virally_suppressed");
 
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_stays_cabo));
+        check_if_cannot_read_param(checkreadok,"param_local->p_stays_cabo");
+
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_vu_becomes_virally_suppressed));
         check_if_cannot_read_param(checkreadok,"param_local->p_vu_becomes_virally_suppressed");
         /* Input times for the cascade events: */

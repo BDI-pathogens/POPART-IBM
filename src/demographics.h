@@ -30,8 +30,9 @@ void update_population_size_new_adult(individual *, population_size *,
     population_size_one_year_age *, stratified_population_size *);
 void update_population_size_death(individual *, population_size *, 
     population_size_one_year_age *, population_size_one_year_age *,
-    population_size_one_year_age *,population_size_one_year_age *, 
-    stratified_population_size *, int, age_list_struct *);
+    population_size_one_year_age *,population_size_one_year_age *,
+    population_size_one_year_age *, stratified_population_size *,
+    int, age_list_struct *);
 void initialize_first_cascade_event_for_new_individual(individual *, double, 
     parameters *, individual ***, long *, long *);
 void update_age_list_new_adult(age_list_struct *, individual *);
@@ -55,15 +56,15 @@ void remove_from_hiv_pos_progression(individual *, individual ***, long *, long 
     double, parameters *, int);
 void remove_from_cascade_events(individual *, individual ***, long *, long *, double, parameters *);
 void remove_from_vmmc_events(individual *, individual ***, long *, long *, double , parameters *);
-void increase_population_count_art_or_virallysuppressed(population_size_one_year_age *, individual *, double);
-void decrease_population_count_art_or_virallysuppressed(population_size_one_year_age *, individual *, double);
+void increase_population_count_art_or_virallysuppressed_or_cabo(population_size_one_year_age *, individual *, double);
+void decrease_population_count_art_or_virallysuppressed_or_cabo(population_size_one_year_age *, individual *, double);
 void deaths_natural_causes(double, patch_struct *, int , all_partnerships *,  file_struct *);
 void make_new_adults(double, patch_struct *, int , all_partnerships *);
 void add_new_kids(double , patch_struct *, int );
 void make_pop_from_age_list(population *, age_list_struct *, individual *);
 void individual_death_AIDS(age_list_struct *, individual *, population_size *, 
     population_size_one_year_age *, population_size_one_year_age *, 
-    population_size_one_year_age *, population_size_one_year_age *, 
+    population_size_one_year_age *, population_size_one_year_age *, population_size_one_year_age *,
     stratified_population_size *, double , parameters *, individual **, 
     long *, population_partners *, population_size_all_patches *, individual ***, 
     long *, long *, patch_struct *, int , file_struct *);

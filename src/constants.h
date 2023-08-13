@@ -283,15 +283,22 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 
 
 /* codes for indiv->ART_status - could merge with HIV status? Note that these are states and not processes. */
-#define NARTEVENTS 8 // Currently runs from -1..6 so 8 events.
+#define NARTEVENTS 9 // Currently runs from -1..7 so 9 events.
 #define ARTNEG  -1 // If never tested HIV positive (note that this is tested, not serostatus).
 #define ARTNAIVE 0 // Never been on ART.
 #define EARLYART 1 // First few weeks/months before achieve viral suppression. Higher mortality and drop-out rate.
 #define LTART_VS 2 // longer-term ART and Virally Suppressed (so low transmission, no CD4 progression or drug resistance).  
-#define LTART_VU 3 // longer-term ART and Virally Unsuppressed (so higher transmission, could have (but not currently) CD4 progression and drug resistance).
-#define ARTDROPOUT 4 // Has been on ART before but not currently.
-#define CASCADEDROPOUT 5 // Dropped out of HIV care cascade prior to ever starting ART.
-#define ARTDEATH 6 // Signals that the person needs to be removed as they die while on ART. 
+#define CABO 3 // cabotegravir medicine (no transmission, no drop-out)
+#define LTART_VU 4 // longer-term ART and Virally Unsuppressed (so higher transmission, could have (but not currently) CD4 progression and drug resistance).
+#define ARTDROPOUT 5 // Has been on ART before but not currently.
+#define CASCADEDROPOUT 6 // Dropped out of HIV care cascade prior to ever starting ART.
+#define ARTDEATH 7 // Signals that the person needs to be removed as they die while on ART. 
+
+/* Target sex and age group to offer CABO */
+#define CABO_GENDER 0 /* 0 for male and 1 for female */
+#define CABO_LOW_AGE 18 /* Minimum age to offer CABO */
+#define CABO_UPP_AGE 25 /* Maximum age to offer CABO */
+
 
 /* Used as CD4 value to identify that people are not infected with HIV.
  * Note: CD4==-2 means the person is dead.

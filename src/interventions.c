@@ -607,12 +607,16 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
                 if(
                 (indiv->ART_status == EARLYART) || 
                 (indiv->ART_status == LTART_VS) || 
+                (indiv->ART_status == CABO) || 
                 (indiv->ART_status == LTART_VU)
                 ){
                     output->NCHIPS_ONART[p][g][ac][chips_round]++;
                     
                     if(indiv->ART_status == LTART_VS){
                         output->NCHIPS_VS[p][g][ac][chips_round]++;
+                    }
+                    else if (indiv->ART_status == CABO){
+                        output->NCHIPS_CABO[p][g][ac][chips_round]++;
                     }
                 }
             }
@@ -718,11 +722,12 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
             fflush(stdout);
         }
         
-        /* if already on ART (and has NOEVENT because of this - ie early ART or VS) then we don't
+        /* if already on ART (and has NOEVENT because of this - ie early ART or VS or CABO) then we don't
         need to do anything else. */
         if(
             (indiv->ART_status == EARLYART) || 
-            (indiv->ART_status == LTART_VS)
+            (indiv->ART_status == LTART_VS) ||
+            (indiv->ART_status == CABO)
         ){
             if(indiv->id == FOLLOW_INDIVIDUAL && indiv->patch_no == FOLLOW_PATCH){
                 printf("Adult %ld at time %lf is already on ART so this is OK.\n", indiv->id, t);

@@ -22,6 +22,7 @@ p_becomes_vs_after_earlyart_if_not_die_early_or_leave,0.9,"Probability become vi
 p_stays_virally_suppressed,0.6,Probability that a woman who becomes virally suppressed remains virally suppressed for life,cascade,
 p_stays_virally_suppressed_male,0.5,Relative probability of a man who becomes virally suppressed remaining virally suppressed for life (compared to a woman),cascade,
 p_stops_virally_suppressed,0.1,Probability that someone who becomes virally suppressed will eventually become virally unsuppressed (but remains on ART),cascade,
+p_stays_cabo,0.1,Probability that targeted group individuals who becomes virally suppressed but wants to drop out will take cabotegravir medicine (no transmission, no drop-out),cascade
 p_vu_becomes_virally_suppressed,0,Probability that someone who becomes virally unsuppressed after early ART eventually becomes virally suppressed,cascade,
 t_earlyart_dropout_nonpopart_min,0,"Minimum time (in years) from starting early ART (from background HIV test) to dropping out, for those who drop out",cascade,
 t_earlyart_dropout_nonpopart_max,0.17,"Maximum time (in years) from starting early ART (from background HIV test) to dropping out, for those who drop out",cascade,

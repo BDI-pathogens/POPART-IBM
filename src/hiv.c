@@ -297,6 +297,8 @@ double hiv_transmission_probability(individual* HIVpos_partner, parameters *para
         hazard *= param->RR_ART_INITIAL;
     }else if(HIVpos_partner->ART_status == LTART_VS){
         hazard *= param->RR_ART_VS;
+    }else if (HIVpos_partner->ART_status == CABO) {
+        hazard = 0;
     }else if(HIVpos_partner->ART_status == LTART_VU){
         hazard *= param->RR_ART_VU;
     }
@@ -1403,7 +1405,7 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
             // Function removes person from everything except the cascade event list:
             individual_death_AIDS(patch[p].age_list, indiv, patch[p].n_population,
                 patch[p].n_population_oneyearagegroups, patch[p].n_infected,
-                patch[p].n_art,patch[p].n_virallysuppressed,
+                patch[p].n_art,patch[p].n_virallysuppressed,patch[p].n_cabo,
                 patch[p].n_population_stratified, t, patch[p].param,
                 overall_partnerships->susceptible_in_serodiscordant_partnership,
                 overall_partnerships->n_susceptible_in_serodiscordant_partnership,
@@ -1474,7 +1476,7 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 
                 // Update debug counters regarding transitions to emergency ART
                 if(indiv->ART_status == ARTNEG){
-                    debug->art_vars[p].n_start_emergency_art_fromartnaive++;
+                    debug->art_vars[p].n_start_emergency_art_fromuntested++;
                 }else if(indiv->ART_status == ARTNAIVE){
                     debug->art_vars[p].n_start_emergency_art_fromartnaive++;
                 }else if(indiv->ART_status == ARTDROPOUT){
@@ -1490,7 +1492,7 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 // individual started ART because of AIDS symptoms (set to 1).  
                 if (indiv->ART_status < EARLYART || indiv->ART_status > LTART_VU ){
                     //printf("a");
-                    increase_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
+                    increase_population_count_art_or_virallysuppressed_or_cabo(patch[p].n_art, indiv, t);
                 }
                                 
 
@@ -3106,21 +3108,41 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
         }
     }
     else{
-        /* ASSUMPTION! Randomly picked this to be 3-6 years later. */
-        double time_dropout;
-        if (is_popart==NOTPOPART){
-            time_dropout = t + param->t_end_vs_dropout_min[NOTPOPART] + param->t_end_vs_dropout_range[NOTPOPART] * gsl_rng_uniform (rng);
-            indiv->next_cascade_event = CASCADEEVENT_DROPOUT_NONPOPART;
+        if ((is_cabo_target_group(indiv, t)) && (gsl_rng_uniform (rng) < param->p_stays_cabo)) {
+            /* Targeted patients who wants to drop out but takes cabotegravir medicine will stay in CABO status */
+            indiv->ART_status = CABO;
+
+            /* Patient takes cabotegravir medicine, no future cascade events for now: */
+            indiv->next_cascade_event= NOEVENT;
+            /* Set to dummy values */
+            /* Note that we do not need to unschedule this indiv from the cascade_event[] list as the event is this one
+            * and we are moving on in time. */
+            indiv->idx_cascade_event[0] = NOEVENT; 
+            indiv->idx_cascade_event[1] = -1;
+
+            if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
+                printf("Adult %ld will take cabotegravir medicine and never drop out with HIV status %i, ART status %i \n",indiv->id,indiv->HIV_status,indiv->ART_status);
+                fflush(stdout);
+            }
         }
-        else{
-            time_dropout = t + param->t_end_vs_dropout_min[POPART] + param->t_end_vs_dropout_range[POPART] * gsl_rng_uniform (rng);
-            indiv->next_cascade_event = CASCADEEVENT_DROPOUT_POPART;
+        
+        else {
+            /* ASSUMPTION! Randomly picked this to be 3-6 years later. */
+            double time_dropout;
+            if (is_popart==NOTPOPART){
+                time_dropout = t + param->t_end_vs_dropout_min[NOTPOPART] + param->t_end_vs_dropout_range[NOTPOPART] * gsl_rng_uniform (rng);
+                indiv->next_cascade_event = CASCADEEVENT_DROPOUT_NONPOPART;
+            }
+            else{
+                time_dropout = t + param->t_end_vs_dropout_min[POPART] + param->t_end_vs_dropout_range[POPART] * gsl_rng_uniform (rng);
+                indiv->next_cascade_event = CASCADEEVENT_DROPOUT_POPART;
+            }
+            if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
+                printf("Adult %ld is scheduled to drop out at time %6.4f\n",indiv->id,time_dropout);
+                fflush(stdout);
+            }
+            schedule_generic_cascade_event(indiv, param, time_dropout, cascade_events, n_cascade_events, size_cascade_events,t);
         }
-        if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
-            printf("Adult %ld is scheduled to drop out at time %6.4f\n",indiv->id,time_dropout);
-            fflush(stdout);
-        }
-        schedule_generic_cascade_event(indiv, param, time_dropout, cascade_events, n_cascade_events, size_cascade_events,t);
     }
 }
 
@@ -3336,9 +3358,9 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
             /* Note that the last argument '3' indicates that this is an AIDS-related death. */
             remove_from_hiv_pos_progression(indiv,  patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression,t, patch[p].param,3);
             /* Function removes person from everything except the cascade event list: */
-            individual_death_AIDS(patch[p].age_list, indiv, patch[p].n_population, patch[p].n_population_oneyearagegroups, patch[p].n_infected,patch[p].n_art,patch[p].n_virallysuppressed, patch[p].n_population_stratified, t, patch[p].param,
+            individual_death_AIDS(patch[p].age_list, indiv, patch[p].n_population, patch[p].n_population_oneyearagegroups, patch[p].n_infected,patch[p].n_art,patch[p].n_virallysuppressed, patch[p].n_cabo,patch[p].n_population_stratified, t, patch[p].param,
                     overall_partnerships->susceptible_in_serodiscordant_partnership, overall_partnerships->n_susceptible_in_serodiscordant_partnership, overall_partnerships->pop_available_partners, overall_partnerships->n_pop_available_partners, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch, p, file_data_store);
-            decrease_population_count_art_or_virallysuppressed(patch[p].n_art,  indiv, t);
+            decrease_population_count_art_or_virallysuppressed_or_cabo(patch[p].n_art,  indiv, t);
             //individual cannot die of AIDS while Virally Suppressed so no need to check if it is
         }
 
@@ -3371,14 +3393,19 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                 /* Only record if this is the first date of viral suppression. */
                 if (indiv->PANGEA_date_startfirstVLsuppression<0)
                     indiv->PANGEA_date_startfirstVLsuppression = t;
-                debug->art_vars[p].cascade_transitions[indiv->ART_status+1][LTART_VS+1]++;
                 if (indiv->ART_status==LTART_VU)
                     indiv->DEBUG_cumulative_time_on_ART_VU += (t-indiv->DEBUG_time_of_last_cascade_event);
                 indiv->DEBUG_time_of_last_cascade_event = t;
 
             
                 virally_suppressed_process(indiv,patch[p].param,t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression);
-
+                // an individual could be either virally suppressed or take cabotegravir medicine (cannot dropout)
+                if (indiv->ART_status==LTART_VS) {
+                    debug->art_vars[p].cascade_transitions[aux_ART_STATUS+1][LTART_VS+1]++;
+                }
+                else {
+                    debug->art_vars[p].cascade_transitions[aux_ART_STATUS+1][CABO+1]++;
+                }
             }
             else if ((indiv->next_cascade_event==CASCADEEVENT_VU_NONPOPART)||(indiv->next_cascade_event==CASCADEEVENT_VU_POPART)){
                 debug->art_vars[p].cascade_transitions[indiv->ART_status+1][LTART_VU+1]++;
@@ -3413,32 +3440,54 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
             if (aux_ART_STATUS!= ARTNEG && !(aux_ART_STATUS== EARLYART && indiv->ART_status==LTART_VU) && aux_ART_STATUS!=indiv->ART_status && !(aux_ART_STATUS==ARTNAIVE &&indiv->ART_status==CASCADEDROPOUT ) ){
                 if(aux_ART_STATUS==ARTNAIVE  &&( indiv->ART_status>= EARLYART && indiv->ART_status<=LTART_VU)){
                     //individual started art
-                    increase_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
-                    if(indiv->ART_status == LTART_VS) increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                    increase_population_count_art_or_virallysuppressed_or_cabo(patch[p].n_art, indiv, t);
+                    if(indiv->ART_status == LTART_VS) {
+                        increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_virallysuppressed, indiv, t);
+                    }
+                    else if (indiv->ART_status == CABO) {
+                        increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_cabo, indiv, t);
+                    }
                 }
                 else if (aux_ART_STATUS==EARLYART && indiv->ART_status== LTART_VS){
-                    increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                    increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_virallysuppressed, indiv, t);
+                }
+                else if (aux_ART_STATUS==EARLYART && indiv->ART_status== CABO) {
+                    increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_cabo, indiv, t);
                 }
                 else if (aux_ART_STATUS==EARLYART && indiv->ART_status > LTART_VU) {
-                    decrease_population_count_art_or_virallysuppressed( patch[p].n_art, indiv, t);
+                    decrease_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_art, indiv, t);
                 }
-                else if (aux_ART_STATUS == LTART_VS && indiv->ART_status>=LTART_VU){
-                    decrease_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
-                    if (indiv->ART_status>LTART_VU)
+                else if (aux_ART_STATUS == LTART_VS && indiv->ART_status>=CABO){
+                    decrease_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_virallysuppressed, indiv, t);
+                    if (indiv->ART_status == CABO) {
+                        increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_cabo, indiv, t);
+                    }
+                    else if (indiv->ART_status>LTART_VU)
                     {
-                        decrease_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
+                        decrease_population_count_art_or_virallysuppressed_or_cabo(patch[p].n_art, indiv, t);
                    }
                 }
+                else if (aux_ART_STATUS == CABO && indiv->ART_status > LTART_VU) {
+                    decrease_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_cabo, indiv, t);
+                    decrease_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_art, indiv, t);
+                }
                 else if (aux_ART_STATUS == LTART_VU && indiv->ART_status==LTART_VS ){
-                    increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                    increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_virallysuppressed, indiv, t);
+                }
+                else if (aux_ART_STATUS == LTART_VU && indiv->ART_status == CABO ){
+                    increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_cabo, indiv, t);
                 }
                 else if (aux_ART_STATUS == LTART_VU && indiv->ART_status>LTART_VU ){
-                    decrease_population_count_art_or_virallysuppressed( patch[p].n_art, indiv, t);
+                    decrease_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_art, indiv, t);
                 }
                 else if (aux_ART_STATUS > LTART_VU  && indiv->ART_status>= EARLYART &&  indiv->ART_status<= LTART_VU){
-                    increase_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
-                    if (indiv -> ART_status == LTART_VS)
-                    increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                    increase_population_count_art_or_virallysuppressed_or_cabo(patch[p].n_art, indiv, t);
+                    if (indiv -> ART_status == LTART_VS) {
+                        increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_virallysuppressed, indiv, t);
+                    }
+                    else if (indiv -> ART_status == CABO) {
+                        increase_population_count_art_or_virallysuppressed_or_cabo( patch[p].n_cabo, indiv, t);
+                    }
                 }
                 else{
                     printf("This event in cascade was not accounted for: %d -> %d, for individual %ld in patch %d, at time %f\n", aux_ART_STATUS ,indiv->ART_status, indiv->id, indiv->patch_no, t);
@@ -3451,6 +3500,23 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
 
 }
 
+int is_cabo_target_group(individual* indiv, double t) {
+    int i;
+    int age = round(t - indiv->DoB);
+    if (SEXUAL_WORKER_STRUCTURE == TRUE) {
+        for (i = 0; i < indiv->n_partners; i++) {
+            if (indiv->partner_pairs[i]->sexual_worker_related == TRUE) {
+                return TRUE;
+            }
+        }
+    }
+    else {
+        if ((indiv->gender == CABO_GENDER) && (age >= CABO_LOW_AGE) && (age <= CABO_UPP_AGE)) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////

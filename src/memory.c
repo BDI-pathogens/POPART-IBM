@@ -133,6 +133,7 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
                 output->NCHIPS_HIVAWARE[p][g][ac][chips_round] = 0;
                 output->NCHIPS_ONART[p][g][ac][chips_round] = 0;
                 output->NCHIPS_VS[p][g][ac][chips_round] = 0;
+                output->NCHIPS_CABO[p][g][ac][chips_round] = 0;
             }
         }
     }
@@ -149,6 +150,7 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
                 output->PC_NAWARE[p][g][a][pc_round] = 0;
                 output->PC_NONART[p][g][a][pc_round] = 0;
                 output->PC_NVS[p][g][a][pc_round] = 0;
+                output->PC_NCABO[p][g][a][pc_round] = 0;
             }
         }
     }
@@ -450,6 +452,14 @@ void alloc_patch_memoryv2(patch_struct *patch){
             exit(1);
         }
 
+        patch[p].n_cabo= malloc(sizeof(population_size_one_year_age));
+        if(patch[p].n_cabo==NULL)
+        {
+            printf("Unable to allocate n_cabo in alloc_all_memory. Execution aborted.");
+            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+            fflush(stdout);
+            exit(1);
+        }
 
         patch[p].n_newly_infected = malloc(sizeof(population_size_one_year_age));
         if(patch[p].n_newly_infected==NULL)
@@ -1042,7 +1052,7 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
 void free_all_patch_memory(parameters *param, individual *individual_population, population_size *n_population, population_size_one_year_age *n_population_oneyearagegroups, stratified_population_size *n_population_stratified, age_list_struct *age_list, child_population_struct *child_population,
         individual ***hiv_pos_progression, long *n_hiv_pos_progression, long *size_hiv_pos_progression, individual ***cascade_events, long *n_cascade_events, long *size_cascade_events, individual ***vmmc_events, long *n_vmmc_events, long *size_vmmc_events,
         long *new_deaths, long *death_dummylist,
-        population_size_one_year_age *n_infected,population_size_one_year_age *n_art,population_size_one_year_age *n_virally_suppressed, population_size_one_year_age *n_newly_infected, population_size_one_year_age *n_infected_cumulative, population_size *n_infected_wide_age_group, population_size *n_newly_infected_wide_age_group,
+        population_size_one_year_age *n_infected,population_size_one_year_age *n_art,population_size_one_year_age *n_virally_suppressed, population_size_one_year_age *n_coba, population_size_one_year_age *n_newly_infected, population_size_one_year_age *n_infected_cumulative, population_size *n_infected_wide_age_group, population_size *n_newly_infected_wide_age_group,
         chips_sample_struct *chips_sample, cumulative_outputs_struct *cumulative_outputs, calendar_outputs_struct *calendar_outputs, long ****cross_sectional_distr_n_lifetime_partners, long ****cross_sectional_distr_n_partners_lastyear, PC_sample_struct *PC_sample, PC_cohort_struct *PC_cohort, PC_cohort_data_struct *PC_cohort_data)
 {
 
@@ -1055,6 +1065,7 @@ void free_all_patch_memory(parameters *param, individual *individual_population,
     free(n_infected);
     free(n_art);
     free(n_virally_suppressed);
+    free(n_coba);
     free(n_newly_infected);
     free(n_infected_cumulative);
     free(n_infected_wide_age_group);
@@ -1195,6 +1206,7 @@ void free_patch_memory(patch_struct *patch){
                 patch[p].n_infected,
                 patch[p].n_art,
                 patch[p].n_virallysuppressed,
+                patch[p].n_cabo,
                 patch[p].n_newly_infected, patch[p].n_infected_cumulative, patch[p].n_infected_wide_age_group, patch[p].n_newly_infected_wide_age_group,
                 patch[p].chips_sample, patch[p].cumulative_outputs, patch[p].calendar_outputs, patch[p].cross_sectional_distr_n_lifetime_partners, patch[p].cross_sectional_distr_n_partners_lastyear,
                 patch[p].PC_sample, patch[p].PC_cohort, patch[p].PC_cohort_data);

@@ -703,11 +703,11 @@ void print_number_by_age_grouped(age_list_struct *age_list,population_size *n_po
 
 /* This function updates the gender-specific counters in the function store_annual_outputs() to reduce repetition and make it easier to adapt what is stored. */
 /* Not currently used. */
-void update_outputs_gender_veryshort(individual *individual, long *npop_g, long *npositive, long *Nknowpositive, long *NArt, long *NVS, long *Nunknown){
+void update_outputs_gender_veryshort(individual *individual, long *npop_g, long *npositive, long *Nknowpositive, long *NArt, long *NVS, long *NCABO, long *Nunknown){
     *npop_g += 1;
     if (individual->HIV_status>0){
         (*npositive) += 1;
-        if ((individual->ART_status==ARTNAIVE) || (individual->ART_status==EARLYART) || (individual->ART_status==LTART_VS) || (individual->ART_status==LTART_VU) || (individual->ART_status==ARTDROPOUT) || (individual->ART_status==CASCADEDROPOUT))
+        if ((individual->ART_status==ARTNAIVE) || (individual->ART_status==EARLYART) || (individual->ART_status==LTART_VS) || (individual->ART_status==CABO) ||(individual->ART_status==LTART_VU) || (individual->ART_status==ARTDROPOUT) || (individual->ART_status==CASCADEDROPOUT))
             (*Nknowpositive) += 1;
         else if (individual->ART_status==ARTNEG)
             (*Nunknown) += 1;
@@ -721,6 +721,10 @@ void update_outputs_gender_veryshort(individual *individual, long *npop_g, long 
         if (individual->ART_status==LTART_VS){
             (*NArt) += 1;
             (*NVS) += 1;
+        }
+        else if (individual->ART_status==CABO) {
+            (*NArt) += 1;
+            (*NCABO) += 1;
         }
         else if ((individual->ART_status==EARLYART) || (individual->ART_status==LTART_VU))
             (*NArt) += 1;
@@ -771,6 +775,7 @@ void update_annual_outputs_gender(individual *individual, long *npop_g, long *np
         if(
         (individual->ART_status == EARLYART) || 
         (individual->ART_status == LTART_VS) || 
+        (individual->ART_status == CABO) ||
         (individual->ART_status == LTART_VU)
         ){
             (*NArt) += 1;
@@ -906,10 +911,13 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
     long N_men_MC = 0;
     long naware_tot =0;
     long nvirallysuppressed_tot=0;
+    long ncabo_tot = 0;
     long nfemale_aware=0;
     long nmale_aware=0;
     long nmale_virallysuppressed=0;
     long nfemale_virallysuppressed=0;
+    long nmale_cabo = 0;
+    long nfemale_cabo = 0;
 
     /* FOR DEBUGGING ONLY */
     long N_men_noMC = 0;
@@ -928,18 +936,20 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
     double prop_aware=0;
     double prophivposonart=0;
     double propvirallysuppressed=0;
+    double propcabo=0;
 
     /* Temporary store of data from current year. */
     char temp_string[10000];
     /* Temporary store for single variable which gets strcat'd into temp_string. */
     char temp_string2[50];
-    /* Temporary store for pop size/incidence/prevalence/art/virallysuppressed by gender and age gp which gets strcat'd
+    /* Temporary store for pop size/incidence/prevalence/art/virallysuppressed/cabo by gender and age gp which gets strcat'd
     into temp_string. */
     char temp_string3[1000];
     char temp_string4[1000];
     char temp_string5[1000];
     char temp_string6[1000];
     char temp_string7[1000];
+    char temp_string8[1000];
     
     int MINAGE_COUNTED, MAX_AGE_COUNTED;
 
@@ -1027,12 +1037,17 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                             
                             naware_tot+=1;
                         }
-                 if(patch[p].individual_population[n_id].ART_status == 2 && 
-                        patch[p].individual_population[n_id].ART_status < ARTDEATH){
- 
-                            nmale_virallysuppressed +=1;
-                            
-                            nvirallysuppressed_tot+=1;
+                    if(patch[p].individual_population[n_id].ART_status == LTART_VS){
+    
+                                nmale_virallysuppressed +=1;
+                                
+                                nvirallysuppressed_tot+=1;
+                        }
+                    if(patch[p].individual_population[n_id].ART_status == CABO){
+    
+                                nmale_cabo +=1;
+                                
+                                ncabo_tot+=1;
                         }
                 }
                 /* Count number of men who are in different circ groups*/
@@ -1064,12 +1079,17 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                             
                             naware_tot+=1;
                         }
-                    if(patch[p].individual_population[n_id].ART_status == 2 && 
-                        patch[p].individual_population[n_id].ART_status < ARTDEATH){
+                    if(patch[p].individual_population[n_id].ART_status == LTART_VS){
  
                             nfemale_virallysuppressed +=1;
                             
                             nvirallysuppressed_tot+=1;
+                        }
+                    if(patch[p].individual_population[n_id].ART_status == CABO){
+ 
+                            nfemale_cabo +=1;
+                            
+                            ncabo_tot+=1;
                         }
                 }
 
@@ -1110,19 +1130,22 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
         prop_aware = (1.0*naware_tot)/npositive;
         if (NArt_m + NArt_f >0) {
             propvirallysuppressed=(1.0*nvirallysuppressed_tot)/(NArt_m + NArt_f);
+            propcabo=(1.0*ncabo_tot)/(NArt_m + NArt_f);
         }
         else{
             propvirallysuppressed=0;
+            propcabo=0;
         }
     }else{
         prophivposonart = 0.0;
         prop_aware=0.0;
         propvirallysuppressed=0.0;
+        propcabo=0.0;
     }
 
     if(PCdata == 0){
         
-        sprintf(temp_string, "%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string, "%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 prop_aware,
@@ -1133,6 +1156,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 patch[p].n_newly_infected_total_from_acute,
                 prophivposonart,
                 propvirallysuppressed,
+                propcabo,
                 patch[p].PANGEA_N_ANNUALINFECTIONS,
                 npop,
                 npositive_m,
@@ -1148,16 +1172,18 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 NTestedLastYear,
                 NArt_m,
                 nmale_virallysuppressed,
+                nmale_cabo,
                 NNeedART_m,
                 NArt_f,
                 nfemale_virallysuppressed,
+                nfemale_cabo,
                 NNeedART_f,
                 N_men_MC/(1.0*npop_m),
                 *overall_partnerships->n_susceptible_in_serodiscordant_partnership,
                 patch[p].OUTPUT_NDIEDFROMHIV,npositive_dead,n_dead);
                 
     }else if(PCdata == 1){
-        sprintf(temp_string,"%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string,"%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 patch[p].PANGEA_N_ANNUALINFECTIONS/(npop - npositive + 0.0),
@@ -1168,6 +1194,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 patch[p].n_newly_infected_total_from_acute_pconly,
                 prophivposonart,
                 propvirallysuppressed,
+                propcabo,
                 patch[p].PANGEA_N_ANNUALINFECTIONS,
                 npop,
                 npositive_m,
@@ -1183,9 +1210,11 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 NTestedLastYear,
                 NArt_m,
                 nmale_virallysuppressed,
+                nmale_cabo,
                 NNeedART_m,
                 NArt_f,
                 nfemale_virallysuppressed,
+                nfemale_cabo,
                 NNeedART_f,
                 N_men_MC/(1.0*npop_m),
                 *overall_partnerships->n_susceptible_in_serodiscordant_partnership,
@@ -1220,7 +1249,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
     }
     
     /* Population size and number of HIV+ and incident HIV+ by age and gender here: */
-    int tempcount_pop, tempcount_inc, tempcount_prev, tempcount_art, tempcount_vs;
+    int tempcount_pop, tempcount_inc, tempcount_prev, tempcount_art, tempcount_vs, tempcount_cabo;
     
     /* Make sure these are blank: */
     memset(temp_string3, '\0', sizeof(temp_string3));
@@ -1228,6 +1257,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
     memset(temp_string5, '\0', sizeof(temp_string5));
     memset(temp_string6, '\0', sizeof(temp_string5));
     memset(temp_string7, '\0', sizeof(temp_string5));
+    memset(temp_string8, '\0', sizeof(temp_string5));
     
     /* Only store these if outputting everything for all age groups. */
     if(PCdata == 0){
@@ -1238,6 +1268,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 tempcount_prev = 0;
                 tempcount_art = 0;
                 tempcount_vs =0;
+                tempcount_cabo = 0;
                 for(aa = (AGE_GROUPS_WITH_OLD[a]-AGE_ADULT); 
                     aa < (AGE_GROUPS_WITH_OLD[a+1] - AGE_ADULT); 
                     aa++){
@@ -1271,6 +1302,12 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                             ai = ai - (MAX_AGE-AGE_ADULT);
                         }
                         tempcount_vs   += patch[p].n_virallysuppressed->pop_size_per_gender_age1_risk[g][ai][r];
+
+                        ai = aa + patch[p].n_cabo->youngest_age_group_index;
+                        while (ai > (MAX_AGE-AGE_ADULT-1)){
+                            ai = ai - (MAX_AGE-AGE_ADULT);
+                        }
+                        tempcount_cabo += patch[p].n_cabo->pop_size_per_gender_age1_risk[g][ai][r];
                     }
                 }
                 if(a == N_AGE - 1){
@@ -1280,6 +1317,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                         tempcount_prev += patch[p].n_infected->pop_size_oldest_age_group_gender_risk[g][r];
                         tempcount_art  += patch[p].n_art->pop_size_oldest_age_group_gender_risk[g][r];
                         tempcount_vs   += patch[p].n_virallysuppressed->pop_size_oldest_age_group_gender_risk[g][r];
+                        tempcount_cabo += patch[p].n_cabo->pop_size_oldest_age_group_gender_risk[g][r];
                     }
                 }
                 sprintf(temp_string2,"%d,",tempcount_pop);
@@ -1300,7 +1338,11 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
 
                 sprintf(temp_string2,"%d,",tempcount_vs);
                 join_strings_with_check(temp_string7, temp_string2, 1000, 
-                    "temp_string7 and temp_string2 in store_annual_outputs()");                                    
+                    "temp_string7 and temp_string2 in store_annual_outputs()");   
+
+                sprintf(temp_string2,"%d,",tempcount_cabo);
+                join_strings_with_check(temp_string8, temp_string2, 1000, 
+                    "temp_string8 and temp_string2 in store_annual_outputs()");                                   
             }
         }
         join_strings_with_check(temp_string, temp_string3, 10000, 
@@ -1312,7 +1354,9 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
         join_strings_with_check(temp_string, temp_string6, 10000, 
             "temp_string and temp_string6 in store_annual_outputs()");
         join_strings_with_check(temp_string, temp_string7, 10000, 
-            "temp_string and temp_string7 in store_annual_outputs()");                        
+            "temp_string and temp_string7 in store_annual_outputs()");   
+        join_strings_with_check(temp_string, temp_string8, 10000, 
+            "temp_string and temp_string8 in store_annual_outputs()");                      
     }
 
     strcat(temp_string,"\n");
@@ -1630,6 +1674,8 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
     long NArt_f = 0;
     long NVS_m = 0;
     long NVS_f = 0;
+    long NCABO_m = 0;
+    long NCABO_f = 0;
     long N_men_MC = 0;
     long temp_cumulativeinfected;
     char temp_string[5000]; // Temporary store of data from current year.
@@ -1647,7 +1693,7 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
                     
                     /* Use a function here so easy to add extra stratifications to output: */
                     update_outputs_gender_veryshort(&(patch[p].individual_population[n_id]), 
-                            &npop_m, &npositive_m, &Nknowpositive_m, &NArt_m, &NVS_m, 
+                            &npop_m, &npositive_m, &Nknowpositive_m, &NArt_m, &NVS_m, &NCABO_m,
                             &NNotKnowStatus_m);
                     
                     /* Count number of men who are currently circ: */
@@ -1655,7 +1701,7 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
                         N_men_MC++;
                     }
                 }else{
-                    update_outputs_gender_veryshort(&(patch[p].individual_population[n_id]), &npop_f, &npositive_f, &Nknowpositive_f, &NArt_f, &NVS_f, &NNotKnowStatus_f);
+                    update_outputs_gender_veryshort(&(patch[p].individual_population[n_id]), &npop_f, &npositive_f, &Nknowpositive_f, &NArt_f, &NVS_f, &NCABO_f, &NNotKnowStatus_f);
                 }
             }
         }
@@ -1671,7 +1717,7 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
                 /* Gender-specific outputs derived here: */
                 if(patch[p].individual_population[n_id].gender == MALE){
                     /* Use a function here so easy to add extra stratifications to output: */
-                    update_outputs_gender_veryshort(&(patch[p].individual_population[n_id]), &npop_m, &npositive_m, &Nknowpositive_m, &NArt_m, &NVS_m, &NNotKnowStatus_m);
+                    update_outputs_gender_veryshort(&(patch[p].individual_population[n_id]), &npop_m, &npositive_m, &Nknowpositive_m, &NArt_m, &NVS_m, &NCABO_m, &NNotKnowStatus_m);
                     
                     /* Count number of men who are currently circ: */
                     if(patch[p].individual_population[n_id].circ==VMMC||patch[p].individual_population[n_id].circ==VMMC_HEALING||patch[p].individual_population[n_id].circ==TRADITIONAL_MC){
@@ -1679,7 +1725,7 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
                     }
                 }else{
                     update_outputs_gender_veryshort(&(patch[p].individual_population[n_id]), 
-                            &npop_f, &npositive_f, &Nknowpositive_f, &NArt_f, &NVS_f, 
+                            &npop_f, &npositive_f, &Nknowpositive_f, &NArt_f, &NVS_f, &NCABO_f,
                             &NNotKnowStatus_f);
                 }
             }
@@ -1692,9 +1738,9 @@ void store_timestep_outputs(patch_struct *patch, int p, double t, output_struct 
         exit(1);
     }
     // Write variables to string `temp_string`
-    sprintf(temp_string,"%6.4f,%i,%i,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,",
+    sprintf(temp_string,"%6.4f,%i,%i,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,",
         t, (int) floor(t0 + (t_step+1)*TIME_STEP), (t_step + 1)%N_TIME_STEP_PER_YEAR, npop_m, npop_f, npositive_m, npositive_f, Nknowpositive_m, Nknowpositive_f, 
-        NArt_m, NArt_f, NVS_m, NVS_f, NNotKnowStatus_m, NNotKnowStatus_f, N_men_MC/(1.0*npop_m));
+        NArt_m, NArt_f, NVS_m, NVS_f, NCABO_m, NCABO_f, NNotKnowStatus_m, NNotKnowStatus_f, N_men_MC/(1.0*npop_m));
     
     if(PCdata == 0){
         MINAGE_COUNTED = 0;
@@ -1793,6 +1839,7 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
     long naware[N_GENDER][AGE_RANGE];
     long nonart[N_GENDER][AGE_RANGE];
     long nvs[N_GENDER][AGE_RANGE];
+    long ncabo[N_GENDER][AGE_RANGE];
     //long nnotknowstatus[N_GENDER][AGE_RANGE];
     long cumulative_infected[N_GENDER][AGE_RANGE];
     
@@ -1802,6 +1849,7 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
     char temp_string_naware[100];
     char temp_string_nonart[100];
     char temp_string_nvs[100];
+    char temp_string_ncabo[100];
     //char temp_string_nnotknowstatus[100];
     char temp_string_cumulative_infected[100];
     
@@ -1816,6 +1864,7 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
             naware[g][a] = 0;
             nonart[g][a] = 0;
             nvs[g][a] = 0;
+            ncabo[g][a] = 0;
             //nnotknowstatus[g][a] = 0;
             cumulative_infected[g][a] = 0;
         }
@@ -1863,12 +1912,17 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
                         // Check if individual is on ART
                         if(patch[p].individual_population[n_id].ART_status == EARLYART || 
                             patch[p].individual_population[n_id].ART_status == LTART_VS || 
+                            patch[p].individual_population[n_id].ART_status == CABO || 
                             patch[p].individual_population[n_id].ART_status == LTART_VU){
                                 nonart[g][a]++;
                             
                             // Check if individual is virally suppressed
                             if(patch[p].individual_population[n_id].ART_status == LTART_VS){
                                 nvs[g][a]++;
+                            }
+                            // Check if individual takes cabotegravir medicine
+                            else if(patch[p].individual_population[n_id].ART_status == CABO){
+                                ncabo[g][a]++;
                             }
                         }
                     }
@@ -1923,12 +1977,17 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
                         // Check if individual is on ART
                         if(patch[p].individual_population[n_id].ART_status == EARLYART || 
                             patch[p].individual_population[n_id].ART_status == LTART_VS || 
+                            patch[p].individual_population[n_id].ART_status == CABO || 
                             patch[p].individual_population[n_id].ART_status == LTART_VU){
                                 nonart[g][a]++;
                             
                             // Check if individual is virally suppressed
                             if(patch[p].individual_population[n_id].ART_status == LTART_VS){
                                 nvs[g][a]++;
+                            }
+                            // Check if individual takes cabotegravir medicine
+                            else if(patch[p].individual_population[n_id].ART_status == CABO){
+                                ncabo[g][a]++;
                             }
                         }
                     }
@@ -2042,6 +2101,26 @@ void store_timestep_age_outputs(patch_struct *patch, int p, double t, output_str
                     temp_string_nvs,
                     SIZEOF_calibration_outputs - 1, 
                     "timestep_outputs_string and temp_..._nvs in store_timestep_age_outputs()");
+            }
+        }
+    }
+
+    // Output on CABO
+    for(g = 0; g < N_GENDER; g++){
+        for(a = 0; a < AGE_RANGE; a++){
+            
+            sprintf(temp_string_ncabo,"%ld,", ncabo[g][a]);
+            
+            if(PCdata == 0){
+                join_strings_with_check(output->timestep_age_outputs_string[p], 
+                    temp_string_ncabo, 
+                    SIZEOF_calibration_outputs - 1, 
+                    "timestep_outputs_string and temp_..._ncabo in store_timestep_age_outputs()");
+            }else{
+                join_strings_with_check(output->timestep_age_outputs_string_PConly[p], 
+                    temp_string_ncabo,
+                    SIZEOF_calibration_outputs - 1, 
+                    "timestep_outputs_string and temp_..._ncabo in store_timestep_age_outputs()");
             }
         }
     }
@@ -2192,11 +2271,15 @@ void save_calibration_outputs_pc(patch_struct *patch, int p, output_struct *outp
                         
                         if(patch[p].individual_population[n_id].ART_status == EARLYART ||
                             patch[p].individual_population[n_id].ART_status == LTART_VS ||
+                            patch[p].individual_population[n_id].ART_status == CABO ||
                             patch[p].individual_population[n_id].ART_status == LTART_VU){
                             output->PC_NONART[p][g][a][pc_round]++;
                             
                             if(patch[p].individual_population[n_id].ART_status == LTART_VS){
                                 output->PC_NVS[p][g][a][pc_round]++;
+                            }
+                            if(patch[p].individual_population[n_id].ART_status == CABO){
+                                output->PC_NCABO[p][g][a][pc_round]++;
                             }
                         }
                     }
@@ -2229,6 +2312,7 @@ void store_calibration_outputs_pc(patch_struct *patch, int p, output_struct *out
     char temp_string_aware[300];
     char temp_string_onart[300];
     char temp_string_vs[300];
+    char temp_string_cabo[300];
     char temp_string_ninc[300];
     char temp_string_inc[300];
     char temp_string_py[300];
@@ -2282,6 +2366,16 @@ void store_calibration_outputs_pc(patch_struct *patch, int p, output_struct *out
                 join_strings_with_check(output->pc_output_string[p], temp_string_vs,
                     SIZEOF_calibration_outputs-1, 
                     "pc_output_string and temp_string_vs in store_calibration_outputs_pc()");
+            }
+        }
+
+        // Store number of HIV+ individuals aware of HIV status that are on ART and CABO, per age and sex
+        for(g = 0; g < N_GENDER; g++){
+            for(a = 0; a < PC_AGE_RANGE_MAX; a++){
+                sprintf(temp_string_cabo,"%ld,", output->PC_NCABO[p][g][a][pc_round]);
+                join_strings_with_check(output->pc_output_string[p], temp_string_cabo,
+                    SIZEOF_calibration_outputs-1, 
+                    "pc_output_string and temp_string_cabo in store_calibration_outputs_pc()");
             }
         }
         
@@ -2489,6 +2583,17 @@ void store_calibration_outputs_chips(patch_struct *patch, int p, output_struct *
                     "store_calibration_outputs_chips()");
             }
         }
+        // Record number positive on ART who take cabotegravir medicine
+        for(g=0; g<N_GENDER; g++){
+            for(ac = 0; ac < (MAX_AGE - AGE_CHIPS + 1); ac++){
+                sprintf(temp_string,"%li,", output->NCHIPS_CABO[p][g][ac][chips_round]);
+                
+                join_strings_with_check(output->calibration_outputs_combined_string[p],
+                    temp_string, SIZEOF_calibration_outputs-1, 
+                    "calibration_outputs_combined_string and temp_string in "
+                    "store_calibration_outputs_chips()");
+            }
+        }
     }
 }
 
@@ -2545,6 +2650,12 @@ void blank_calibration_output_file(char *calibration_output_filename, int NDHSRO
         for(a = AGE_CHIPS; a <= MAX_AGE; a++){
             fprintf(TEMPFILE, "CHIPSRound%iNvsF%i,", r, a);
         }
+
+        for(a = AGE_CHIPS; a <= MAX_AGE; a++)
+            fprintf(TEMPFILE, "CHIPSRound%iNcaboM%i,", r, a);
+        for(a = AGE_CHIPS; a <= MAX_AGE; a++){
+            fprintf(TEMPFILE, "CHIPSRound%iNcaboF%i,", r, a);
+        }
     }
     
     // Write PC columns to file.  
@@ -2573,6 +2684,12 @@ void blank_calibration_output_file(char *calibration_output_filename, int NDHSRO
             fprintf(TEMPFILE, "PC%iNvsM%i,", r*12, a);
         for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++){
             fprintf(TEMPFILE, "PC%iNvsF%i,", r*12, a);
+        }
+
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++)
+            fprintf(TEMPFILE, "PC%iNcaboM%i,", r*12, a);
+        for(a = AGE_PC_MIN; a <= AGE_PC_MAX; a++){
+            fprintf(TEMPFILE, "PC%iNcaboF%i,", r*12, a);
         }
         
         // Incident cases
@@ -2646,7 +2763,7 @@ void write_annual_outputs(file_struct *file_data_store, output_struct *output, i
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Year,Prevalence,PropAware,Incidence,NumberPositive,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYear,NewCasesThisYearFromOutside,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYearFromAcute,PropHIVPosONART,PropVirallySuppressed,");
-    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NAnnual,TotalPopulation,");
+    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"PropCabo,NAnnual,TotalPopulation,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
         "NumberPositiveM,NumberAwareM,PopulationM,NumberPositiveF,NumberAwareF,PopulationF,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
@@ -2654,7 +2771,7 @@ void write_annual_outputs(file_struct *file_data_store, output_struct *output, i
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
         "CumulativeNonPopartCD4tests,CumulativePopartCD4tests,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
-        "NHIVTestedThisYear,NOnARTM,NVirallySuppressedM,NNeedARTM,NOnARTF,NVirallySuppressedF,NNeedARTF,");
+        "NHIVTestedThisYear,NOnARTM,NVirallySuppressedM,NcaboM,NNeedARTM,NOnARTF,NVirallySuppressedF,NcaboF,NNeedARTF,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
         "PropMenCirc,NindInSdPart,NDied_from_HIV,NHIV_pos_dead,N_dead,");
     
@@ -2716,6 +2833,14 @@ void write_annual_outputs(file_struct *file_data_store, output_struct *output, i
     for(a = 0; a < N_AGE; a++){
         fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p], 
             "NViralSuppFage%i-%i,", AGE_GROUPS_WITH_OLD[a], AGE_GROUPS_WITH_OLD[a+1]);
+    }
+    for(a = 0; a < N_AGE; a++){
+        fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p], 
+            "NCaboMage%i-%i,", AGE_GROUPS_WITH_OLD[a], AGE_GROUPS_WITH_OLD[a+1]);
+    }
+    for(a = 0; a < N_AGE; a++){
+        fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p], 
+            "NCaboFage%i-%i,", AGE_GROUPS_WITH_OLD[a], AGE_GROUPS_WITH_OLD[a+1]);
     }
 
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p], "\n");
@@ -2825,7 +2950,7 @@ void write_timestep_outputs(file_struct *file_data_store, output_struct *output,
     }
     
     // Write the header file
-    fprintf(file_data_store->TIMESTEP_OUTPUT_FILE[p],"Time,Year,Timestep,N_m,N_f,NPos_m,NPos_f,N_knowpos_m,N_knowpos_f,NART_m,NART_f,NVS_m,NVS_f,NNotKnowStatus_m,NNotKnowStatus_f,PropMenCirc,Cumulative_Infected_m,Cumulative_Infected_f\n");
+    fprintf(file_data_store->TIMESTEP_OUTPUT_FILE[p],"Time,Year,Timestep,N_m,N_f,NPos_m,NPos_f,N_knowpos_m,N_knowpos_f,NART_m,NART_f,NVS_m,NVS_f,NCABO_m,NCABO_f,NNotKnowStatus_m,NNotKnowStatus_f,PropMenCirc,Cumulative_Infected_m,Cumulative_Infected_f\n");
     
     if (PCdata == 0){
         fprintf(file_data_store->TIMESTEP_OUTPUT_FILE[p],"%s\n",output->timestep_outputs_string[p]);
@@ -2945,6 +3070,18 @@ void write_timestep_age_outputs(file_struct *file_data_store, output_struct *out
         }else{
             for(a = AGE_ADULT; a <= MAX_AGE; a++){
                 fprintf(file_data_store->TIMESTEP_AGE_OUTPUT_FILE[p], "NvsF%i,", a);
+            }
+        }
+    }
+
+    for(g = 0; g < N_GENDER; g++){
+        if(g == MALE){
+            for(a = AGE_ADULT; a <= MAX_AGE; a++){
+                fprintf(file_data_store->TIMESTEP_AGE_OUTPUT_FILE[p], "NcaboM%i,", a);
+            }
+        }else{
+            for(a = AGE_ADULT; a <= MAX_AGE; a++){
+                fprintf(file_data_store->TIMESTEP_AGE_OUTPUT_FILE[p], "NcaboF%i,", a);
             }
         }
     }
@@ -3823,6 +3960,7 @@ void write_pc_data(patch_struct *patch, int p, file_struct *file_data_store){
     int Nhivpos[N_GENDER][AGE_PC_MAX-AGE_PC_MIN+1];
     int NonART[N_GENDER][AGE_PC_MAX-AGE_PC_MIN+1];
     int NVS[N_GENDER][AGE_PC_MAX-AGE_PC_MIN+1];
+    int NCABO[N_GENDER][AGE_PC_MAX-AGE_PC_MIN+1];
     int Nsd; /* Number in serodiscordant partnership. Not stratified as use for validation. */
 
     file_data_store->PC_DATAFILE[p] = fopen(file_data_store->filename_PC_data[p],"w");
@@ -3863,6 +4001,13 @@ void write_pc_data(patch_struct *patch, int p, file_struct *file_data_store){
             else
                 fprintf(file_data_store->PC_DATAFILE[p],"NvsF[%i],",ap+AGE_PC_MIN);
         }
+    for (g=0; g<N_GENDER; g++)
+        for (ap=0; ap<(AGE_PC_MAX-AGE_PC_MIN+1); ap++){
+            if (g==MALE)
+                fprintf(file_data_store->PC_DATAFILE[p],"NcaboM[%i],",ap+AGE_PC_MIN);
+            else
+                fprintf(file_data_store->PC_DATAFILE[p],"NcaboF[%i],",ap+AGE_PC_MIN);
+        }
     fprintf(file_data_store->PC_DATAFILE[p],"Nsd,");
     fprintf(file_data_store->PC_DATAFILE[p],"\n");
 
@@ -3876,6 +4021,7 @@ void write_pc_data(patch_struct *patch, int p, file_struct *file_data_store){
                 Nhivpos[g][ap] = 0;
                 NonART[g][ap] = 0;
                 NVS[g][ap] = 0;
+                NCABO[g][ap] = 0;
             }
         }
         Nsd=0;
@@ -3905,10 +4051,14 @@ void write_pc_data(patch_struct *patch, int p, file_struct *file_data_store){
                 }
                 if (patch[p].PC_cohort_data->PC0_cohort_data[n].HIV_status[pc_round]>UNINFECTED){
                     Nhivpos[g][ap]++;
-                    if (patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==EARLYART || patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==LTART_VS || patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==LTART_VU){
+                    if (patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==EARLYART || patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==LTART_VS || patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==CABO ||patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==LTART_VU){
                         NonART[g][ap]++;
-                        if (patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==LTART_VS)
+                        if (patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==LTART_VS) {
                             NVS[g][ap]++;
+                        }
+                        else if (patch[p].PC_cohort_data->PC0_cohort_data[n].ART_status[pc_round]==CABO) {
+                            NCABO[g][ap]++;
+                        }
                     }
                 }
                 if (patch[p].PC_cohort_data->PC0_cohort_data[n].HIV_status[pc_round]==UNINFECTED){
@@ -3931,6 +4081,9 @@ void write_pc_data(patch_struct *patch, int p, file_struct *file_data_store){
         for (g=0; g<N_GENDER; g++)
             for (ap=0; ap<(AGE_PC_MAX-AGE_PC_MIN+1); ap++)
                 fprintf(file_data_store->PC_DATAFILE[p],"%i,",NVS[g][ap]);
+        for (g=0; g<N_GENDER; g++)
+            for (ap=0; ap<(AGE_PC_MAX-AGE_PC_MIN+1); ap++)
+                fprintf(file_data_store->PC_DATAFILE[p],"%i,",NCABO[g][ap]);
         fprintf(file_data_store->PC_DATAFILE[p],"%i,",Nsd);
         fprintf(file_data_store->PC_DATAFILE[p],"\n");
     }
@@ -4018,6 +4171,11 @@ void write_chips_data_visit(patch_struct *patch, int p, file_struct *file_data_s
                 fprintf(file_data_store->ChipsVisit_DATAFILE[p],"%li,",output->NCHIPS_VS[p][g][ac][chips_round]);
             }
         }
+        for (g=0; g<N_GENDER; g++){
+            for (ac=0; ac<(MAX_AGE-AGE_CHIPS+1); ac++){
+                fprintf(file_data_store->ChipsVisit_DATAFILE[p],"%li,",output->NCHIPS_CABO[p][g][ac][chips_round]);
+            }
+        }
         fprintf(file_data_store->ChipsVisit_DATAFILE[p],"\n");
     }
     fclose(file_data_store->ChipsVisit_DATAFILE[p]);
@@ -4036,6 +4194,7 @@ void write_chips_data_annual(patch_struct *patch, int p, int year, int t_step, i
     long NCHIPS_HIVAWARE[N_GENDER][MAX_AGE-AGE_CHIPS+1];
     long NCHIPS_ONART[N_GENDER][MAX_AGE-AGE_CHIPS+1];
     long NCHIPS_VS[N_GENDER][MAX_AGE-AGE_CHIPS+1];
+    long NCHIPS_CABO[N_GENDER][MAX_AGE-AGE_CHIPS+1];
     long total_chips_visits = 0;
 
     /* Fairly arbitrarily, we store the number of people who have been visited 0, 1, 2, 3, 4, 5+ times.The upper limit should
@@ -4068,6 +4227,7 @@ void write_chips_data_annual(patch_struct *patch, int p, int year, int t_step, i
             NCHIPS_HIVAWARE[g][ac] = 0;
             NCHIPS_ONART[g][ac] = 0;
             NCHIPS_VS[g][ac] = 0;
+            NCHIPS_CABO[g][ac] = 0;
         }
 
         /* We go from 0..MAXVISITSRECORDED - hence "<=" rather than "<". */
@@ -4109,10 +4269,13 @@ void write_chips_data_annual(patch_struct *patch, int p, int year, int t_step, i
                             NCHIPS_HIVPOS[g][ac]++;
                             if (person->ART_status>=ARTNAIVE && person->ART_status<ARTDEATH){
                                 NCHIPS_HIVAWARE[g][ac]++;
-                                if (person->ART_status==EARLYART || person->ART_status==LTART_VS || person->ART_status==LTART_VU){
+                                if (person->ART_status==EARLYART || person->ART_status==LTART_VS || person->ART_status==CABO || person->ART_status==LTART_VU){
                                     NCHIPS_ONART[g][ac]++;
-                                    if (person->ART_status==LTART_VS)
+                                    if (person->ART_status==LTART_VS) {
                                         NCHIPS_VS[g][ac]++;
+                                    } else if (person->ART_status==CABO) {
+                                        NCHIPS_CABO[g][ac]++;
+                                    }     
                                 }
                             }
                         }
@@ -4188,6 +4351,14 @@ void write_chips_data_annual(patch_struct *patch, int p, int year, int t_step, i
                 else
                     fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"NvsF[%i] ",ac+AGE_CHIPS);
             }
+        
+        for (g=0; g<N_GENDER; g++)
+            for (ac=0; ac<(MAX_AGE-AGE_CHIPS+1); ac++){
+                if (g==MALE)
+                    fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"NcaboM[%i] ",ac+AGE_CHIPS);
+                else
+                    fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"NcaboF[%i] ",ac+AGE_CHIPS);
+            }
 
         fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"\n");
     }
@@ -4225,6 +4396,11 @@ void write_chips_data_annual(patch_struct *patch, int p, int year, int t_step, i
     for (g=0; g<N_GENDER; g++){
         for (ac=0; ac<(MAX_AGE-AGE_CHIPS+1); ac++){
             fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"%li ",NCHIPS_VS[g][ac]);
+        }
+    }
+    for (g=0; g<N_GENDER; g++){
+        for (ac=0; ac<(MAX_AGE-AGE_CHIPS+1); ac++){
+            fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"%li ",NCHIPS_CABO[g][ac]);
         }
     }
     fprintf(file_data_store->ChipsAnnual_DATAFILE[p],"\n");
@@ -4663,6 +4839,7 @@ void update_annual_outputs_gender_cd4(individual *individual, long *npop_g, long
         if(
         (individual->ART_status == EARLYART) || 
         (individual->ART_status == LTART_VS) || 
+        (individual->ART_status == CABO) || 
         (individual->ART_status == LTART_VU)
         ){
             (*NArt) += 1;
@@ -4740,6 +4917,8 @@ void store_treats_outputs(patch_struct *patch, int p, output_struct *output,
                 art = EARLYART;
             }else if(art == LTART_VS){
                 art = LTART_VS;
+            }else if (art == CABO) {
+                art = CABO;
             }else if(art == LTART_VU){
                 art = LTART_VU;
             }else if(art == ARTDROPOUT){

@@ -1194,9 +1194,9 @@ void blank_debugging_files(file_struct *file_data_store){
 
         if(WRITE_DEBUG_ART_STATE==1){
             file_data_store->ARTPOPULATIONFILE[p] = fopen(file_data_store->filename_debug_artpopulation[p],"w");
-            fprintf(file_data_store->ARTPOPULATIONFILE[p],"time,n_hivneg,n_hivpos_dontknowstatus,n_hivpos_knowposneverart,n_hivpos_earlyart,n_hivpos_artvs,n_hivpos_artvu,n_hivpos_dropout,n_hivpos_cascadedropout,n_artdeath,");
+            fprintf(file_data_store->ARTPOPULATIONFILE[p],"time,n_hivneg,n_hivpos_dontknowstatus,n_hivpos_knowposneverart,n_hivpos_earlyart,n_hivpos_artvs,n_hivpos_cabo,n_hivpos_artvu,n_hivpos_dropout,n_hivpos_cascadedropout,n_artdeath,");
             fprintf(file_data_store->ARTPOPULATIONFILE[p],"cumulative_n_start_emergency_art_fromuntested,cumulative_n_start_emergency_art_fromartnaive,cumulative_n_start_emergency_art_fromartdroupout,cumulative_n_start_emergency_art_fromcascadedropout,");
-            fprintf(file_data_store->ARTPOPULATIONFILE[p],"cumulative_n_learnhivpos_fromuntested,cumulative_n_startART_fromuntested,cumulative_n_startART_fromartnaive,cumulative_n_startART_fromartdropout,cumulative_n_startART_fromcascadedropout,cumulative_n_becomeVS_fromearlyart,cumulative_n_becomeVS_fromartvu,cumulative_n_becomeVU_fromearlyart,cumulative_n_becomeVU_fromartvs,cumulative_n_ARTdropout_fromearlyart,cumulative_n_ARTdropout_fromartvs,cumulative_n_ARTdropout_fromartvu,cumulative_n_cascadedropout_fromARTnaive,n_cascadedropout_fromARTneg,cumulative_n_aidsdeaths_fromuntested,cumulative_n_aidsdeaths_fromartnaive,cumulative_n_aidsdeaths_fromearlyart,cumulative_n_aidsdeaths_fromartvs,cumulative_n_aidsdeaths_fromartvu,cumulative_n_aidsdeaths_fromartdropout,cumulative_n_aidsdeaths_fromcascadedropout\n");
+            fprintf(file_data_store->ARTPOPULATIONFILE[p],"cumulative_n_learnhivpos_fromuntested,cumulative_n_startART_fromuntested,cumulative_n_startART_fromartnaive,cumulative_n_startART_fromartdropout,cumulative_n_startART_fromcascadedropout,cumulative_n_becomeVS_fromearlyart,cumulative_n_becomeVS_fromartvu,cumulative_n_becomeCABO_fromearlyart,cumulative_n_becomeCABO_fromartvu,cumulative_n_becomeVU_fromearlyart,cumulative_n_becomeVU_fromartvs,cumulative_n_ARTdropout_fromearlyart,cumulative_n_ARTdropout_fromartvs,cumulative_n_ARTdropout_fromartvu,cumulative_n_cascadedropout_fromARTnaive,n_cascadedropout_fromARTneg,cumulative_n_aidsdeaths_fromuntested,cumulative_n_aidsdeaths_fromartnaive,cumulative_n_aidsdeaths_fromearlyart,cumulative_n_aidsdeaths_fromartvs,cumulative_n_aidsdeaths_fromcabo,cumulative_n_aidsdeaths_fromartvu,cumulative_n_aidsdeaths_fromartdropout,cumulative_n_aidsdeaths_fromcascadedropout\n");
             fclose(file_data_store->ARTPOPULATIONFILE[p]);
         }
 
@@ -1446,6 +1446,7 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
     long n_hivpos_knowposneverart;
     long n_hivpos_earlyart;
     long n_hivpos_artvs;
+    long n_hivpos_cabo;
     long n_hivpos_artvu;
     long n_hivpos_dropout;
     long n_hivpos_cascadedropout;
@@ -1453,21 +1454,21 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
 
     /****** Now look at transitions. ******/
     /* First AIDS deaths - should ONLY be possible if not ART VS. */
-    long n_aidsdeaths_fromuntested,n_aidsdeaths_fromartnaive,n_aidsdeaths_fromearlyart,n_aidsdeaths_fromartvs,n_aidsdeaths_fromartvu,n_aidsdeaths_fromartdropout,n_aidsdeaths_fromcascadedropout;
+    long n_aidsdeaths_fromuntested,n_aidsdeaths_fromartnaive,n_aidsdeaths_fromearlyart,n_aidsdeaths_fromartvs,n_aidsdeaths_fromcabo,n_aidsdeaths_fromartvu,n_aidsdeaths_fromartdropout,n_aidsdeaths_fromcascadedropout;
     /* Next number of HIV+ who learn status (go from n_hivpos_dontknowstatus to n_hivpos_knowposneverart). */
     long n_learnhivpos_fromuntested;
     /* Number of people who get CD4 tested. */
     //long n_getcd4test_fromuntested,n_getcd4test_fromartnaive,n_getcd4test_fromartdropout,n_getcd4test_fromcascadedropout;
     /* Number of people who get ART tested: */
     long n_startART_fromuntested,n_startART_fromartnaive,n_startART_fromartdropout,n_startART_fromcascadedropout;
-    /* Number of people becoming virally suppressed/virally unsuppressed: */
-    long n_becomeVS_fromearlyart, n_becomeVS_fromartvu,n_becomeVU_fromearlyart, n_becomeVU_fromartvs;
+    /* Number of people becoming virally suppressed or cabo or virally unsuppressed: */
+    long n_becomeVS_fromearlyart, n_becomeVS_fromartvu,n_becomeCABO_fromearlyart, n_becomeCABO_fromartvu, n_becomeVU_fromearlyart, n_becomeVU_fromartvs;
     /* Number of people stopping ART: */
     long n_ARTdropout_fromearlyart,n_ARTdropout_fromartvs,n_ARTdropout_fromartvu;
     /* Number of people dropping out of cascade before ART: */
     long n_cascadedropout_fromARTnaive, n_cascadedropout_fromARTneg;
 
-    /* ART_status runs from -1 to 6 (ARTDEATH) so need array to go from 0 to ARTDEATH+2. */
+    /* ART_status runs from -1 to 7 (ARTDEATH) so need array to go from 0 to ARTDEATH+2. */
     long temp_state_counter[ARTDEATH+2];
     long temp_hivnegstate_counter;
 
@@ -1503,6 +1504,7 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
         n_hivpos_knowposneverart = temp_state_counter[ARTNAIVE+1];
         n_hivpos_earlyart = temp_state_counter[EARLYART+1];
         n_hivpos_artvs = temp_state_counter[LTART_VS+1];
+        n_hivpos_cabo = temp_state_counter[CABO+1];
         n_hivpos_artvu = temp_state_counter[LTART_VU+1];
         n_hivpos_dropout = temp_state_counter[ARTDROPOUT+1];
         n_hivpos_cascadedropout = temp_state_counter[CASCADEDROPOUT+1];
@@ -1568,12 +1570,32 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTNAIVE+1][LTART_VS+1]");
         if(debug->art_vars[p].cascade_transitions[LTART_VS+1][LTART_VS+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[LTART_VS+1][LTART_VS+1]");
+        if(debug->art_vars[p].cascade_transitions[CABO+1][LTART_VS+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[CABO+1][LTART_VS+1]");
         if(debug->art_vars[p].cascade_transitions[ARTDROPOUT+1][LTART_VS+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTDROPOUT+1][LTART_VS+1]");
         if(debug->art_vars[p].cascade_transitions[CASCADEDROPOUT+1][LTART_VS+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[CASCADEDROPOUT+1][LTART_VS+1]");
         if(debug->art_vars[p].cascade_transitions[ARTDEATH+1][LTART_VS+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTDEATH+1][LTART_VS+1]");
+
+        // Now becoming CABO - should only be possible from early ART or VU:
+        n_becomeCABO_fromearlyart = debug->art_vars[p].cascade_transitions[EARLYART+1][CABO+1];
+        n_becomeCABO_fromartvu = debug->art_vars[p].cascade_transitions[LTART_VU+1][CABO+1];
+        if(debug->art_vars[p].cascade_transitions[ARTNEG+1][CABO+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTNEG+1][CABO+1]");
+        if(debug->art_vars[p].cascade_transitions[ARTNAIVE+1][CABO+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTNAIVE+1][CABO+1]");
+        if(debug->art_vars[p].cascade_transitions[LTART_VS+1][CABO+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[LTART_VS+1][CABO+1]");
+        if(debug->art_vars[p].cascade_transitions[CABO+1][CABO+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[CABO+1][CABO+1]");
+        if(debug->art_vars[p].cascade_transitions[ARTDROPOUT+1][CABO+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTDROPOUT+1][CABO+1]");
+        if(debug->art_vars[p].cascade_transitions[CASCADEDROPOUT+1][CABO+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[CASCADEDROPOUT+1][CABO+1]");
+        if(debug->art_vars[p].cascade_transitions[ARTDEATH+1][CABO+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTDEATH+1][CABO+1]");
 
         // Now becoming VU - should only be possible from early ART or VS:
         n_becomeVU_fromearlyart = debug->art_vars[p].cascade_transitions[EARLYART+1][LTART_VU+1];
@@ -1582,6 +1604,8 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTNEG+1][LTART_VU+1]");
         if(debug->art_vars[p].cascade_transitions[ARTNAIVE+1][LTART_VU+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTNAIVE+1][LTART_VU+1]");
+        if(debug->art_vars[p].cascade_transitions[CABO+1][LTART_VU+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[CABO+1][LTART_VU+1]");
         if(debug->art_vars[p].cascade_transitions[LTART_VU+1][LTART_VU+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[LTART_VU+1][LTART_VU+1]");
         if(debug->art_vars[p].cascade_transitions[ARTDROPOUT+1][LTART_VU+1]!=0)
@@ -1599,6 +1623,8 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTNEG+1][ARTDROPOUT+1]");
         if(debug->art_vars[p].cascade_transitions[ARTNAIVE+1][ARTDROPOUT+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTNAIVE+1][ARTDROPOUT+1]");
+        if(debug->art_vars[p].cascade_transitions[CABO+1][ARTDROPOUT+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[CABO+1][ARTDROPOUT+1]");
         if(debug->art_vars[p].cascade_transitions[ARTDROPOUT+1][ARTDROPOUT+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTDROPOUT+1][ARTDROPOUT+1]");
         if(debug->art_vars[p].cascade_transitions[CASCADEDROPOUT+1][ARTDROPOUT+1]!=0)
@@ -1615,6 +1641,8 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[EARLYART+1][CASCADEDROPOUT+1]");
         if(debug->art_vars[p].cascade_transitions[LTART_VS+1][CASCADEDROPOUT+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[LTART_VS+1][CASCADEDROPOUT+1]");
+        if(debug->art_vars[p].cascade_transitions[CABO+1][CASCADEDROPOUT+1]!=0)
+            print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[CABO+1][CASCADEDROPOUT+1]");
         if(debug->art_vars[p].cascade_transitions[LTART_VU+1][CASCADEDROPOUT+1]!=0)
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[LTART_VU+1][CASCADEDROPOUT+1]");
         if(debug->art_vars[p].cascade_transitions[ARTDROPOUT+1][CASCADEDROPOUT+1]!=0)
@@ -1628,6 +1656,7 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
         n_aidsdeaths_fromartnaive = debug->art_vars[p].cascade_transitions[ARTNEG+1][ARTDEATH+1];
         n_aidsdeaths_fromearlyart = debug->art_vars[p].cascade_transitions[EARLYART+1][ARTDEATH+1];
         n_aidsdeaths_fromartvs = debug->art_vars[p].cascade_transitions[LTART_VS+1][ARTDEATH+1];
+        n_aidsdeaths_fromcabo = debug->art_vars[p].cascade_transitions[CABO+1][ARTDEATH+1];
         n_aidsdeaths_fromartvu = debug->art_vars[p].cascade_transitions[LTART_VU+1][ARTDEATH+1];
         n_aidsdeaths_fromcascadedropout = debug->art_vars[p].cascade_transitions[CASCADEDROPOUT+1][ARTDEATH+1];
         n_aidsdeaths_fromartdropout = debug->art_vars[p].cascade_transitions[ARTDROPOUT+1][ARTDEATH+1];
@@ -1635,17 +1664,11 @@ void write_art_states(patch_struct *patch, int year, debug_struct *debug, file_s
             print_debugerror_shouldbezero_exit("art_vars[p].cascade_transitions[ARTDEATH+1][ARTDEATH+1]");
 
         file_data_store->ARTPOPULATIONFILE[p] = fopen(file_data_store->filename_debug_artpopulation[p],"a");
-        fprintf(file_data_store->ARTPOPULATIONFILE[p],"%d,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,",year,n_hivneg,n_hivpos_dontknowstatus,n_hivpos_knowposneverart,n_hivpos_earlyart,n_hivpos_artvs,n_hivpos_artvu,n_hivpos_dropout,n_hivpos_cascadedropout,n_artdeath);
+        fprintf(file_data_store->ARTPOPULATIONFILE[p],"%d,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,",year,n_hivneg,n_hivpos_dontknowstatus,n_hivpos_knowposneverart,n_hivpos_earlyart,n_hivpos_artvs,n_hivpos_cabo,n_hivpos_artvu,n_hivpos_dropout,n_hivpos_cascadedropout,n_artdeath);
         fprintf(file_data_store->ARTPOPULATIONFILE[p],"%ld,%ld,%ld,%ld,",debug->art_vars[p].n_start_emergency_art_fromuntested , debug->art_vars[p].n_start_emergency_art_fromartnaive, debug->art_vars[p].n_start_emergency_art_fromartdroupout, debug->art_vars[p].n_start_emergency_art_fromcascadedropout);
-        //fprintf(file_data_store->ARTPOPULATIONFILE[p],"%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld\n",n_learnhivpos_fromuntested,n_getcd4test_fromuntested,n_getcd4test_fromartnaive,n_getcd4test_fromartdropout,n_getcd4test_fromcascadedropout,n_startART_fromuntested,n_startART_fromartnaive,n_startART_fromartdropout,n_startART_fromcascadedropout,n_becomeVS_fromearlyart, n_becomeVS_fromartvu,n_becomeVU_fromearlyart, n_becomeVU_fromartvs,n_ARTdropout_fromearlyart,n_ARTdropout_fromartvs,n_ARTdropout_fromartvu,n_cascadedropout_fromARTnaive,n_aidsdeaths_fromuntested,n_aidsdeaths_fromartnaive,n_aidsdeaths_fromearlyart,n_aidsdeaths_fromartvs,n_aidsdeaths_fromartvu,n_aidsdeaths_fromartdropout,n_aidsdeaths_fromcascadedropout);
-        fprintf(file_data_store->ARTPOPULATIONFILE[p],"%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld\n",n_learnhivpos_fromuntested,n_startART_fromuntested,n_startART_fromartnaive,n_startART_fromartdropout,n_startART_fromcascadedropout,n_becomeVS_fromearlyart, n_becomeVS_fromartvu,n_becomeVU_fromearlyart, n_becomeVU_fromartvs,n_ARTdropout_fromearlyart,n_ARTdropout_fromartvs,n_ARTdropout_fromartvu,n_cascadedropout_fromARTnaive,n_cascadedropout_fromARTneg, n_aidsdeaths_fromuntested,n_aidsdeaths_fromartnaive,n_aidsdeaths_fromearlyart,n_aidsdeaths_fromartvs,n_aidsdeaths_fromartvu,n_aidsdeaths_fromartdropout,n_aidsdeaths_fromcascadedropout);
+        fprintf(file_data_store->ARTPOPULATIONFILE[p],"%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld\n",n_learnhivpos_fromuntested,n_startART_fromuntested,n_startART_fromartnaive,n_startART_fromartdropout,n_startART_fromcascadedropout,n_becomeVS_fromearlyart, n_becomeVS_fromartvu,n_becomeCABO_fromearlyart,n_becomeCABO_fromartvu,n_becomeVU_fromearlyart, n_becomeVU_fromartvs,n_ARTdropout_fromearlyart,n_ARTdropout_fromartvs,n_ARTdropout_fromartvu,n_cascadedropout_fromARTnaive,n_cascadedropout_fromARTneg, n_aidsdeaths_fromuntested,n_aidsdeaths_fromartnaive,n_aidsdeaths_fromearlyart,n_aidsdeaths_fromartvs,n_aidsdeaths_fromcabo,n_aidsdeaths_fromartvu,n_aidsdeaths_fromartdropout,n_aidsdeaths_fromcascadedropout);
         fclose(file_data_store->ARTPOPULATIONFILE[p]);
 
-
-        //      fprintf(file_data_store->ARTPOPULATIONFILE[p],"n_learnhivpos_fromuntested,n_getcd4test_fromuntested,n_getcd4test_fromartnaive,n_getcd4test_fromartdropout,n_getcd4test_fromcascadedropout,n_startART_fromuntested,n_startART_fromartnaive,n_startART_fromartdropout,n_startART_fromcascadedropout,n_becomeVS_fromearlyart, n_becomeVS_fromartvu,n_becomeVU_fromearlyart, n_becomeVU_fromartvs,n_ARTdropout_fromearlyart,n_ARTdropout_fromartvs,n_ARTdropout_fromartvu,n_cascadedropout_fromARTnaive,n_aidsdeaths_fromuntested,n_aidsdeaths_fromartnaive,n_aidsdeaths_fromearlyart,n_aidsdeaths_fromartvs,n_aidsdeaths_fromartvu,n_aidsdeaths_fromartdropout,n_aidsdeaths_fromcascadedropout\n");
-        //      file_data_store->ARTPOPULATIONFILE[p] = fopen(file_data_store->filename_debug_artpopulation[p],"a");
-        //      fprintf(file_data_store->ARTPOPULATIONFILE[p],"%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld\n",n_hivneg,n_hivpos_dontknowstatus,n_hivpos_knowposneverart,n_hivpos_earlyart,n_hivpos_artvs,n_hivpos_artvu,n_hivpos_dropout,n_hivpos_cascadedropout,n_artdeath);
-        //      fclose(file_data_store->ARTPOPULATIONFILE[p]);
     }
 
 }

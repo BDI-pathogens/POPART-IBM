@@ -378,10 +378,11 @@ typedef struct {
     double p_becomes_vs_after_earlyart_if_not_die_early_or_leave; /* become virally suppressed, conditional on other stuff above */
     /* or you remain virally unsuppressed */
 
-    /* Given you've become virally suppressed, 3 possible events can happen with following probabilities */
+    /* Given you've become virally suppressed, 4 possible events can happen with following probabilities */
     double p_stays_virally_suppressed; /* remain virally suppressed until you die */
     double p_stays_virally_suppressed_male; /* Decrease in p_stays_virally_suppressed for men compared to women */
     double p_stops_virally_suppressed; /* at some point you will become unsuppressed */
+    double p_stays_cabo; /* cabotegravir medicine to force those targeted individuals who want to drop out to stay in CABO */
     /* or you will drop out */
 
     /* Given you've become virally unsuppressed, 2 possible events can happen with following probabilities */
@@ -737,6 +738,7 @@ typedef struct{
     population_size_one_year_age *n_infected_cumulative;
     population_size_one_year_age *n_newly_infected;
     population_size_one_year_age *n_virallysuppressed;
+    population_size_one_year_age *n_cabo;
 
     population_size *n_infected_wide_age_group;
     population_size *n_newly_infected_wide_age_group;
@@ -886,6 +888,7 @@ typedef struct{ /* structure which contains all the strings that are outputted *
     long NCHIPS_HIVAWARE[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
     long NCHIPS_ONART[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
     long NCHIPS_VS[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
+    long NCHIPS_CABO[NPATCHES][N_GENDER][MAX_AGE-AGE_CHIPS+1][NCHIPSROUNDS];
     
     // Counter for the number of incident infections in a PC round
     long PC_ROUND_INFECTIONS[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS - 1];
@@ -897,6 +900,7 @@ typedef struct{ /* structure which contains all the strings that are outputted *
     long PC_NAWARE[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
     long PC_NONART[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
     long PC_NVS[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
+    long PC_NCABO[NPATCHES][N_GENDER][PC_AGE_RANGE_MAX][NPC_ROUNDS];
 } output_struct;
 
 

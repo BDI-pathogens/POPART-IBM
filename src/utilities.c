@@ -1381,6 +1381,7 @@ void print_param_struct(parameters *param){
     printf("param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave=%lg\n",param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave);
     printf("param->p_stays_virally_suppressed=%lg\n",param->p_stays_virally_suppressed);
     printf("param->p_stops_virally_suppressed=%lg\n",param->p_stops_virally_suppressed);
+    printf("param->p_stays_cabo=%lg\n",param->p_stays_cabo);
     printf("param->p_vu_becomes_virally_suppressed=%lg\n",param->p_vu_becomes_virally_suppressed);
     printf("param->t_earlyart_dropout_min[NOTPOPART]=%lg\n",param->t_earlyart_dropout_min[NOTPOPART]);
     printf("param->t_earlyart_dropout_min[POPART]=%lg\n",param->t_earlyart_dropout_min[POPART]);
@@ -1894,6 +1895,12 @@ void check_if_parameters_plausible(parameters *param){
     }
     if (param->p_stops_virally_suppressed<0 || param->p_stops_virally_suppressed>1){
         printf("Error:param->p_stops_virally_suppressed is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    if (param->p_stays_cabo<0 || param->p_stays_cabo>1){
+        printf("Error:param->p_stays_cabo is outside expected range [0,1]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);

@@ -80,5 +80,6 @@ void dropout_process(individual* , parameters *, double , individual ***, long *
     individual ***, long *, long *, cumulative_outputs_struct *, calendar_outputs_struct *);
 void carry_out_cascade_events_per_timestep(double , patch_struct *, int , all_partnerships *,
     debug_struct *, file_struct *);
+int is_cabo_target_group(individual* , double t);
 double PANGEA_get_cd4(individual* , double );
 #endif /* HIV_H_ */
