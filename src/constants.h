@@ -217,8 +217,8 @@ extern const int FIND_AGE_GROUPS[MAX_AGE-AGE_ADULT+1]; /* Convert from (age-AGE_
 #define SEXUAL_WORKER_RELATED 1 /* 1 if the formed partnership is related to sexual worker activity */
 
 #define MAX_N_CLIENT 100 /* Maximum number of clients a sexual worker can have */
-#define MIN_N_CLIENT 1 /* Minimum number of clients a sexual worker can have */
-#define SCALING_POWER_LAW 3 /* Scaling factor in power law distribution */
+#define MIN_N_CLIENT 9 /* Minimum number of clients a sexual worker can have */
+#define SCALING_POWER_LAW 2 /* Scaling factor in power law distribution */
 
 #define DEAD -2 /* used as CD4 value to identify that people are dead */
 #define DIEDBEFORECHIPSVISIT -2 /* Used to identify people who were scheduled to be visited by chips in current round but died beforehand. */
@@ -296,8 +296,8 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 
 /* Target sex and age group to offer CABO */
 #define CABO_GENDER 0 /* 0 for male and 1 for female */
-#define CABO_LOW_AGE 18 /* Minimum age to offer CABO */
-#define CABO_UPP_AGE 25 /* Maximum age to offer CABO */
+#define CABO_LOW_AGE 20 /* Minimum age to offer CABO */
+#define CABO_UPP_AGE 35 /* Maximum age to offer CABO */
 
 
 /* Used as CD4 value to identify that people are not infected with HIV.
