@@ -299,6 +299,9 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 #define CABO_LOW_AGE 20 /* Minimum age to offer CABO */
 #define CABO_UPP_AGE 35 /* Maximum age to offer CABO */
 
+/* Start and end year for CABO */
+#define CABO_START_YEAR 2020
+#define CABO_END_YEAR 2030
 
 /* Used as CD4 value to identify that people are not infected with HIV.
  * Note: CD4==-2 means the person is dead.

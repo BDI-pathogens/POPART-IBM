@@ -3108,7 +3108,7 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
         }
     }
     else{
-        if ((is_cabo_target_group(indiv, t)) && (gsl_rng_uniform (rng) < param->p_stays_cabo)) {
+        if ((t >= CABO_START_YEAR) && (t <= CABO_END_YEAR) && (is_cabo_target_group(indiv, t)) && (gsl_rng_uniform (rng) < param->p_stays_cabo)) {
             /* Targeted patients who wants to drop out but takes cabotegravir medicine will stay in CABO status */
             indiv->ART_status = CABO;
 
