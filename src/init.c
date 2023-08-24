@@ -370,6 +370,7 @@ void set_up_population(int p, patch_struct *patch, population *pop){
     set_population_count_one_year_zero(patch[p].n_infected);
     set_population_count_one_year_zero(patch[p].n_art);
     set_population_count_one_year_zero(patch[p].n_virallysuppressed);
+    set_population_count_one_year_zero(patch[p].n_cabo);
     set_population_count_one_year_zero(patch[p].n_newly_infected);
     set_population_count_one_year_zero(patch[p].n_infected_cumulative);
 

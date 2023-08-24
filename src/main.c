@@ -558,10 +558,11 @@ int main(int argc,char *argv[]){
                     /* Now update age_list: */
                     age_population_by_one_year(patch[p].age_list);
 
-                    /* Ageing by 1 year HIV positive people (update n_infected, ART, virallysuppressed) */
+                    /* Ageing by 1 year HIV positive people (update n_infected, ART, virallysuppressed, cabo) */
                     age_population_size_one_year_age_by_one_year(patch[p].n_infected);
                     age_population_size_one_year_age_by_one_year(patch[p].n_art);
                     age_population_size_one_year_age_by_one_year(patch[p].n_virallysuppressed);
+                    age_population_size_one_year_age_by_one_year(patch[p].n_cabo);
 
                     /* Age the 1-year age group population by 1 year: */
                         age_population_size_one_year_age_by_one_year(
