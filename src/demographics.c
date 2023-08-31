@@ -444,6 +444,7 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
 
     /* Set up partnerships later on, so initialize to zero here:. */
     new_adult->n_clients = 0;
+    new_adult->n_normal_partners = 0;
     new_adult->n_partners = 0;         
     new_adult->n_HIVpos_partners = 0;
 
@@ -451,9 +452,10 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
 
     /* set_max_n_clients() draws max number of clients for a sexual worker */
     new_adult->max_n_clients = set_max_n_clients(new_adult->sexual_worker_status);
-    // At present set_max_n_partners() does not actually use age group or gender.
-    /* set_max_n_partners() depends on gender, age group and risk group. This is a new adult so age group is 0. It includes the max number of clients this individual can have */
-    new_adult->max_n_partners = set_max_n_partners(new_adult->gender, 0, new_adult->sex_risk, new_adult->sexual_worker_status, param) + new_adult->max_n_clients;  
+    // At present set_max_n_normal_partners() does not actually use age group or gender.
+    /* set_max_n_normal_partners() depends on gender, age group and risk group. This is a new adult so age group is 0. It includes the max number of clients this individual can have */
+    new_adult->max_n_normal_partners = set_max_n_normal_partners(new_adult->gender, 0, new_adult->sex_risk, new_adult->sexual_worker_status, param);
+    new_adult->max_n_partners = new_adult->max_n_clients + new_adult->max_n_normal_partners;  
 
     /* Number of sexual partners outside cluster: */
     new_adult->n_partners_outside = 0;
@@ -1420,6 +1422,9 @@ void remove_dead_persons_partners(individual *dead_person, population_partners *
         if ((a_partnership_ptr->sexual_worker_related == SEXUAL_WORKER_RELATED) && (a_partner->sexual_worker_status == SEXUAL_WORKER)) {
             a_partner->n_clients--;
         }    
+        else {
+            a_partner->n_normal_partners--;
+        }
         if(a_partner->patch_no != dead_person->patch_no)
         {
             a_partner->n_partners_outside--;

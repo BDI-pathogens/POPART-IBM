@@ -108,6 +108,7 @@ struct individual{
 
     int n_partners; /* current number of partners of this individual (who are in OR out of the community) */
     int n_clients; /* current number of clients of this individual (who are in OR out of the community), should always be 0 for non-sexual workers */
+    int n_normal_partners; /* current number of normal partners (not clients) of this individual (who are in OR out of the community) */
     partnership* partner_pairs[MAX_PARTNERSHIPS_PER_INDIVIDUAL]; /* This is a list of the partnership pairs (with someone in the community) that this individual is in at a certain time. */
 
     /* The two following are only updated for HIV- individuals (who are in the community) */
@@ -118,6 +119,7 @@ struct individual{
     int sex_risk; /* 0, 1, 2 for LOW, MEDIUM, HIGH risk */
     int max_n_partners; /* maximum number of partners this individual can have at a certain time point */
     int max_n_clients; /* maximum number of clients this individual can have at a certain time point, should always be 0 for non-sexual individuals */
+    int max_n_normal_partners; /* maximum number of normal partners this individual can have at a certain time point */
     int n_partners_outside; /* number of partners living outside the community at a certain time point */
 
     long idx_serodiscordant; // this is -1 if the individual is in no serodiscordant partnership, otherwise it is the index of this individual in the list susceptible_in_serodiscordant_partnership

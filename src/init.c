@@ -18,7 +18,7 @@
  * get_initial_population_distribution() - calculates the % of individuals in each age x risk group for each gender based 
  * initialize_child_population() - sets up the number of children (by timestep) at the start of the simulation - this will give the number of new adults at each timestep.
  * make_DoB() - gives an individual a DoB at the start of the simulation based on assuming that age is uniformly distributed in each age group and drawing a random number.
- * set_max_n_partners() - gives an individual a maximum number of partners at any given time (exclude the number of clients when the individual is sexual worker).
+ * set_max_n_normal_partners() - gives an individual a maximum number of normal partners at any given time (exclude the number of clients when the individual is sexual worker).
  * set_max_n_clients() - gives a sexual worker a maximum number of clients at any given time.
  * set_population_count_zero() - initializes all the population counts in the "population" structure to be zero.
  * set_population_count_one_year_zero() - initializes all elements of a population_size_one_year_age struct to be zero. These are counts of prevalent and incident cases.
@@ -164,10 +164,10 @@ void initialize_child_population(parameters *param, child_population_struct *chi
 ///////////// FIX THIS:
 ///////////// This is a placeholder - set max_n_partners correctly later
 /* Function arguments: risk group of individual
- * Function does: This is a placeholder - should return a number of partners based on some data.
- * Function returns: The maximum number of partners that an individual can have in that risk group (exclude the number of clients of sexual worker)
+ * Function does: This is a placeholder - should return a number of normal partners based on some data.
+ * Function returns: The maximum number of normal partners that an individual can have in that risk group (exclude the number of clients of sexual worker)
  * (may also depend on age/gender?). */
-int set_max_n_partners(int g, int ag, int r, int sexual_worker_status, parameters *param){
+int set_max_n_normal_partners(int g, int ag, int r, int sexual_worker_status, parameters *param){
     // assume the max normal partnership for a sexual worker is 1
     if (sexual_worker_status == SEXUAL_WORKER) {
         return 1;
@@ -422,6 +422,7 @@ void set_up_population(int p, patch_struct *patch, population *pop){
     person_template.time_to_delivery = -1;                /* Not pregnant - allow a % of women to be pregnant later. */
     /* Set up partnerships later on. */
     person_template.n_clients = 0;
+    person_template.n_normal_partners = 0;
     person_template.n_partners = 0;
     person_template.n_HIVpos_partners = 0;
     person_template.n_HIVpos_partners_outside = 0;
@@ -576,9 +577,11 @@ void set_up_population(int p, patch_struct *patch, population *pop){
                 
                     /* Draw max number of clients of a sexual worker */
                     patch[p].individual_population[patch[p].id_counter].max_n_clients = set_max_n_clients(person_template.sexual_worker_status);
+                    /* Draw max number of normal partners of an individual */
+                    // Note: set_max_n_normal_partners() is currently a placeholder function.
+                    patch[p].individual_population[patch[p].id_counter].max_n_normal_partners = set_max_n_normal_partners(g,ag,r,person_template.sexual_worker_status,patch[p].param);
                     /* Draw max number of sexual partners based on gender, age, risk group: it includes the max number of clients a sexual worker can have */
-                    // Note: set_max_n_partners() is currently a placeholder function.
-                    patch[p].individual_population[patch[p].id_counter].max_n_partners = set_max_n_partners(g,ag,r,person_template.sexual_worker_status,patch[p].param) + patch[p].individual_population[patch[p].id_counter].max_n_clients;
+                    patch[p].individual_population[patch[p].id_counter].max_n_partners = patch[p].individual_population[patch[p].id_counter].max_n_clients + patch[p].individual_population[patch[p].id_counter].max_n_normal_partners;
 
                     /* This is a list of pointers to all individuals of a given g, ag, r: */
                     (pop->pop_per_gender_age_risk[g][ag][r])[id_counter_per_gender_age_risk[g][ag][r]] = &patch[p].individual_population[patch[p].id_counter];
