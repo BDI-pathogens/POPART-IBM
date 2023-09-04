@@ -241,6 +241,7 @@ extern int POPART_SAMPLING_FRAME_ESTABLISHED;
 /************************************************************************/
 
 #define MAX_PARTNERSHIPS_PER_INDIVIDUAL 115 /* An individual can belong to up to MAX_PARTNERSHIPS_PER_INDIVIDUAL partnerships at any time point. Maximum of 15 normal relationship and 100 sexual worker related activity */
+#define MAX_NORMAL_PARTNERSHIPS 15 /* An individual can belong to up to MAX_NORMAL_PARTNERSHIPS normal partnerships at any time point. */
 #define MAX_N_PARTNERS_IN_OUTPUTS 500 /* the outputed distributions of partners will be written cumulatively from MAX_N_PARTNERS_IN_OUTPUTS onwards  */
 
 #define MAX_BREAKUPS_PER_TIME_STEP MAX_PARTNERSHIPS_PER_INDIVIDUAL*MAX_POP_SIZE/2000 /* This is the maximum number of breakups that can happen in a given time step. Taken to be VERY conservative */

@@ -36,7 +36,8 @@ write_one_year_age_groups_including_kids()
 write_nbirths_nnewadults_ndeaths()
 output_life_expectancy()
 check_if_individual_should_be_in_list_susceptibles_in_serodiscordant_partnership()
-check_if_individual_should_be_in_list_available_partners()
+check_if_individual_should_be_in_list_available_sexual_workers()
+check_if_individual_should_be_in_list_available_normal_partners()
 sweep_through_all_and_check_lists_serodiscordant_and_available_partners()
 sweep_through_all_and_check_n_partners_outside_n_HIVpos_partners_and_n_HIVpos_partners_outside()
 sweep_through_all_and_check_age_and_risk_of_partners()
@@ -858,35 +859,70 @@ void check_if_individual_should_be_in_list_susceptibles_in_serodiscordant_partne
     }
 }
 
-// CHECK 2: check if individual is alive and has available partnerships, whether he is in the right place in the list of available partners
-void check_if_individual_should_be_in_list_available_partners(individual *temp_ind, all_partnerships * overall_partnerships, int t0, int t_step){
+// CHECK 2: check if individual is alive and has available sexual workers/normal partnerships, whether he is in the right place in the list of available partners
+void check_if_individual_should_be_in_list_available_sexual_workers(individual *temp_ind, all_partnerships * overall_partnerships, int t0, int t_step){
     int i;
     long temp_id;
     int temp_patch;
     int ag;
-    int n_times_found_in_list_available_partners;
+    int n_times_found_in_list_available_sexual_workers;
 
-    if(temp_ind->cd4 > DEAD && temp_ind->n_partners<temp_ind->max_n_partners)
+    if(temp_ind->cd4 > DEAD && temp_ind->n_clients<temp_ind->max_n_clients)
     {
-        n_times_found_in_list_available_partners = 0;
+        n_times_found_in_list_available_sexual_workers = 0;
         // find ag the age group of temp_ind
         ag = get_age_group(temp_ind->DoB,t0+t_step*TIME_STEP, AGE_GROUPS, N_AGE);
 
-        for(i=0 ; i<overall_partnerships->n_pop_available_partners->pop_per_patch[temp_ind->patch_no].pop_size_per_gender_age_risk[temp_ind->gender][ag][temp_ind->sex_risk] ; i++)
+        for(i=0 ; i<overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[temp_ind->patch_no].pop_size_per_gender_age_risk[temp_ind->gender][ag][temp_ind->sex_risk] ; i++)
         {
-            temp_id = overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[temp_ind->patch_no][temp_ind->gender][ag][temp_ind->sex_risk][i]->id;
-            temp_patch = overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[temp_ind->patch_no][temp_ind->gender][ag][temp_ind->sex_risk][i]->patch_no;
+            temp_id = overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[temp_ind->patch_no][temp_ind->gender][ag][temp_ind->sex_risk][i]->id;
+            temp_patch = overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[temp_ind->patch_no][temp_ind->gender][ag][temp_ind->sex_risk][i]->patch_no;
 
             if(temp_id == temp_ind->id && temp_patch == temp_ind->patch_no)
             {
-                n_times_found_in_list_available_partners++;
+                n_times_found_in_list_available_sexual_workers++;
             }
         }
-        if(n_times_found_in_list_available_partners != temp_ind->max_n_partners - temp_ind->n_partners)
+        if(n_times_found_in_list_available_sexual_workers != temp_ind->max_n_clients - temp_ind->n_clients)
         {
-            printf("PROBLEM: individual %ld from patch %d is not found as many time as expected in the list of available partners\n",temp_ind->id,temp_ind->patch_no);
+            printf("PROBLEM: individual %ld from patch %d is not found as many time as expected in the list of available sexual workers\n",temp_ind->id,temp_ind->patch_no);
             print_individual(temp_ind);
-            printf("Individual was found %d times in the list but has %d available partnerships\n",n_times_found_in_list_available_partners,temp_ind->max_n_partners - temp_ind->n_partners);
+            printf("Individual was found %d times in the list but has %d available partnerships\n",n_times_found_in_list_available_sexual_workers,temp_ind->max_n_clients - temp_ind->n_clients);
+            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+            fflush(stdout);
+            exit(1);
+        }
+    }
+}
+
+void check_if_individual_should_be_in_list_available_normal_partners(individual *temp_ind, all_partnerships * overall_partnerships, int t0, int t_step){
+    int i;
+    long temp_id;
+    int temp_patch;
+    int ag;
+    int n_times_found_in_list_available_normal_partners;
+
+    if(temp_ind->cd4 > DEAD && temp_ind->n_normal_partners<temp_ind->max_n_normal_partners)
+    {
+        n_times_found_in_list_available_normal_partners = 0;
+        // find ag the age group of temp_ind
+        ag = get_age_group(temp_ind->DoB,t0+t_step*TIME_STEP, AGE_GROUPS, N_AGE);
+
+        for(i=0 ; i<overall_partnerships->n_pop_available_normal_partners->pop_per_patch[temp_ind->patch_no].pop_size_per_gender_age_risk[temp_ind->gender][ag][temp_ind->sex_risk] ; i++)
+        {
+            temp_id = overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[temp_ind->patch_no][temp_ind->gender][ag][temp_ind->sex_risk][i]->id;
+            temp_patch = overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[temp_ind->patch_no][temp_ind->gender][ag][temp_ind->sex_risk][i]->patch_no;
+
+            if(temp_id == temp_ind->id && temp_patch == temp_ind->patch_no)
+            {
+                n_times_found_in_list_available_normal_partners++;
+            }
+        }
+        if(n_times_found_in_list_available_normal_partners != temp_ind->max_n_normal_partners - temp_ind->n_normal_partners)
+        {
+            printf("PROBLEM: individual %ld from patch %d is not found as many time as expected in the list of available sexual workers\n",temp_ind->id,temp_ind->patch_no);
+            print_individual(temp_ind);
+            printf("Individual was found %d times in the list but has %d available partnerships\n",n_times_found_in_list_available_normal_partners,temp_ind->max_n_normal_partners - temp_ind->n_normal_partners);
             printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
             fflush(stdout);
             exit(1);
@@ -913,8 +949,9 @@ void sweep_through_all_and_check_lists_serodiscordant_and_available_partners (pa
             // CHECK 1: check if individual is alive, HIV- and has HIV+ partners, and if so whether he is in the right place in the list of susceptibles in a serodiscordant partnership
             check_if_individual_should_be_in_list_susceptibles_in_serodiscordant_partnership(&temp_ind, overall_partnerships);
 
-            // CHECK 2: check if individual is alive and has available partnerships, whether he is in the right place in the list of available partners
-            check_if_individual_should_be_in_list_available_partners(&temp_ind, overall_partnerships, t0, t_step);
+            // CHECK 2: check if individual is alive and has available sexual workers/normal partnerships, whether he is in the right place in the list of available partners
+            check_if_individual_should_be_in_list_available_sexual_workers(&temp_ind, overall_partnerships, t0, t_step);
+            check_if_individual_should_be_in_list_available_normal_partners(&temp_ind, overall_partnerships, t0, t_step);
         }
 
     }

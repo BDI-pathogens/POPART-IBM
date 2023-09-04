@@ -1408,9 +1408,11 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 patch[p].n_art,patch[p].n_virallysuppressed,patch[p].n_cabo,
                 patch[p].n_population_stratified, t, patch[p].param,
                 overall_partnerships->susceptible_in_serodiscordant_partnership,
-                overall_partnerships->n_susceptible_in_serodiscordant_partnership,
-                overall_partnerships->pop_available_partners,
-                overall_partnerships->n_pop_available_partners, 
+                overall_partnerships->n_susceptible_in_serodiscordant_partnership, 
+                overall_partnerships->pop_available_sexual_workers,
+                overall_partnerships->n_pop_available_sexual_workers,
+                overall_partnerships->pop_available_normal_partners,
+                overall_partnerships->n_pop_available_normal_partners,
                 patch[p].cascade_events, patch[p].n_cascade_events, 
                 patch[p].size_cascade_events, patch, p, file_data_store);
         }else{
@@ -3359,7 +3361,10 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
             remove_from_hiv_pos_progression(indiv,  patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression,t, patch[p].param,3);
             /* Function removes person from everything except the cascade event list: */
             individual_death_AIDS(patch[p].age_list, indiv, patch[p].n_population, patch[p].n_population_oneyearagegroups, patch[p].n_infected,patch[p].n_art,patch[p].n_virallysuppressed, patch[p].n_cabo,patch[p].n_population_stratified, t, patch[p].param,
-                    overall_partnerships->susceptible_in_serodiscordant_partnership, overall_partnerships->n_susceptible_in_serodiscordant_partnership, overall_partnerships->pop_available_partners, overall_partnerships->n_pop_available_partners, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch, p, file_data_store);
+                    overall_partnerships->susceptible_in_serodiscordant_partnership, overall_partnerships->n_susceptible_in_serodiscordant_partnership,
+                    overall_partnerships->pop_available_sexual_workers, overall_partnerships->n_pop_available_sexual_workers,
+                    overall_partnerships->pop_available_normal_partners, overall_partnerships->n_pop_available_normal_partners,
+                    patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch, p, file_data_store);
             decrease_population_count_art_or_virallysuppressed_or_cabo(patch[p].n_art,  indiv, t);
             //individual cannot die of AIDS while Virally Suppressed so no need to check if it is
         }

@@ -124,7 +124,8 @@ struct individual{
 
     long idx_serodiscordant; // this is -1 if the individual is in no serodiscordant partnership, otherwise it is the index of this individual in the list susceptible_in_serodiscordant_partnership
 
-    long idx_available_partner[MAX_PARTNERSHIPS_PER_INDIVIDUAL]; // this is filled in with -1 if the individual is not available for partnership (i.e. n_partners==max_n_partners), otherwise it is filled in from 0 to max_n+partners-n_partners with the index this individual is at in the list pop_available_partners (within its patch/gender/age/risk group)
+    long idx_available_normal_partner[MAX_NORMAL_PARTNERSHIPS]; // this is filled in with -1 if the individual is not available for normal partnership (i.e. n_clients==max_n_clients), otherwise it is filled in from 0 to max_n_clients-n_clients with the index this individual is at in the list pop_available_sexual_workers (within its patch/gender/age/risk group)
+    long idx_available_sexual_worker[MAX_N_CLIENT]; // this is filled in with -1 if the individual is not available for sexual worker related partnership
 
     long n_lifetime_partners;             /* Counts the number of partners that someone has had in their lifetime. */
     long n_lifetime_partners_outside;             /* same but for partners outside the patch */
@@ -811,12 +812,12 @@ typedef struct{
 typedef struct{
     partnership* partner_pairs;
     long *n_partnerships;
-    population_partners* pop_available_partners;
-    population_size_all_patches *n_pop_available_partners;
-    long *new_partners_f;
+    population_partners* pop_available_sexual_workers;
+    population_partners* pop_available_normal_partners;
+    population_size_all_patches *n_pop_available_sexual_workers;
+    population_size_all_patches *n_pop_available_normal_partners;
     long *new_partners_f_sorted;
     long *shuffled_idx;
-    long *new_partners_f_non_matchable;
     long *new_partners_m;
     long *new_partners_m_sorted;
     long *new_partners_m_non_matchable;

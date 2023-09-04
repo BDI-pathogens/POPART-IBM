@@ -229,7 +229,7 @@ double make_DoB(int ag, double t, int *aa_ptr){
 /* Function arguments: pointer to the "population" structure which contains information about the 
  * number of people in each risk, age and gender group and overall.
  * Function does: Initializes all of these as zero. 
- * Function is used to set n_pop_available_partners to zero. */
+ * Function is used to set n_pop_available_sexual_workers, n_pop_available_normal_partners to zero. */
 void set_population_count_zero(population_size *n_pop){
     int g,ag,r;
     for (ag=0; ag<N_AGE; ag++){
@@ -438,8 +438,11 @@ void set_up_population(int p, patch_struct *patch, population *pop){
     person_template.idx_vmmc_event[0] = -1;         /* Initialize at dummy value. */
     person_template.idx_vmmc_event[1] = -1;
     person_template.debug_last_vmmc_event_index = -1;     /* Initialize at dummy value. */
-    for(i=person_template.n_partners ; i<MAX_PARTNERSHIPS_PER_INDIVIDUAL ; i++){
-        person_template.idx_available_partner[i] = -1; /* Not yet in the list of available partners */
+    for (i=person_template.n_clients; i<MAX_N_CLIENT; i++){
+        person_template.idx_available_sexual_worker[i] = -1; /* Not yet in the list of available sexual workers */
+    }
+    for (i=person_template.n_normal_partners; i<MAX_NORMAL_PARTNERSHIPS; i++){
+        person_template.idx_available_normal_partner[i] = -1; /* Not yet in the list of available normal partners */
     }
 
     person_template.PANGEA_t_prev_cd4stage = -1.0;
@@ -622,35 +625,39 @@ void set_up_population(int p, patch_struct *patch, population *pop){
 }
 
 
-/* This function fills in (*pop_available_partners) and (*n_pop_available_partners) using (*pop) and (*n_population) 
- * it counts all the "free partnerships" and points to them in pop_available_partners, with associated numbers of 
- * free partnerships stored in n_pop_available_partners */
+/* This function fills in (*pop_available_sexual_workers) and (*n_pop_available_sexual_workers), (*pop_available_normal_partners) and (*n_pop_available_normal_partners) using (*pop) and (*n_population) 
+ * it counts all the "free partnerships" and points to them in pop_available_sexual_workers, pop_available_normal_partners, with associated numbers of 
+ * free partnerships stored in n_pop_available_sexual_workers, n_pop_available_normal_partners */
 void init_available_partnerships(int p, patch_struct *patch, all_partnerships *overall_partnerships,population *pop){
 
     int g,ag,r;   /* Indices over gender, age group and risk group and patch. */
     long i;       /* Index to loop over number of people. */
     int j;        /* Index to loop over partnerships. */
 
-    set_population_count_zero(&overall_partnerships->n_pop_available_partners->pop_per_patch[p]);
+    set_population_count_zero(&overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p]);
+    set_population_count_zero(&overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p]);
     for (g=0 ; g<N_GENDER ; g++){
         for (ag=0 ; ag<N_AGE ; ag++){
             for(r=0 ; r<N_RISK ; r++){
                 /* Loop over each individual in this gender/age/risk category: */
                 for(i=0 ; i<patch[p].n_population->pop_size_per_gender_age_risk[g][ag][r] ; i++){
-                    /* for each free partnership of this individual */
-                    for(j=pop->pop_per_gender_age_risk[g][ag][r][i]->n_partners ; j<pop->pop_per_gender_age_risk[g][ag][r][i]->max_n_partners ; j++){
-                        /* Adding this person as an available partner in the list of available partners */
-                        overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]] = pop->pop_per_gender_age_risk[g][ag][r][i];
+                    /* for each free sexual worker partnership of this individual */
+                    for(j=pop->pop_per_gender_age_risk[g][ag][r][i]->n_clients ; j<pop->pop_per_gender_age_risk[g][ag][r][i]->max_n_clients ; j++){
+                        /* Adding this person as an available sexual worker in the list of available sexual workers */
+                        overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][ag][r][overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]] = pop->pop_per_gender_age_risk[g][ag][r][i];
                         /* Keeping track of where this person is in that list */
-                        pop->pop_per_gender_age_risk[g][ag][r][i]->idx_available_partner[j] = overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r];
-                        overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]++;
+                        pop->pop_per_gender_age_risk[g][ag][r][i]->idx_available_sexual_worker[j] = overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r];
+                        overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]++;
+                    }
+                    /* for each free normal partnership of this individual */
+                    for(j=pop->pop_per_gender_age_risk[g][ag][r][i]->n_normal_partners ; j<pop->pop_per_gender_age_risk[g][ag][r][i]->max_n_normal_partners ; j++){
+                        /* Adding this person as an available normal partner in the list of available normal partners */
+                        overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][ag][r][overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]] = pop->pop_per_gender_age_risk[g][ag][r][i];
+                        /* Keeping track of where this person is in that list */
+                        pop->pop_per_gender_age_risk[g][ag][r][i]->idx_available_normal_partner[j] = overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r];
+                        overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]++;
                     }
                 }
-                /*for(i=0 ; i<n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] ; i++)
-                {
-                    printf("%ld\n",pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][i]->id);
-                    fflush(stdout);
-                }*/
             }
         }
     }

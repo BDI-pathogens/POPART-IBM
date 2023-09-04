@@ -39,8 +39,10 @@ void output_life_expectancy(char *, patch_struct *, int , int );
 
 void check_if_individual_should_be_in_list_susceptibles_in_serodiscordant_partnership(individual *,
     all_partnerships * );
-void check_if_individual_should_be_in_list_available_partners(individual *, all_partnerships *,
+void check_if_individual_should_be_in_list_available_sexual_workers(individual *, all_partnerships *,
     int , int );
+void check_if_individual_should_be_in_list_available_normal_partners(individual *, all_partnerships *,
+    int , int ); 
 void sweep_through_all_and_check_lists_serodiscordant_and_available_partners (patch_struct *,
     all_partnerships * , int , int );
 void sweep_through_all_and_check_n_partners_outside_n_HIVpos_partners_and_n_HIVpos_partners_outside (patch_struct *, all_partnerships * , int , int );

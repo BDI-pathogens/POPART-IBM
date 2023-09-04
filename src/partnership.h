@@ -24,8 +24,7 @@ void new_partnership(individual* , individual* , int, double , all_partnerships 
     debug_struct *, file_struct *);
 int time_to_partnership_dissolution(parameters *, int r_m, int r_f, int p_m, int p_f);
 void breakup(double, partnership*, all_partnerships *);
-void update_list_available_partners_breakup(double , partnership* , population_partners*, 
-    population_size_all_patches *);
+void update_list_available_partners_breakup(double , partnership* , population_partners*, population_size_all_patches *, population_partners*, population_size_all_patches *);
 void add_susceptible_to_list_serodiscordant_partnership(individual* , individual** , long *);
 void remove_susceptible_from_list_serodiscordant_partnership(individual* , individual** , long *);
 void update_list_susceptibles_in_serodiscordant_partnerships_breakup(partnership* , 

@@ -475,35 +475,35 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
     new_adult->idx_serodiscordant = -1;  /* Not in a serodiscordant partnership */
 
 
-    /* Add all the available partnerships (max_n_partners as they do not have any yet) to the list of available partnerships
+    /* Add all the available sexual workers (max_n_clients as they do not have any yet) to the list of available sexual workers
      * and create references to these in the new_adult individual structure. */
-    for(i=new_adult->n_partners ; i<new_adult->max_n_partners ; i++){
-        /* Add to end of pop_available_partners array element: */ 
-        new_adult->idx_available_partner[i] = overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]; /* Not yet in the list of available partners */
+    for(i=new_adult->n_clients ; i<new_adult->max_n_clients ; i++){
+        /* Add to end of pop_available_sexual_workers array element: */ 
+        new_adult->idx_available_sexual_worker[i] = overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]; /* Not yet in the list of available sexual workers */
         /* Note that age group = 0 as new adults. */
-        overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[p][new_adult->gender][0][new_adult->sex_risk][overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]] = new_adult;
-        overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]++;
+        overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][new_adult->gender][0][new_adult->sex_risk][overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]] = new_adult;
+        overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]++;
     }
 
-    /* Above max_n_partners set the rest of the entries to -1 - this is a checking mechanism to ensure we never give them more than max_n_partners. */
-    for(i=new_adult->max_n_partners ; i<MAX_PARTNERSHIPS_PER_INDIVIDUAL ; i++){
-        new_adult->idx_available_partner[i] = -1; /* Not in the list of available partners */
+    /* Above max_n_clients set the rest of the entries to -1 - this is a checking mechanism to ensure we never give them more than max_n_clients. */
+    for(i=new_adult->max_n_clients ; i<MAX_N_CLIENT ; i++){
+        new_adult->idx_available_sexual_worker[i] = -1; /* Not in the list of available sexual workers */
     }
 
-    /*if(new_adult->id==5486)
-    {
-            print_here_string("000000000000000000000000000000000000000000000000",0);
-            print_here_string("Created individual ",new_adult->id);
-            print_here_string("Patch ",new_adult->patch_no);
-            print_here_string("Gender ",new_adult->gender);
-            print_here_string("Circ ",new_adult->circ);
-            print_here_string("Risk ",new_adult->sex_risk);
-            print_here_string("Yearob ",(int) new_adult->DoB);
-            print_here_string("Max_n_partners ",new_adult->max_n_partners);
-            print_here_string("Current_n_partners ",new_adult->n_partners);
-            print_here_string("111111111111111111111111111111111111111111111111",1);
-    }*/
+    /* Add all the available normal partners (max_n_normal_partners as they do not have any yet) to the list of available normal partners
+     * and create references to these in the new_adult individual structure. */
+    for(i=new_adult->n_normal_partners ; i<new_adult->max_n_normal_partners ; i++){
+        /* Add to end of pop_available_normal_partners array element: */ 
+        new_adult->idx_available_normal_partner[i] = overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]; /* Not yet in the list of available normal partners */
+        /* Note that age group = 0 as new adults. */
+        overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[p][new_adult->gender][0][new_adult->sex_risk][overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]] = new_adult;
+        overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[new_adult->gender][0][new_adult->sex_risk]++;
+    }
 
+    /* Above max_n_normal_partners set the rest of the entries to -1 - this is a checking mechanism to ensure we never give them more than max_n_normal_partners. */
+    for(i=new_adult->max_n_normal_partners ; i<MAX_NORMAL_PARTNERSHIPS ; i++){
+        new_adult->idx_available_normal_partner[i] = -1; /* Not in the list of available normal partners */
+    }
 }
 
 
@@ -861,10 +861,10 @@ void update_n_population_ageing_by_one_year(patch_struct *patch, int p){
 
 
 
-/* Function updates pop_available_partners and n_pop_available_partners as population ages by one year (ageing is by cohort). 
+/* Function updates pop_available_sexual_workers/pop_availables_normal_partners and n_pop_available_sexual_workers/n_pop_availables_normal_partners as population ages by one year (ageing is by cohort). 
  * It does this by going through each individual who is about to age (NOTE: it is important that this is called out before age_list is updated)
  * For each individual we go through each of their available partnerships and move each one to the new age group as needed. 
- * Code can probably be sped up - the issue with making pop_available_partners into 1 years age groups is that the number in each age group
+ * Code can probably be sped up - the issue with making pop_available_sexual_workers/pop_availables_normal_partners into 1 years age groups is that the number in each age group
  * will be small so more chance for having two identical partnerships formed (not clear how to prevent this). */
 void update_pop_available_partners_ageing_by_one_year(patch_struct *patch, int p, all_partnerships *overall_partnerships, double t){
     /* aa+AGE_ADULT is the age of the person (so aa runs from 0..MAX_AGE-AGE_ADULT).
@@ -876,11 +876,6 @@ void update_pop_available_partners_ageing_by_one_year(patch_struct *patch, int p
     individual *this_person;
     individual *personB;
 
-    //// Debug:
-    //for 
-    //printf("update_pop_available_partners_ageing_by_one_year: %li\n",n_pop_available_partners->pop_size_per_gender_age_risk[0][1][0]);
-    //printf("Check this person is here: %li\n",pop_available_partners->pop_per_gender_age_risk[0][1][0][(n_pop_available_partners->pop_size_per_gender_age_risk[0][1][0])-1]->id);
-    //fflush(stdout);
     for (g=0;g<N_GENDER;g++){
         /* Deliberately starting at age_index=1 - we are interested in ageing the population by one year, but those aged 12 turning 13 are dealt with separately as new adults. */
         for (age_index=1; age_index<N_AGE; age_index++){
@@ -904,8 +899,6 @@ void update_pop_available_partners_ageing_by_one_year(patch_struct *patch, int p
             for (n=0; n<n_age_ai; n++){
                 /* Use the pointer as an alias for this person - makes code more readable + possibly a bit quicker? */
                 this_person = patch[p].age_list->age_list_by_gender[g]->age_group[ai][n];
-                /*if (this_person->id==10013)
-                printf("10013 moving out of age group: %i with DoB %f\n",age_index-1,this_person->DoB);*/
 
                 if(this_person->id==FOLLOW_INDIVIDUAL && this_person->patch_no==FOLLOW_PATCH)
                 {
@@ -914,36 +907,21 @@ void update_pop_available_partners_ageing_by_one_year(patch_struct *patch, int p
                 }
 
                 r = this_person->sex_risk;
-                /*if(p!=this_person->patch_no)
-                {
-                    printf("Issue in update_pop_available_partners_ageing_by_one_year\n");
-                    fflush(stdout);
-                }*/
 
-                //print_here_string("Check patch inside function",p);
-
-                //printf("Current g a r = %i %i %i\n",g,age_index,r);
-                //printf("XXupdate_pop_available_partners_ageing_by_one_year: %li\n",n_pop_available_partners->pop_size_per_gender_age_risk[0][1][0]);
-                //printf("Check this person is here: ID=%li CD4=%i idx=%i\n",pop_available_partners->pop_per_gender_age_risk[0][1][0][(n_pop_available_partners->pop_size_per_gender_age_risk[0][1][0])-1]->id,pop_available_partners->pop_per_gender_age_risk[0][1][0][(n_pop_available_partners->pop_size_per_gender_age_risk[0][1][0])-1]->cd4,pop_available_partners->pop_per_gender_age_risk[0][1][0][(n_pop_available_partners->pop_size_per_gender_age_risk[0][1][0])-1]->idx_available_partner[0]);
-                //fflush(stdout);
-                /* We go over all available partnerships of this person. */
+                /* We go over all available sexual workers of this person. */
                 i = 0;
-                //printf("This person: %i %i %f\n",g,r,this_person->DoB);
-                while ((this_person->idx_available_partner[i]>-1) && (i<(this_person->max_n_partners-this_person->n_partners)) && (overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]>0)){
+                while ((this_person->idx_available_sexual_worker[i]>-1) && (i<(this_person->max_n_clients-this_person->n_clients)) && (overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]>0)){
                     /* Swap this person's available index with that of the last person in the array (we'll call them person B):
                      * Firstly swap the pointer with the pointer of person B: */
-                    //printf("HEY2x %li %i %i %i\n",n_pop_available_partners->pop_size_per_gender_age_risk[g][age_index-1][r],g,age_index-1,r);
-                    //printf("Last person: %i %i %f %li\n",pop_available_partners->pop_per_gender_age_risk[g][age_index-1][r][(n_pop_available_partners->pop_size_per_gender_age_risk[g][age_index-1][r])-1]->gender,pop_available_partners->pop_per_gender_age_risk[g][age_index-1][r][n_pop_available_partners->pop_size_per_gender_age_risk[g][age_index-1][r]-1]->sex_risk,pop_available_partners->pop_per_gender_age_risk[g][age_index-1][r][n_pop_available_partners->pop_size_per_gender_age_risk[g][age_index-1][r]-1]->DoB,pop_available_partners->pop_per_gender_age_risk[g][age_index-1][r][(n_pop_available_partners->pop_size_per_gender_age_risk[g][age_index-1][r])-1]->id);
-                    personB = overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[p][g][age_index-1][r][overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]-1];
+                    personB = overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][age_index-1][r][overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]-1];
 
-                    overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[p][g][age_index-1][r][this_person->idx_available_partner[i]] = personB;
+                    overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][age_index-1][r][this_person->idx_available_sexual_worker[i]] = personB;
 
-                    /* Now adjust the idx_available_partner element of person B to reflect this change in pop_available_partners:
+                    /* Now adjust the idx_available_sexual_worker element of person B to reflect this change in pop_available_sexual_workers:
                      * Unfortunately we have to look through their partnerships to find the right one: */
-                    i2 = personB->max_n_partners-personB->n_partners-1;
-                    while ((personB->idx_available_partner[i2]!=overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]-1) && (personB->idx_available_partner[i2]>=0) && (i2>=0)){
-                        //printf("HEY %i %i %li\n",i2,personB->idx_available_partner[i2],n_pop_available_partners->pop_size_per_gender_age_risk[g][age_index-1][r]-1);
-                        if ((personB->idx_available_partner[i2]==-1)|| (i2<0)){
+                    i2 = personB->max_n_clients-personB->n_clients-1;
+                    while ((personB->idx_available_sexual_worker[i2]!=overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]-1) && (personB->idx_available_sexual_worker[i2]>=0) && (i2>=0)){
+                        if ((personB->idx_available_sexual_worker[i2]==-1)|| (i2<0)){
                             printf("Can't find person B's index in update_pop_available_partners_ageing_by_one_year\n");
                             printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
                             fflush(stdout);
@@ -951,34 +929,62 @@ void update_pop_available_partners_ageing_by_one_year(patch_struct *patch, int p
                         }
                         i2--;
                     }
-                    //  if (this_person->id==10013){
-                    //  printf("Swapping 10013 idx = %i (%li) with %li's idx=%i (%li): \n",i, this_person->idx_available_partner[i],personB->id,i2,personB->idx_available_partner[i2]);
-                    //  printf("Now 10013's indices are: %li %li %li %li %li %li %li %li %li \n",this_person->idx_available_partner[0],this_person->idx_available_partner[1],this_person->idx_available_partner[2],this_person->idx_available_partner[3],this_person->idx_available_partner[4],this_person->idx_available_partner[5],this_person->idx_available_partner[6],this_person->idx_available_partner[7],this_person->idx_available_partner[8]);
-                    //}
-                    ////* Note that in general we can swap indices from the same person. The only problem comes if we are trying to swap the same index (which should be because they are the last person).
-                    /// * In that case we actually don't need to do anything.*/
 
-                    //if (personB->idx_available_partner[i2]==this_person->idx_available_partner[i]){
+                    /* Now we've got the correct index i2 set this to point to the new place in pop_available_sexual_workers (ie where this_person was): */
+                    personB->idx_available_sexual_worker[i2] = this_person->idx_available_sexual_worker[i];
 
+                    /* Next decrease the number of available sexual workers in age_index-1: */
+                    overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]--;
 
+                    /* Add ageing person into the pop_available_sexual_workers for new age group (note that because we are adding to the end, no need for "-1" in the last index: */
+                    overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][age_index][r][overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r]] = this_person;
+                    /* Modify idx_available_sexual_worker of this person: */
+                    this_person->idx_available_sexual_worker[i] = overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r];
 
-                    /* Now we've got the correct index i2 set this to point to the new place in pop_available_partners (ie where this_person was): */
-                    personB->idx_available_partner[i2] = this_person->idx_available_partner[i];
-
-                    /* Next decrease the number of available partners in age_index-1: */
-                    overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]--;
-
-                    /* Add ageing person into the pop_available_partners for new age group (note that because we are adding to the end, no need for "-1" in the last index: */
-                    overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[p][g][age_index][r][overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r]] = this_person;
-                    /* Modify idx_available_partner of this person: */
-                    this_person->idx_available_partner[i] = overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r];
-
-                    /* Finally increase the number of available partners in this age group: */
-                    overall_partnerships->n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r]++;
-                    /* Now go to next potential available partner: */
+                    /* Finally increase the number of available sexual workers in this age group: */
+                    overall_partnerships->n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r]++;
+                    /* Now go to next potential available sexual worker: */
                     i++;
                 }
 
+                /* We go over all available normal partners of this person. */
+                i = 0;
+                while ((this_person->idx_available_normal_partner[i]>-1) && (i<(this_person->max_n_normal_partners-this_person->n_normal_partners)) && (overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]>0)){
+                    /* Swap this person's available index with that of the last person in the array (we'll call them person B):
+                     * Firstly swap the pointer with the pointer of person B: */
+                    personB = overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][age_index-1][r][overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]-1];
+
+                    overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][age_index-1][r][this_person->idx_available_normal_partner[i]] = personB;
+
+                    /* Now adjust the idx_available_normal_partner element of person B to reflect this change in pop_available_normal_partners:
+                     * Unfortunately we have to look through their partnerships to find the right one: */
+                    i2 = personB->max_n_normal_partners-personB->n_normal_partners-1;
+                    while ((personB->idx_available_normal_partner[i2]!=overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]-1) && (personB->idx_available_normal_partner[i2]>=0) && (i2>=0)){
+                        if ((personB->idx_available_normal_partner[i2]==-1)|| (i2<0)){
+                            printf("Can't find person B's index in update_pop_available_partners_ageing_by_one_year\n");
+                            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                            fflush(stdout);
+                            exit(1);
+                        }
+                        i2--;
+                    }
+
+                    /* Now we've got the correct index i2 set this to point to the new place in pop_available_normal_partners (ie where this_person was): */
+                    personB->idx_available_normal_partner[i2] = this_person->idx_available_normal_partner[i];
+
+                    /* Next decrease the number of available normal partners in age_index-1: */
+                    overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index-1][r]--;
+
+                    /* Add ageing person into the pop_available_normal_partners for new age group (note that because we are adding to the end, no need for "-1" in the last index: */
+                    overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][age_index][r][overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r]] = this_person;
+                    /* Modify idx_available_normal_partner of this person: */
+                    this_person->idx_available_normal_partner[i] = overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r];
+
+                    /* Finally increase the number of available normal partners in this age group: */
+                    overall_partnerships->n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][age_index][r]++;
+                    /* Now go to next potential available normal partner: */
+                    i++;
+                }
             }
         }
     }
@@ -1285,10 +1291,11 @@ void remove_dead_person_from_susceptible_in_serodiscordant_partnership(individua
 }
 
 /* Function arguments: pointer to the person who died.
- * Function does: removes a dead person from the list of pop_available_partners
- * and n_pop_available_partners structs.
+ * Function does: removes a dead person from the list of pop_available_sexual_workers, n_pop_available_sexual_workers, pop_available_normal_partners, n_pop_available_normal_partners structs.
  * Function returns: nothing. */
-void remove_dead_person_from_list_available_partners(double time_death, individual *dead_person, population_partners *pop_available_partners, population_size_all_patches *n_pop_available_partners){
+void remove_dead_person_from_list_available_partners(double time_death, individual *dead_person,
+    population_partners *pop_available_sexual_workers, population_size_all_patches *n_pop_available_sexual_workers,
+    population_partners *pop_available_normal_partners, population_size_all_patches *n_pop_available_normal_partners){
     int n, g, ag, r, j, p;
 
     ag = get_age_group(dead_person->DoB,time_death, AGE_GROUPS, N_AGE);
@@ -1302,51 +1309,52 @@ void remove_dead_person_from_list_available_partners(double time_death, individu
         fflush(stdout);
     }
 
-
-    ///// Debugging:
-    //printf("Details to debug: %i %i %i, %li \n",g,ag,r,n_pop_available_partners->pop_size_per_gender_age_risk[g][ag][r] - 1);
-    //printf("remove_dead_person_from_list_available_partners: %li\n",n_pop_available_partners->pop_size_per_gender_age_risk[0][6][2]);
-    ///fflush(stdout);
-    //printf("People: %li",n_pop_available_partners->pop_size_per_gender_age_risk[0][1][0]);
-    //for (n=0; n<n_pop_available_partners->pop_size_per_gender_age_risk[0][6][2];n++){
-    //  printf("%8li ",pop_available_partners->pop_per_gender_age_risk[0][6][2][n]->id);
-    //}
-    //printf("\n");
-    //fflush(stdout);
-
-    //printf(" %li\n",pop_available_partners->pop_per_gender_age_risk[g][ag][r][n_pop_available_partners->pop_size_per_gender_age_risk[g][ag][r] - 1]->id);
-    ////    
-
-
-    for (n=dead_person->n_partners; n<dead_person->max_n_partners; n++)
+    for (n=dead_person->n_clients; n<dead_person->max_n_clients; n++)
     {
-        //if(dead_person->id==FOLLOW_INDIVIDUAL && dead_person->patch_no==FOLLOW_PATCH)
-        //printf("Hey %li %li\n",dead_person->idx_available_partner[n-dead_person->n_partners],n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1);
-        if(dead_person->idx_available_partner[n-dead_person->n_partners]<n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1)
+        if(dead_person->idx_available_sexual_worker[n-dead_person->n_clients]<n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1)
         {
-            pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_partner[n-dead_person->n_partners]] = pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1]; /* pointing to the last person instead of the current one */
-            j = pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_partner[n-dead_person->n_partners]]->max_n_partners - pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_partner[n-dead_person->n_partners]]->n_partners - 1;
-            while(pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_partner[n-dead_person->n_partners]]->idx_available_partner[j] != n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1)
+            pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_sexual_worker[n-dead_person->n_clients]] = pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][ag][r][n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1]; /* pointing to the last person instead of the current one */
+            j = pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_sexual_worker[n-dead_person->n_clients]]->max_n_clients - pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_sexual_worker[n-dead_person->n_clients]]->n_clients - 1;
+            while(pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_sexual_worker[n-dead_person->n_clients]]->idx_available_sexual_worker[j] != n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1)
             {
                 j--;
             }
-            pop_available_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_partner[n-dead_person->n_partners]]->idx_available_partner[j] = dead_person->idx_available_partner[n-dead_person->n_partners]; /* telling the person that has moved that they have. */
-            /* switch idx_available partners of dead_person to -1 */
+            pop_available_sexual_workers->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_sexual_worker[n-dead_person->n_clients]]->idx_available_sexual_worker[j] = dead_person->idx_available_sexual_worker[n-dead_person->n_clients]; /* telling the person that has moved that they have. */
+            /* switch idx_available_sexual_worker of dead_person to -1 */
             //// This can probably be ignored but probably easier to identify issues etc. if it is done.
-            dead_person->idx_available_partner[n-dead_person->n_partners] = -1;
+            dead_person->idx_available_sexual_worker[n-dead_person->n_clients] = -1;
         }
-        n_pop_available_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]--; /* decreasing the number of available females in that group by 1 */
+        n_pop_available_sexual_workers->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]--; /* decreasing the number of available sexual workers in that group by 1 */
+    }
+
+    for (n=dead_person->n_normal_partners; n<dead_person->max_n_normal_partners; n++)
+    {
+        if(dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners]<n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1)
+        {
+            pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners]] = pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][ag][r][n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1]; /* pointing to the last person instead of the current one */
+            j = pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners]]->max_n_normal_partners - pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners]]->n_normal_partners - 1;
+            while(pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners]]->idx_available_normal_partner[j] != n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r] - 1)
+            {
+                j--;
+            }
+            pop_available_normal_partners->pop_per_patch_gender_age_risk[p][g][ag][r][dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners]]->idx_available_normal_partner[j] = dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners]; /* telling the person that has moved that they have. */
+            /* switch idx_available_normal_partner of dead_person to -1 */
+            //// This can probably be ignored but probably easier to identify issues etc. if it is done.
+            dead_person->idx_available_normal_partner[n-dead_person->n_normal_partners] = -1;
+        }
+        n_pop_available_normal_partners->pop_per_patch[p].pop_size_per_gender_age_risk[g][ag][r]--; /* decreasing the number of available normal partners in that group by 1 */
     }
 }
 
-/* Function arguments: pointer to the person who died, the list of available partners (and the numbers of available partners) plus current time t.
+/* Function arguments: pointer to the person who died, the list of available sexual workers (and the numbers of available sexual workers), the list of available normal partners (and the numbers of available normal partners) plus current time t.
  * Function does: removes the partnerships of people who have died (including serodiscordant partnerships), 
  * and add their partners back to "list of available partners".
  * NOTE: This function can be used for either death from natural causes or HIV-related death 
  * (or indeed anything that removes an individual from all partnerships such as permanent migration if this is ever implemented).
  * Function returns: nothing. */        
-void remove_dead_persons_partners(individual *dead_person, population_partners *pop_available_partners, 
-        population_size_all_patches *n_pop_available_partners, double t){
+void remove_dead_persons_partners(individual *dead_person,
+    population_partners *pop_available_sexual_workers, population_size_all_patches *n_pop_available_sexual_workers,
+    population_partners* pop_available_normal_partners, population_size_all_patches *n_pop_available_normal_partners, double t){
 
     int i,j,ag;
     /* All of these pointers will point to existing memory so no calls to malloc needed - they are there to make code readable. */
@@ -1432,15 +1440,24 @@ void remove_dead_persons_partners(individual *dead_person, population_partners *
         /* Get the age group of this partner: */
         ag = get_age_group(a_partner->DoB,t, AGE_GROUPS, N_AGE);
 
-
-        /* This is just a shorthand way to write. I create a pointer to the correct place (ie this is a reference so no need to malloc)
-         *  - so that we can change the contents of the original place in the n_pop_available_partners struct. */ 
-        n_ptr = &n_pop_available_partners->pop_per_patch[a_partner->patch_no].pop_size_per_gender_age_risk[a_partner->gender][ag][a_partner->sex_risk];
-        /* Add this partner to the correct place in the pool of available partners. */
-        pop_available_partners->pop_per_patch_gender_age_risk[a_partner->patch_no][a_partner->gender][ag][a_partner->sex_risk][*n_ptr] = a_partner;
-        a_partner->idx_available_partner[a_partner->max_n_partners - a_partner->n_partners - 1] = *n_ptr;
-        (*n_ptr)++;
-
+        if ((a_partnership_ptr->sexual_worker_related == SEXUAL_WORKER_RELATED) && (a_partner->sexual_worker_status == SEXUAL_WORKER)) {
+            /* This is just a shorthand way to write. I create a pointer to the correct place (ie this is a reference so no need to malloc)
+            *  - so that we can change the contents of the original place in the n_pop_available_sexual_workers struct. */ 
+            n_ptr = &n_pop_available_sexual_workers->pop_per_patch[a_partner->patch_no].pop_size_per_gender_age_risk[a_partner->gender][ag][a_partner->sex_risk];
+            /* Add this partner to the correct place in the pool of available sexual workers. */
+            pop_available_sexual_workers->pop_per_patch_gender_age_risk[a_partner->patch_no][a_partner->gender][ag][a_partner->sex_risk][*n_ptr] = a_partner;
+            a_partner->idx_available_sexual_worker[a_partner->max_n_clients - a_partner->n_clients - 1] = *n_ptr;
+            (*n_ptr)++;
+        }
+        else {
+            /* This is just a shorthand way to write. I create a pointer to the correct place (ie this is a reference so no need to malloc)
+            *  - so that we can change the contents of the original place in the n_pop_available_normal_partners struct. */ 
+            n_ptr = &n_pop_available_normal_partners->pop_per_patch[a_partner->patch_no].pop_size_per_gender_age_risk[a_partner->gender][ag][a_partner->sex_risk];
+            /* Add this partner to the correct place in the pool of available normal partners. */
+            pop_available_normal_partners->pop_per_patch_gender_age_risk[a_partner->patch_no][a_partner->gender][ag][a_partner->sex_risk][*n_ptr] = a_partner;
+            a_partner->idx_available_normal_partner[a_partner->max_n_normal_partners - a_partner->n_normal_partners - 1] = *n_ptr;
+            (*n_ptr)++;
+        }
     }
 
 }
@@ -1838,11 +1855,14 @@ void deaths_natural_causes(double t, patch_struct *patch, int p,
                         overall_partnerships->n_susceptible_in_serodiscordant_partnership);
                     
                     remove_dead_person_from_list_available_partners(t, person_dying,
- overall_partnerships->pop_available_partners,overall_partnerships->n_pop_available_partners);
+                        overall_partnerships->pop_available_sexual_workers,overall_partnerships->n_pop_available_sexual_workers,
+                        overall_partnerships->pop_available_normal_partners, overall_partnerships->n_pop_available_normal_partners);
                     
                     remove_dead_persons_partners(person_dying,
-                        overall_partnerships->pop_available_partners,
-                        overall_partnerships->n_pop_available_partners, t);
+                        overall_partnerships->pop_available_sexual_workers,
+                        overall_partnerships->n_pop_available_sexual_workers,
+                        overall_partnerships->pop_available_normal_partners,
+                        overall_partnerships->n_pop_available_normal_partners, t);
                         
                     if(person_dying->HIV_status > UNINFECTED){
                         // Note the final '1' argument means that the person is dying, 
@@ -1945,12 +1965,16 @@ void deaths_natural_causes(double t, patch_struct *patch, int p,
                 overall_partnerships->n_susceptible_in_serodiscordant_partnership);
             
             remove_dead_person_from_list_available_partners(t, person_dying,
-                overall_partnerships->pop_available_partners,
-                overall_partnerships->n_pop_available_partners);
+                overall_partnerships->pop_available_sexual_workers,
+                overall_partnerships->n_pop_available_sexual_workers,
+                overall_partnerships->pop_available_normal_partners,
+                overall_partnerships->n_pop_available_normal_partners);
             
             remove_dead_persons_partners(person_dying,
-                overall_partnerships->pop_available_partners,
-                overall_partnerships->n_pop_available_partners, t);
+                overall_partnerships->pop_available_sexual_workers,
+                overall_partnerships->n_pop_available_sexual_workers,
+                overall_partnerships->pop_available_normal_partners,
+                overall_partnerships->n_pop_available_normal_partners, t);
             
             if(person_dying->HIV_status > UNINFECTED){
                 /* Note the final '1' argument means that the person is dying, not starting ART. */
@@ -2237,8 +2261,11 @@ void individual_death_AIDS(age_list_struct *age_list, individual *dead_person,
         stratified_population_size *n_population_stratified, double t, parameters *param, 
         individual **susceptible_in_serodiscordant_partnership, 
         long *n_susceptible_in_serodiscordant_partnership, 
-        population_partners *pop_available_partners, 
-        population_size_all_patches *n_pop_available_partners, individual ***cascade_events, 
+        population_partners *pop_available_sexual_workers,
+        population_size_all_patches *n_pop_available_sexual_workers,
+        population_partners *pop_available_normal_partners,
+        population_size_all_patches *n_pop_available_normal_partners,
+        individual ***cascade_events, 
         long *n_cascade_events, long *size_cascade_events, patch_struct *patch, int p, 
         file_struct *file_data_store){
     
@@ -2331,9 +2358,9 @@ void individual_death_AIDS(age_list_struct *age_list, individual *dead_person,
 
         remove_dead_person_from_susceptible_in_serodiscordant_partnership(dead_person, susceptible_in_serodiscordant_partnership, n_susceptible_in_serodiscordant_partnership);
 
-        remove_dead_person_from_list_available_partners(t, dead_person, pop_available_partners,n_pop_available_partners);
+        remove_dead_person_from_list_available_partners(t, dead_person, pop_available_sexual_workers,n_pop_available_sexual_workers,pop_available_normal_partners,n_pop_available_normal_partners);
 
-        remove_dead_persons_partners(dead_person, pop_available_partners, n_pop_available_partners, t);
+        remove_dead_persons_partners(dead_person, pop_available_sexual_workers, n_pop_available_sexual_workers, pop_available_normal_partners, n_pop_available_normal_partners, t);
 
         if (PRINT_DEBUG_DEMOGRAPHICS==1)
             printf("Calling deaths_natural_causes() with %i partners\n",dead_person->n_partners);
@@ -2372,8 +2399,8 @@ void individual_death_AIDS(age_list_struct *age_list, individual *dead_person,
 
         /* Now call a function to remove people who have died and to update their partnerships. */
         remove_dead_person_from_susceptible_in_serodiscordant_partnership(dead_person, susceptible_in_serodiscordant_partnership, n_susceptible_in_serodiscordant_partnership);
-        remove_dead_person_from_list_available_partners(t, dead_person, pop_available_partners,n_pop_available_partners);
-        remove_dead_persons_partners(dead_person, pop_available_partners, n_pop_available_partners, t);
+        remove_dead_person_from_list_available_partners(t, dead_person, pop_available_sexual_workers,n_pop_available_sexual_workers,pop_available_normal_partners,n_pop_available_normal_partners);
+        remove_dead_persons_partners(dead_person, pop_available_sexual_workers, n_pop_available_sexual_workers, pop_available_normal_partners, n_pop_available_normal_partners, t);
 
         // WRONG CODE: the following line is a call which shouldn't be here as we call this function outside individual_death_AIDS, so this is a repeat call.
         // Have had problems with trying to remove the same dead person twice.

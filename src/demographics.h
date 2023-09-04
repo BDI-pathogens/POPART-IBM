@@ -48,10 +48,12 @@ void update_pop_available_partners_ageing_by_one_year(patch_struct *, int,
 void age_population_size_one_year_age_by_one_year(population_size_one_year_age *);
 void remove_dead_person_from_susceptible_in_serodiscordant_partnership(individual *, 
     individual **, long *);
-void remove_dead_person_from_list_available_partners(double, individual *,population_partners *,
-    population_size_all_patches *);
-void remove_dead_persons_partners(individual *, population_partners *, 
-    population_size_all_patches *, double );
+void remove_dead_person_from_list_available_partners(double, individual *,
+    population_partners *, population_size_all_patches *,
+    population_partners *, population_size_all_patches *);
+void remove_dead_persons_partners(individual *,
+    population_partners *, population_size_all_patches *,
+    population_partners *, population_size_all_patches *, double );
 void remove_from_hiv_pos_progression(individual *, individual ***, long *, long *, 
     double, parameters *, int);
 void remove_from_cascade_events(individual *, individual ***, long *, long *, double, parameters *);
@@ -66,7 +68,8 @@ void individual_death_AIDS(age_list_struct *, individual *, population_size *,
     population_size_one_year_age *, population_size_one_year_age *, 
     population_size_one_year_age *, population_size_one_year_age *, population_size_one_year_age *,
     stratified_population_size *, double , parameters *, individual **, 
-    long *, population_partners *, population_size_all_patches *, individual ***, 
+    long *, population_partners *, population_size_all_patches *,
+    population_partners *, population_size_all_patches *, individual ***, 
     long *, long *, patch_struct *, int , file_struct *);
 
 #endif /* DEMOGRAPHICS_H_ */

@@ -825,16 +825,6 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
     int i,j,k,l;
     long m;
 
-
-    overall_partnerships->new_partners_f = malloc(MAX_N_PER_AGE_GROUP*MAX_PARTNERSHIPS_PER_INDIVIDUAL*sizeof(long));
-    if(overall_partnerships->new_partners_f==NULL)
-    {
-        printf("Unable to allocate new_partners_f in alloc_all_memory. Execution aborted.");
-        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-        fflush(stdout);
-        exit(1);
-    }
-
     overall_partnerships->new_partners_f_sorted = malloc(MAX_N_PER_AGE_GROUP*MAX_PARTNERSHIPS_PER_INDIVIDUAL*sizeof(long));
     if(overall_partnerships->new_partners_f_sorted==NULL)
     {
@@ -848,15 +838,6 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
     if(overall_partnerships->shuffled_idx==NULL)
     {
         printf("Unable to allocate shuffled_idx in alloc_all_memory. Execution aborted.");
-        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
-        fflush(stdout);
-        exit(1);
-    }
-
-    overall_partnerships->new_partners_f_non_matchable = malloc(MAX_N_PER_AGE_GROUP*MAX_PARTNERSHIPS_PER_INDIVIDUAL*sizeof(long));
-    if(overall_partnerships->new_partners_f_non_matchable==NULL)
-    {
-        printf("Unable to allocate new_partners_f_non_matchable in alloc_all_memory. Execution aborted.");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
@@ -936,56 +917,99 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
         exit(1);
     }
 
-
-    overall_partnerships->pop_available_partners = malloc(sizeof(population_partners)); // Here only storing adresses to individuals who already exist and have been allocated memory for so should be ok
-    if(overall_partnerships->pop_available_partners==NULL)
+    overall_partnerships->pop_available_sexual_workers = malloc(sizeof(population_partners)); // Here only storing adresses to individuals who already exist and have been allocated memory for so should be ok
+    if(overall_partnerships->pop_available_sexual_workers==NULL)
     {
-        printf("Unable to allocate overall_partnerships->pop_available_partners in alloc_all_memory. Execution aborted.");
+        printf("Unable to allocate overall_partnerships->pop_available_sexual_workers in alloc_all_memory. Execution aborted.");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+
+    overall_partnerships->pop_available_normal_partners = malloc(sizeof(population_partners)); // Here only storing adresses to individuals who already exist and have been allocated memory for so should be ok
+    if(overall_partnerships->pop_available_normal_partners==NULL)
+    {
+        printf("Unable to allocate overall_partnerships->pop_available_normal_partners in alloc_all_memory. Execution aborted.");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
     }
 
     /****************************************************************************************************/
-    /**** Code to dynamically allocate memory for pop_available_partners->pop_per_patch_gender_age_risk. */
+    /**** Code to dynamically allocate memory for pop_available_sexual_workers->pop_per_patch_gender_age_risk, pop_available_normal_partners->pop_per_patch_gender_age_risk. */
     /****************************************************************************************************/
 
-    overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk = malloc(NPATCHES*sizeof(individual *****));
-    if(overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk==NULL){
-        printf("Unable to allocate memory for overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk.\n");
+    overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk = malloc(NPATCHES*sizeof(individual *****));
+    if(overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk==NULL){
+        printf("Unable to allocate memory for overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk.\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk = malloc(NPATCHES*sizeof(individual *****));
+    if(overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk==NULL){
+        printf("Unable to allocate memory for overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk.\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
     }
 
     for (i=0; i<NPATCHES; i++){
-        overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i] = malloc(N_GENDER*sizeof(individual ****));
-        if(overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i]==NULL){
-            printf("Unable to allocate memory for overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i].\n");
+        overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i] = malloc(N_GENDER*sizeof(individual ****));
+        overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i] = malloc(N_GENDER*sizeof(individual ****));
+        if(overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i]==NULL){
+            printf("Unable to allocate memory for overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i].\n");
+            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+            fflush(stdout);
+            exit(1);
+        }
+        if(overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i]==NULL){
+            printf("Unable to allocate memory for overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i].\n");
             printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
             fflush(stdout);
             exit(1);
         }
         for (j=0; j<N_GENDER; j++){
-            overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j] = malloc(N_AGE*sizeof(individual ***));
-            if(overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j]==NULL){
-                printf("Unable to allocate memory for overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j].\n");
+            overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j] = malloc(N_AGE*sizeof(individual ***));
+            overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j] = malloc(N_AGE*sizeof(individual ***));
+            if(overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j]==NULL){
+                printf("Unable to allocate memory for overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j].\n");
+                printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                fflush(stdout);
+                exit(1);
+            }
+            if(overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j]==NULL){
+                printf("Unable to allocate memory for overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j].\n");
                 printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
                 fflush(stdout);
                 exit(1);
             }
             for (k=0; k<N_AGE; k++){
-                overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j][k] = malloc(N_RISK*sizeof(individual **));
-                if(overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j][k]==NULL){
-                    printf("Unable to allocate memory for overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j][k].\n");
+                overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k] = malloc(N_RISK*sizeof(individual **));
+                overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k] = malloc(N_RISK*sizeof(individual **));
+                if(overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k]==NULL){
+                    printf("Unable to allocate memory for overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k].\n");
+                    printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                    fflush(stdout);
+                    exit(1);
+                }
+                if(overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k]==NULL){
+                    printf("Unable to allocate memory for overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k].\n");
                     printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
                     fflush(stdout);
                     exit(1);
                 }
                 for (l=0; l<N_RISK; l++){
-                    overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j][k][l] = malloc(MAX_N_PER_AGE_GROUP*MAX_PARTNERSHIPS_PER_INDIVIDUAL*sizeof(individual *));
-                    if(overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j][k]==NULL){
-                        printf("Unable to allocate memory for overall_partnerships->pop_available_partners->pop_per_patch_gender_age_risk[i][j][k][l].\n");
+                    overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k][l] = malloc(MAX_N_PER_AGE_GROUP*MAX_N_CLIENT*sizeof(individual *));
+                    overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k][l] = malloc(MAX_N_PER_AGE_GROUP*MAX_NORMAL_PARTNERSHIPS*sizeof(individual *));
+                    if(overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k][l]==NULL){
+                        printf("Unable to allocate memory for overall_partnerships->pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k][l].\n");
+                        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                        fflush(stdout);
+                        exit(1);
+                    }
+                    if(overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k][l]==NULL){
+                        printf("Unable to allocate memory for overall_partnerships->pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k][l].\n");
                         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
                         fflush(stdout);
                         exit(1);
@@ -1004,15 +1028,22 @@ void alloc_partnership_memoryv2(all_partnerships *overall_partnerships){
 
 
 
-    overall_partnerships->n_pop_available_partners = malloc(sizeof(population_size_all_patches)); // This is ok as population_size contains only objects allocated statically
-    if(overall_partnerships->n_pop_available_partners==NULL)
+    overall_partnerships->n_pop_available_sexual_workers = malloc(sizeof(population_size_all_patches)); // This is ok as population_size contains only objects allocated statically
+    if(overall_partnerships->n_pop_available_sexual_workers==NULL)
     {
-        printf("Unable to allocate n_pop_available_partners in alloc_all_memory. Execution aborted.");
+        printf("Unable to allocate n_pop_available_sexual_workers in alloc_all_memory. Execution aborted.");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
     }
-
+    overall_partnerships->n_pop_available_normal_partners = malloc(sizeof(population_size_all_patches)); // This is ok as population_size contains only objects allocated statically
+    if(overall_partnerships->n_pop_available_normal_partners==NULL)
+    {
+        printf("Unable to allocate n_pop_available_normal_partners in alloc_all_memory. Execution aborted.");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
 
 
     overall_partnerships->planned_breakups = malloc(MAX_N_YEARS*N_TIME_STEP_PER_YEAR*sizeof(partnership**)); // planned_breakups[t] is a list of pointers to partnerships planned to break up at time step param->start_time_simul+t
@@ -1137,15 +1168,16 @@ void free_all_patch_memory(parameters *param, individual *individual_population,
 }
 
 void free_all_partnership_memory(partnership *partner_pairs, long *n_partnerships, individual **susceptible_in_serodiscordant_partnership, long *n_susceptible_in_serodiscordant_partnership,
-        population_partners* pop_available_partners, population_size_all_patches *n_pop_available_partners,
+        population_partners* pop_available_sexual_workers, population_size_all_patches *n_pop_available_sexual_workers,
+        population_partners* pop_available_normal_partners, population_size_all_patches *n_pop_available_normal_partners,
         partnership ***planned_breakups, long *n_planned_breakups, long *size_planned_breakups,
-        long *new_partners_f, long *new_partners_f_sorted, long *shuffled_idx, long *new_partners_f_non_matchable, long *new_partners_m, long *new_partners_m_sorted, long *new_partners_m_non_matchable, long *partner_dummylist)
+        long *new_partners_f_sorted, long *shuffled_idx, long *new_partners_m, long *new_partners_m_sorted, long *new_partners_m_non_matchable, long *partner_dummylist)
 {
     int i,j,k,l;
     long m;
 
     /****************************************************************************************************/
-    /**** Code to dynamically allocate memory for pop_available_partners->pop_per_patch_gender_age_risk. */
+    /**** Code to dynamically allocate memory for pop_available_sexual_workers->pop_per_patch_gender_age_risk, pop_available_normal_partners->pop_per_patch_gender_age_risk. */
     /****************************************************************************************************/
 
 
@@ -1155,20 +1187,24 @@ void free_all_partnership_memory(partnership *partner_pairs, long *n_partnership
         for (j=0; j<N_GENDER; j++){
             for (k=0; k<N_AGE; k++){
                 for (l=0; l<N_RISK; l++)
-                    free(pop_available_partners->pop_per_patch_gender_age_risk[i][j][k][l]);
-                free(pop_available_partners->pop_per_patch_gender_age_risk[i][j][k]);
+                    free(pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k][l]);
+                    free(pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k][l]);
+                free(pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j][k]);
+                free(pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j][k]);
             }
-            free(pop_available_partners->pop_per_patch_gender_age_risk[i][j]);
+            free(pop_available_sexual_workers->pop_per_patch_gender_age_risk[i][j]);
+            free(pop_available_normal_partners->pop_per_patch_gender_age_risk[i][j]);
         }
-        free(pop_available_partners->pop_per_patch_gender_age_risk[i]);
+        free(pop_available_sexual_workers->pop_per_patch_gender_age_risk[i]);
+        free(pop_available_normal_partners->pop_per_patch_gender_age_risk[i]);
     }
-    free(pop_available_partners->pop_per_patch_gender_age_risk);
-    free(pop_available_partners);
+    free(pop_available_sexual_workers->pop_per_patch_gender_age_risk);
+    free(pop_available_normal_partners->pop_per_patch_gender_age_risk);
+    free(pop_available_sexual_workers);
+    free(pop_available_normal_partners);
 
-    free(new_partners_f);
     free(new_partners_f_sorted);
     free(shuffled_idx);
-    free(new_partners_f_non_matchable);
     free(new_partners_m);
     free(new_partners_m_sorted);
     free(new_partners_m_non_matchable);
@@ -1179,7 +1215,8 @@ void free_all_partnership_memory(partnership *partner_pairs, long *n_partnership
     free(susceptible_in_serodiscordant_partnership);
     free(n_susceptible_in_serodiscordant_partnership);
 
-    free(n_pop_available_partners);
+    free(n_pop_available_sexual_workers);
+    free(n_pop_available_normal_partners);
     for(m=0 ; m<MAX_N_YEARS*N_TIME_STEP_PER_YEAR ; m++)
     {
         free(planned_breakups[m]);
@@ -1219,10 +1256,11 @@ void free_partnership_memory(all_partnerships *overall_partnerships){
 
     free_all_partnership_memory(overall_partnerships->partner_pairs,overall_partnerships->n_partnerships,
             overall_partnerships->susceptible_in_serodiscordant_partnership, overall_partnerships->n_susceptible_in_serodiscordant_partnership,
-            overall_partnerships->pop_available_partners, overall_partnerships->n_pop_available_partners,
+            overall_partnerships->pop_available_sexual_workers, overall_partnerships->n_pop_available_sexual_workers,
+            overall_partnerships->pop_available_normal_partners, overall_partnerships->n_pop_available_normal_partners,
             overall_partnerships->planned_breakups, overall_partnerships->n_planned_breakups,
             overall_partnerships->size_planned_breakups,
-            overall_partnerships->new_partners_f, overall_partnerships->new_partners_f_sorted, overall_partnerships->shuffled_idx, overall_partnerships->new_partners_f_non_matchable,
+            overall_partnerships->new_partners_f_sorted, overall_partnerships->shuffled_idx, 
             overall_partnerships->new_partners_m, overall_partnerships->new_partners_m_sorted, overall_partnerships->new_partners_m_non_matchable, overall_partnerships->partner_dummylist);
 
 }
