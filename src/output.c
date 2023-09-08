@@ -3191,15 +3191,15 @@ void store_phylogenetic_transmission_output(output_struct *output, double time, 
 	
     /* Format output: */
     if (infector->gender==MALE)
-        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,M,%s,%s,%.2lf,%.2lf\n",
-			who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
-			infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
-			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB);
+        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,M,%s,%s,%.2lf,%.2lf,%li\n",
+            who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
+            infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
+            infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB,infector->sexual_worker_status);
     else
-        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,F,%s,%s,%.2lf,%.2lf\n",
-			who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
-			infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
-			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB);
+        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,F,%s,%s,%.2lf,%.2lf,%li\n",
+            who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
+            infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
+            infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB,infector->sexual_worker_status);
     
     //print_here_string(temp_string,0);
     /* The -2 is because in C the last character in any string of length n is "\0" - so we only have n-1 characters in the array we can write to. Make -2 instead of -1 to be a bit more sure! */
