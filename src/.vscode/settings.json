@@ -3,6 +3,7 @@
         "structures.h": "c",
         "__locale": "c",
         "ios": "c",
-        "random": "c"
+        "random": "c",
+        "format": "c"
     }
 }

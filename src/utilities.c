@@ -1166,9 +1166,9 @@ void concatenate_filename(char *output_filename, char *output_file_directory, ch
 /* Note that this function can be called multiple times whenever we want to take snapshots at several times but want to
  * have flexibility as to the times when we store data - so we create several files each of which has the corresponding
  * year in the title. */
-void make_filenames_for_snapshot(char *output_filename, char *output_file_directory, file_label_struct *file_labels, int year, int p, char *file_tag){
-    char yearstring[6]; /* Each year has 4 digits + one char for "_" + one extra char for terminating '\0'. */
-    sprintf(yearstring,"_%i",year);
+void make_filenames_for_snapshot(char *output_filename, char *output_file_directory, file_label_struct *file_labels, double year, int p, char *file_tag){
+    char yearstring[9]; /* Each year has 9 digits + one char for "_" + one extra char for terminating '\0'. */
+    sprintf(yearstring,"_%.2f",year);
     memset(output_filename, '\0', LONGSTRINGLENGTH*sizeof(char));            /* Ensure that output_filename is blank. */
     /* If output_filename is not long enough then exit - so prevent buffer overflow.
      * We add 2 as we need a termination character '\0' and the slash from add_slash(). */

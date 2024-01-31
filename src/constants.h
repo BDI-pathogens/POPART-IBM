@@ -98,6 +98,8 @@
 #define TIMESTEP_AGE 0 /* Generates the files Timestep_age_outputs_*.csv */
 #define WRITE_PHYLOGENETICS_OUTPUT 0 // 1    /* if 1 print phylo output to file, otherwise do not print */
 #define WRITE_PARTNERSHIP_NETWORK_SNAPSHOT 0 /* if 1 then print out the sexual network at fixed times to allow network plots.  Writes the files Partnership_network_*.csv to disk.  The years at which partnerships are output are hard-coded in main.c */
+#define PARTNERSHIP_NETWORK_SNAPSHOT_START 2010
+#define PARTNERSHIP_NETWORK_SNAPSHOT_END 2019
 #define WRITE_PARTNERS_OUTSIDE_COMMUNITY 0   /* if 1 then makes the file Partner_outside_inside_patch0.csv. */
 
 #define WRITE_HAZARDS 0                      /* Generates the files Hazards_*.csv */

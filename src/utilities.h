@@ -60,7 +60,7 @@ void make_output_label_struct(file_label_struct *, long , int , int , int , patc
     int , int );
 void make_filenames_for_struct(file_label_struct *, file_struct *,  char *);
 void concatenate_filename(char *, char *, char *, char *);
-void make_filenames_for_snapshot(char *, char *, file_label_struct *, int , int , char *);
+void make_filenames_for_snapshot(char *, char *, file_label_struct *, double , int , char *);
 void make_calibration_output_filename(char *, char *, long , patch_struct *, int , int , int, int);
 void add_commas_to_calibration_output(char *,int );
 void print_param_struct(parameters *);

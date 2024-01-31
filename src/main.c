@@ -530,7 +530,7 @@ int main(int argc,char *argv[]){
                 //printf("YEAR: %d\n\n",year);
                 fit_flag = carry_out_processes(year, *fitting_data, patch, overall_partnerships,
                     output, rng_seed_offset, rng_seed_offset_PC, debug, file_data_store,
-                    is_counterfactual);
+                    is_counterfactual, output_file_directory, file_labels);
 
                 if(fit_flag == -1){
                     printf("Error.  Unexpected return from carry_out_processes(). Exiting.\n");
@@ -694,16 +694,7 @@ int main(int argc,char *argv[]){
                         write_demographics_byage_gender(patch, p, (float) year, file_data_store);
                     }
                 }
-                /* Print the sexual network every year for 5 years (used in DSMB 2016). */
-                if(
-                    (year > 2008 && year<=2018) && 
-                    (WRITE_PARTNERSHIP_NETWORK_SNAPSHOT==1) && 
-                    (PRINT_EACH_RUN_OUTPUT==1)
-                ){
-                    print_partnership_network(file_data_store, output_file_directory,
-                    file_labels,patch, 
-                    year + 1, p);
-                }
+ 
 
                 /* At least one patch has died out, and we are no longer seeding HIV. */
                 if(fit_flag == 0 && PRINT_ALL_RUNS == 0){

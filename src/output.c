@@ -3309,7 +3309,7 @@ void write_hivpos_individual_data(file_struct *file_data_store, individual *indi
 
 
 
-void print_partnership_network(file_struct *file_data_store, char *output_file_directory, file_label_struct *file_labels,  patch_struct *patch,  int year, int p){
+void print_partnership_network(file_struct *file_data_store, char *output_file_directory, file_label_struct *file_labels,  patch_struct *patch,  double year, int p){
     long n_id, gender;
     float ageid, agepart;
     int n_partners, i_partner;
