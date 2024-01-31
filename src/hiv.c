@@ -1463,7 +1463,10 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 indiv->time_last_hiv_test = t;
 
                 // PANGEA stuff - get CD4 at time of emergency ART:
-                indiv->PANGEA_t_diag = t;
+                // check that the individual was not already tested at time of starting ART
+                if (indiv->PANGEA_t_diag==-1){
+                    indiv->PANGEA_t_diag = t;
+                }
                 indiv->PANGEA_cd4atdiagnosis = PANGEA_get_cd4(indiv, t);
 
                 // Assume that HIV test happens at same time as start of ART:
