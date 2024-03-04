@@ -41,7 +41,7 @@
  * function arguments: pointer to the pair and the 2 individuals, time of partnership formation, list of planned_breakups and n_planned_breakups, list of susceptible_in_serodiscordant_partnership and n_susceptible_in_serodiscordant_partnership, poiter to parameters.
  * Function returns: nothing */
 
-void new_partnership(individual* ind1, individual* ind2, double t_form_partnership,
+void new_partnership(individual* ind1, individual* ind2, int t_form_partnership,
         all_partnerships *overall_partnerships,
         parameters *param, debug_struct *debug,
         file_struct *file_data_store){
@@ -106,7 +106,6 @@ void new_partnership(individual* ind1, individual* ind2, double t_form_partnersh
 
         risk_f = ind1->sex_risk;
         risk_m = ind2->sex_risk;
-
     }else
     {
         age_f = get_age_group(ind2->DoB,t_form_partnership, AGE_GROUPS, N_AGE);
@@ -115,18 +114,17 @@ void new_partnership(individual* ind1, individual* ind2, double t_form_partnersh
         risk_f = ind2->sex_risk;
         risk_m = ind1->sex_risk;
     }
-    pair->begin = t_form_partnership; /*current time in years*/
 
     if(CHECK_AGE_AND_RISK_ASSORTATIVITY == 1)
     {
-        debug->age_of_partners_at_partnership_formation[(int)t_form_partnership - param->start_time_simul][age_f][age_m] ++;
-        debug->risk_of_partners_at_partnership_formation[(int)t_form_partnership - param->start_time_simul][risk_f][risk_m] ++;
+        debug->age_of_partners_at_partnership_formation[t_form_partnership - param->start_time_simul][age_f][age_m] ++;
+        debug->risk_of_partners_at_partnership_formation[t_form_partnership - param->start_time_simul][risk_f][risk_m] ++;
     }
 
     /* duration (in number of time steps) of the partnership */
 
     pair->duration_in_time_steps = time_to_partnership_dissolution(param,ind1->sex_risk,ind2->sex_risk, ind1->patch_no, ind2->patch_no); //// IF WE WANT SOMETHING ASYMETRICAL ACCORDING TO GENDER WILL NEED TO SPECIFY WHICH IS THE MALE AND WHICH IS THE FEMALE
-    
+
     if(DEBUG_PARTNERSHIP_DURATION ==1)
     {
 
@@ -629,7 +627,7 @@ void draw_nb_new_partnerships(patch_struct *patch, parameters *param, int patch_
 }
 
 
-void draw_n_new_partnerships(double time, long n, parameters *param, int ag_f, int r_f, int ag_m, 
+void draw_n_new_partnerships(int time, long n, parameters *param, int ag_f, int r_f, int ag_m, 
     int r_m, int *n_non_matchable, all_partnerships *overall_partnerships, patch_struct *patch, 
     int patch_f, int patch_m, debug_struct *debug, file_struct *file_data_store){
     
@@ -644,7 +642,7 @@ void draw_n_new_partnerships(double time, long n, parameters *param, int ag_f, i
     
     Parameters
     ----------
-    time : double
+    time : int
         the time of partnership formation
     
     n : long
@@ -942,7 +940,7 @@ void draw_n_new_partnerships(double time, long n, parameters *param, int ag_f, i
 }
 
 
-void draw_new_partnerships(double time, all_partnerships *overall_partnerships, patch_struct *patch,
+void draw_new_partnerships(int time, all_partnerships *overall_partnerships, patch_struct *patch,
     parameters *param, int patch_f, int patch_m, debug_struct *debug, 
     file_struct *file_data_store){
     // !!! here I kept param as an argument as we may want to generate a parameter set which is a
@@ -954,8 +952,8 @@ void draw_new_partnerships(double time, all_partnerships *overall_partnerships, 
 
     Arguments
     ---------
-    time : double
-        the time of partnership formation in years
+    time : int
+        the time of partnership formation
     overall_partnerships : pointer to all_partnerships struct
     
     patch : pointer to patch_struct struct

@@ -53,7 +53,7 @@ carry_out_processes_by_patch_by_time_step()
 int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct *patch,
     all_partnerships * overall_partnerships, output_struct *output, int rng_seed_offset, 
     int rng_seed_offset_PC, debug_struct *debug, file_struct *file_data_store, 
-    int is_counterfactual, char *output_file_directory, file_label_struct *file_labels){
+    int is_counterfactual){
     /* Main function for carrying out 
     
     
@@ -73,10 +73,8 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
     file_data_store : pointer to a file_struct
     is_counterfactual : int
         Indicator for whether the counterfactual is being run or not (1 Yes, 0 No)
-    output_file_directory: pointer to char 
-    used to print the evolution of partnership network (if WRITE_PARTNERSHIP_SNAPSHOT is 1)
-    file_labels: pointer to file_label_struct:
-    usd to print the evolution of the partnership network step by step
+    
+    
     Returns
     -------
     Integer; 
@@ -95,6 +93,9 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
         patch[p].n_newly_infected_total_pconly = 0;
         patch[p].n_newly_infected_total_from_outside_pconly = 0;
         patch[p].n_newly_infected_total_from_acute_pconly = 0;
+        patch[p].n_newly_infected_total_from_drug_resistant = 0;
+        patch[p].n_newly_infected_total_from_drug_resistant_pconly = 0;
+        
         
         for(r = 0; r < N_RISK; r++){
             patch[p].n_newly_infected_total_by_risk[r] = 0;
@@ -151,11 +152,11 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
             
             fit_flag = carry_out_processes_by_patch_by_time_step(t_step, t0, fitting_data, patch,
                 p, overall_partnerships, output, rng_seed_offset, rng_seed_offset_PC, debug, 
-                file_data_store, is_counterfactual,output_file_directory, file_labels);
+                file_data_store, is_counterfactual);
         }
         
         carry_out_partnership_processes_by_time_step(t_step, t0,patch, overall_partnerships, output,
-            debug, file_data_store,output_file_directory, file_labels);
+            debug, file_data_store);
         
         // store_timestep_outputs() is called at the end of this timestep, 
         // so time = t+TIME_STEP.*/
@@ -263,7 +264,7 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
 
 void carry_out_partnership_processes_by_time_step(int t_step, int t0, patch_struct *patch,
     all_partnerships * overall_partnerships, output_struct *output, debug_struct *debug,
-    file_struct *file_data_store, char *output_file_directory, file_label_struct *file_labels){
+    file_struct *file_data_store){
     /* Carry out processes associated with partnership dissolution (non-death related), partnership
     formation and HIV acquisition between serodiscordant partnerships.  
     
@@ -370,11 +371,11 @@ void carry_out_partnership_processes_by_time_step(int t_step, int t0, patch_stru
 int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_struct *fitting_data,
         patch_struct *patch, int p, all_partnerships * overall_partnerships, output_struct *output,
         int rng_seed_offset, int rng_seed_offset_PC, debug_struct *debug, 
-        file_struct *file_data_store, int is_counterfactual, char *output_file_directory, file_label_struct *file_labels){
+        file_struct *file_data_store, int is_counterfactual){
     /* This function calls a range of processes used in the simulation
     
     In the following order, this function calls the following processes: 
-        1. Set up PC sample //we are not using this really (supposed to be a representative sample, not working correctly - the real sample is biased!)
+        1. Set up PC sample
         2. Set up CHiPs sample
         3. HIV testing
         4. Births and deaths
@@ -428,20 +429,6 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
     /* Current time in yrs. */
     t = t0 + t_step * TIME_STEP;
     
-
-
-    /* Print the sexual network every year for n years (used in DSMB 2016). */
-    if(
-        (t > PARTNERSHIP_NETWORK_SNAPSHOT_START && t<=PARTNERSHIP_NETWORK_SNAPSHOT_END) && 
-        (WRITE_PARTNERSHIP_NETWORK_SNAPSHOT==1) && 
-        (PRINT_EACH_RUN_OUTPUT==1)
-    ){
-        print_partnership_network(file_data_store, output_file_directory,
-        file_labels,patch, 
-        t, p);
-    }
-
-
     // Determine if the current time is within the final CHiPs round or not.  The variable
     // `POPART_FINISHED` takes value 1 after the end of the final CHiPs round. Once
     // PopART finishes assume that test-and-treat continues like the last CHiPs round.
@@ -964,7 +951,7 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
     // Function determines if there are any things we need to fit to at the current timestep, 
     // and carries out any fitting needed.
     fit_flag = fit_data(t0, t_step, fitting_data, patch, p);
-    //printf("fitta %d",fitting_data[0].fit_year);
+    
     // If run did not fit given data, then return from this function - stops any further timesteps,
     // and this run is then terminated in main.c.
     

@@ -357,6 +357,7 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
     if (hivstatus==0){
         new_adult->HIV_status = UNINFECTED;
         new_adult->ART_status = ARTNEG;
+        new_adult->cascade_round = 0;
         new_adult->next_HIV_event = NOEVENT; /* Initialize at dummy value. */
         new_adult->next_cascade_event = NOEVENT; /* Initialize at dummy value. */
         new_adult->SPVL_num_G = 0;                  /* Initialize at dummy value. */
@@ -388,6 +389,8 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
         new_adult->PANGEA_date_startfirstVLsuppression = -1.0;
         new_adult->PANGEA_date_endfirstVLsuppression = -1.0;
 
+        new_adult->drug_resistant = -1;
+        new_adult->t_HIVpos_diag = -1;
         /* Variables store cumulative amount of time a person spends on ART: */
         new_adult->DEBUG_cumulative_time_on_ART_VS = 0;
         new_adult->DEBUG_cumulative_time_on_ART_VU = 0;
@@ -574,8 +577,7 @@ void update_population_size_new_adult(individual *new_adult, population_size *n_
  * Function arguments: pointer to the specific individual who dies, pointer to population_size structure, age group index (age groups 13-18, 19-22, 23-30, etc). 
  * Function returns: Nothing. */
 void update_population_size_death(individual *individual, population_size *n_population, population_size_one_year_age *n_population_oneyearagegroups,
-        population_size_one_year_age *n_infected,population_size_one_year_age *n_art,population_size_one_year_age *n_virallysuppressed,
-         stratified_population_size *n_population_stratified, int aa, age_list_struct *age_list){
+        population_size_one_year_age *n_infected, stratified_population_size *n_population_stratified, int aa, age_list_struct *age_list){
 
     int ag = FIND_AGE_GROUPS[aa];
     int ai;
@@ -603,40 +605,14 @@ void update_population_size_death(individual *individual, population_size *n_pop
             // FOR DEBUGGING ONLY:
             //check_age_group_index(age_list, individual->gender, individual->id,ai); /// could be removed as only checking things ///
             (n_infected->pop_size_per_gender_age1_risk[individual->gender][ai][individual->sex_risk]) -= 1;
-            if (individual->ART_status>=EARLYART && individual->ART_status < ARTDROPOUT){
-                 //printf("%d, demo.c\n",individual->patch_no);
-                 //if(n_art->pop_size_per_gender_age1_risk[individual->gender][ai][individual->sex_risk]==0) printf("id = %ld\n, patch =%d\n",individual->id, individual->ART_status);
-                 
-                 //printf("at t=%f, decrease due to death from %ld, aa=%d, gender=%d, id %ld, patch %d, art %d\n",individual->DoD,n_art->pop_size_per_gender_age1_risk[individual->gender][ai][individual->sex_risk],ai,individual->gender,individual->id,individual->patch_no,individual->ART_status);
-        
-                 (n_art->pop_size_per_gender_age1_risk[individual->gender][ai][individual->sex_risk]) -= 1;
-                 if (individual->ART_status==2 ){
-                    //printf("at t=%f, decrease due to death from %ld, aa=%d, gender=%d, id %ld, patch %d, art %d\n",individual->DoD,n_art->pop_size_per_gender_age1_risk[individual->gender][ai][individual->sex_risk],ai,individual->gender,individual->id,individual->patch_no,individual->ART_status);
-
-                     (n_virallysuppressed->pop_size_per_gender_age1_risk[individual->gender][ai][individual->sex_risk]) -= 1;
-                 }
-            }
             //printf("--- One death of HIV+ (age group %d, gender %d risk group %d)\n",ai, individual->gender, individual->sex_risk);
             //fflush(stdout);
         }
         else{
             (n_infected->pop_size_oldest_age_group_gender_risk[individual->gender][individual->sex_risk]) -= 1;
-            if (individual->ART_status>=EARLYART && individual->ART_status< ARTDROPOUT ){
-                //if(n_art->pop_size_oldest_age_group_gender_risk[individual->gender][individual->sex_risk]==0) printf("id = %ld\n , patch =%d\n",individual->id, individual->ART_status);
-                //printf("at t=%f, decrease due to death from %ld, aa=max, gender=%d, id %ld, patch %d, art %d\n",individual->DoD,n_art->pop_size_oldest_age_group_gender_risk[individual->gender][individual->sex_risk],individual->gender,individual->id,individual->patch_no,individual->ART_status);
-
-                //printf("%f, demo.c\n",individual->t_start_art);
-                (n_art->pop_size_oldest_age_group_gender_risk[individual->gender][individual->sex_risk]) -= 1;
-                 if (individual->ART_status==2 ){
-                    //printf("at t=%f, decrease due to death from %ld, aa=%d, gender=%d, id %ld, patch %d, art %d\n",individual->DoD,n_art->pop_size_per_gender_age1_risk[individual->gender][ai][individual->sex_risk],ai,individual->gender,individual->id,individual->patch_no,individual->ART_status);
-
-                    (n_virallysuppressed->pop_size_oldest_age_group_gender_risk[individual->gender][individual->sex_risk]) -= 1;
-                 }
-            }
             //printf("--- One death of HIV+ (old, gender %d risk group %d)\n",individual->gender, individual->sex_risk);
-            //
+            //fflush(stdout);
         }
-        fflush(stdout);
     }
 
     (n_population_stratified->pop_size_per_gender_age[individual->gender][ag])--;
@@ -742,7 +718,7 @@ int get_age_index(double DoB, double start_simul){ /// Do we ever use this?
 //}
 
 
-int get_age_indexv2(double DoB, double t, int youngest_age_group_index){ /// Do we ever use this? Not currently used except as a check - may use as a 'standard method' later on. EDIT FDL used in increase_population_count_art_or_virallysuppressed */
+int get_age_indexv2(double DoB, double t, int youngest_age_group_index){ /// Do we ever use this? Not currently used except as a check - may use as a 'standard method' later on. */
     int ai;
     int aa = (int) floor(floor(t) - DoB) - AGE_ADULT;
 
@@ -1534,8 +1510,6 @@ void remove_from_cascade_events(individual *indiv, individual ***cascade_events,
         return;
     if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
         printf("Individual %ld at time %6.2f - removing from cascade events\n",indiv->id,t);
-        printf("Individual ART status is %d at time %6.2f - removing from cascade events\n",indiv->ART_status,t);
-
         fflush(stdout);
     }
 
@@ -1637,35 +1611,6 @@ void remove_from_vmmc_events(individual *indiv, individual ***vmmc_events, long 
     /* We have removed one person: */
     n_vmmc_events[i]--; 
 
-}
-//increase (or decrease) the counter for the population based on individual who changes ART or VS status, used in store_annual_outputs.c 
-void increase_population_count_art_or_virallysuppressed(population_size_one_year_age *n_local_pop,  individual* infected, double time_current){
-    int aa;
-    aa = get_age_indexv2(infected->DoB,time_current,n_local_pop->youngest_age_group_index);
-    if (aa<MAX_AGE-AGE_ADULT){
-        //printf("at t=%f, increase from %ld, aa=%d, gender=%d, id %ld, patch %d, art %d\n",time_current,n_local_pop->pop_size_per_gender_age1_risk[infected->gender][aa][infected->sex_risk],aa,infected->gender,infected->id,infected->patch_no,infected->ART_status);
-
-        (n_local_pop->pop_size_per_gender_age1_risk[infected->gender][aa][infected->sex_risk]) +=1;
-    }
-    else{
-       // printf("at t=%f,increase from %ld, aa=max, gender=%d, id %ld, patch %d, art %d\n",time_current,n_local_pop->pop_size_oldest_age_group_gender_risk[infected->gender][infected->sex_risk],infected->gender,infected->id,infected->patch_no,infected->ART_status);
-        (n_local_pop->pop_size_oldest_age_group_gender_risk[infected->gender][infected->sex_risk])+=1;
-    }
-    fflush(stdout);
-}
-void decrease_population_count_art_or_virallysuppressed(population_size_one_year_age *n_local_pop,  individual* infected, double time_current){
-    int aa;
-
-    aa = get_age_indexv2(infected->DoB,time_current,n_local_pop->youngest_age_group_index);
-    if (aa<MAX_AGE-AGE_ADULT){
-        //printf("at t=%f, decrease from %ld, aa=%d, gender=%d, id %ld, patch %d, art %d\n",time_current,n_local_pop->pop_size_per_gender_age1_risk[infected->gender][aa][infected->sex_risk],aa,infected->gender,infected->id,infected->patch_no,infected->ART_status);
-        (n_local_pop->pop_size_per_gender_age1_risk[infected->gender][aa][infected->sex_risk]) -=1;
-    }
-    else{
-        //printf("at t=%f,decrease from %ld, aa=max, gender=%d, id %ld, patch %d, art %d\n",time_current,n_local_pop->pop_size_oldest_age_group_gender_risk[infected->gender][infected->sex_risk],infected->gender,infected->id,infected->patch_no,infected->ART_status);
-        (n_local_pop->pop_size_oldest_age_group_gender_risk[infected->gender][infected->sex_risk])-=1;
-    }
-    fflush(stdout);
 }
 
 
@@ -1840,14 +1785,10 @@ void deaths_natural_causes(double t, patch_struct *patch, int p,
                         remove_from_vmmc_events(person_dying, patch[p].vmmc_events,
                             patch[p].n_vmmc_events, patch[p].size_vmmc_events, t, patch[p].param);
                     }
-                    if(person_dying->id==FOLLOW_INDIVIDUAL && person_dying->patch_no==FOLLOW_PATCH){
-                        printf("\n individual ART status before dying was %d \n\n",person_dying->ART_status);
-                        fflush(stdout);
-                    }
+                    
                     // Now update popn counts: n_population, n_infected, n_population_stratified
                     update_population_size_death(person_dying, patch[p].n_population,
                         patch[p].n_population_oneyearagegroups, patch[p].n_infected,
-                        patch[p].n_art,patch[p].n_virallysuppressed,
                         patch[p].n_population_stratified, aa, patch[p].age_list);
 
                     // Output time person was seropositive if HIV+ and not on ART.
@@ -1947,7 +1888,6 @@ void deaths_natural_causes(double t, patch_struct *patch, int p,
             // Updates population counts
             update_population_size_death(person_dying, patch[p].n_population,
                 patch[p].n_population_oneyearagegroups, patch[p].n_infected,
-                patch[p].n_art,patch[p].n_virallysuppressed,
                 patch[p].n_population_stratified, MAX_AGE-AGE_ADULT, patch[p].age_list);
             
             // Output time person was seropositive if HIV+
@@ -1968,9 +1908,6 @@ void deaths_natural_causes(double t, patch_struct *patch, int p,
         }
     }
 }
-
-
-
 
 
 /* Function does: Deals with transition to adulthood of children from child_population at each timestep. 
@@ -2206,8 +2143,6 @@ void make_pop_from_age_list(population *pop, age_list_struct *age_list, individu
 void individual_death_AIDS(age_list_struct *age_list, individual *dead_person, 
         population_size *n_population, population_size_one_year_age *n_population_oneyearagegroups,
         population_size_one_year_age *n_infected,
-        population_size_one_year_age *n_art, 
-        population_size_one_year_age *n_virallysuppressed, 
         stratified_population_size *n_population_stratified, double t, parameters *param, 
         individual **susceptible_in_serodiscordant_partnership, 
         long *n_susceptible_in_serodiscordant_partnership, 
@@ -2232,8 +2167,8 @@ void individual_death_AIDS(age_list_struct *age_list, individual *dead_person,
     int age_idx = FIND_AGE_GROUPS_UNPD[age - AGE_ADULT];
     
     if (dead_person->id==FOLLOW_INDIVIDUAL && dead_person->patch_no == FOLLOW_PATCH){
-        printf("Killing %li from patch %d by HIV at time %6.2f\n Their individual ART status is %d", 
-            dead_person->id, dead_person->patch_no, t, dead_person->ART_status);
+        printf("Killing %li from patch %d by HIV at time %6.2f\n", 
+            dead_person->id, dead_person->patch_no, t);
         fflush(stdout);
     }
     
@@ -2312,7 +2247,7 @@ void individual_death_AIDS(age_list_struct *age_list, individual *dead_person,
             printf("Calling deaths_natural_causes() with %i partners\n",dead_person->n_partners);
 
         /* Now update the n_population, n_infected and n_population_stratified counts. */
-        update_population_size_death(dead_person, n_population, n_population_oneyearagegroups, n_infected, n_art, n_virallysuppressed, n_population_stratified, aa, age_list); /* Updates population counts. */
+        update_population_size_death(dead_person, n_population, n_population_oneyearagegroups, n_infected, n_population_stratified, aa, age_list); /* Updates population counts. */
 
 
         //////// For DEBUGGING:
@@ -2352,7 +2287,7 @@ void individual_death_AIDS(age_list_struct *age_list, individual *dead_person,
         // Have had problems with trying to remove the same dead person twice.
         //remove_from_cascade_events(dead_person, cascade_events, n_cascade_events, size_cascade_events,t, param);
 
-        update_population_size_death(dead_person, n_population, n_population_oneyearagegroups, n_infected, n_art,n_virallysuppressed, n_population_stratified, MAX_AGE-AGE_ADULT, age_list); /* Updates population counts. */
+        update_population_size_death(dead_person, n_population, n_population_oneyearagegroups, n_infected, n_population_stratified, MAX_AGE-AGE_ADULT, age_list); /* Updates population counts. */
 
         dead_person->cd4 = DEAD;
         dead_person->DoD = t;

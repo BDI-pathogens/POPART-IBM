@@ -15,7 +15,7 @@
 #	./popart-simul.exe Zambia
 
 GSLFLAGS= -lgsl -lgslcblas -lm -O3
-LFLAGS = ${GSLFLAGS} $(shell gsl-config --libs)
+LFLAGS = ${GSLFLAGS}
 
 # all the C files (*.c)
 SRCS = constants.c demographics.c hiv.c init.c input.c interventions.c output.c partnership.c utilities.c checks.c memory.c fitting.c debug.c pc.c simul.c main.c 
@@ -36,15 +36,15 @@ endif
 
 # For compilation on Rescomp
 ifeq ($(location),rescomp)
-	INC = $EBROOTGSL/include
-	LIB = $EBROOTGSL/lib	
+	INC = /apps/well/gsl/2.2.1-gcc4.9.3/include
+	LIB = /apps/well//gsl/2.2.1-gcc4.9.3/lib
 else
-	INC = /usr/local/include
+        INC = /usr/local/include
 	LIB = /usr/local/lib
 endif
 
 # Compilation options and libraries to be used
-CFLAGS = -g -fcommon -Wall -fmessage-length=0 -I$(INC) $(shell gsl-config --cflags) 
+CFLAGS = -g -Wall -fmessage-length=0 -I$(INC) -O0 -fcommon
 
 # To compile
 all: ${OBJS}

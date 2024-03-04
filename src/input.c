@@ -1106,8 +1106,23 @@ void read_cascade_params(char *patch_tag, parameters *allrunparameters, int n_ru
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_leaves_earlyart_cd4_under200_if_not_die_early));
         check_if_cannot_read_param(checkreadok,"param_local->p_leaves_earlyart_cd4_under200_if_not_die_early");
 
-        checkreadok = fscanf(param_file,"%lg",&(param_local->p_becomes_vs_after_earlyart_if_not_die_early_or_leave));
-        check_if_cannot_read_param(checkreadok,"param_local->p_becomes_vs_after_earlyart_if_not_die_early_or_leave");
+        /*checkreadok = fscanf(param_file,"%lg",&(param_local->p_becomes_vs_after_earlyart_if_not_die_early_or_leave));
+        check_if_cannot_read_param(checkreadok,"param_local->p_becomes_vs_after_earlyart_if_not_die_early_or_leave");*/
+        checkreadok = fscanf(param_file,"%lg",&(param_local->intercept_PDR));
+        check_if_cannot_read_param(checkreadok,"param_local->intercept_PDR");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->slope_PDR));
+        check_if_cannot_read_param(checkreadok,"param_local->slope_PDR");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->coeff_age_under45_PDR));
+        check_if_cannot_read_param(checkreadok,"param_local->coeff_age_under45_PDR");
+		checkreadok = fscanf(param_file,"%lg",&(param_local->p_vs_given_PDR[NOT_IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_vs_given_PDR");
+		checkreadok = fscanf(param_file,"%lg",&(param_local->p_vs_given_PDR[IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_vs_given_PDR");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_vs_given_nonPDR[NOT_IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_vs_given_nonPDR");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_vs_given_nonPDR[IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_vs_given_nonPDR");
+		
 
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_stays_virally_suppressed));
         check_if_cannot_read_param(checkreadok,"param_local->p_stays_virally_suppressed");
@@ -1118,9 +1133,21 @@ void read_cascade_params(char *patch_tag, parameters *allrunparameters, int n_ru
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_stops_virally_suppressed));
         check_if_cannot_read_param(checkreadok,"param_local->p_stops_virally_suppressed");
 
-        checkreadok = fscanf(param_file,"%lg",&(param_local->p_vu_becomes_virally_suppressed));
-        check_if_cannot_read_param(checkreadok,"param_local->p_vu_becomes_virally_suppressed");
-        /* Input times for the cascade events: */
+        /*checkreadok = fscanf(param_file,"%lg",&(param_local->p_vu_becomes_virally_suppressed));
+        check_if_cannot_read_param(checkreadok,"param_local->p_vu_becomes_virally_suppressed");*/
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_DR_given_vu));
+        check_if_cannot_read_param(checkreadok,"param_local->p_DR_given_vu");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_DR_vu_becomes_virally_suppressed[NOT_IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_DR_vu_becomes_virally_suppressed");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_DR_vu_becomes_virally_suppressed[IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_DR_vu_becomes_virally_suppressed");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_nonDR_vu_becomes_virally_suppressed[NOT_IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_nonDR_vu_becomes_virally_suppressed");
+        checkreadok = fscanf(param_file,"%lg",&(param_local->p_nonDR_vu_becomes_virally_suppressed[IPM]));
+        check_if_cannot_read_param(checkreadok,"param_local->p_nonDR_vu_becomes_virally_suppressed");
+        
+		
+		/* Input times for the cascade events: */
         checkreadok = fscanf(param_file,"%lg",&(param_local->t_earlyart_dropout_min[NOTPOPART]));
         check_if_cannot_read_param(checkreadok,"param_local->t_earlyart_dropout_min");
 

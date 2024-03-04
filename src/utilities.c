@@ -1089,18 +1089,18 @@ void make_filenames_for_struct(file_label_struct *file_labels,
         join_strings_with_check(phylo_indiv_filename_temp, temp, 100, 
             "phylo_trans_filename_temp and temp in make_filenames_for_struct()");
     }
-    for(p=0;p<NPATCHES;p++){
-        concatenate_filename(file_data_store->filename_phylogenetic_transmission[p],
-            output_file_directory, file_labels->filename_label_bypatch[p],
-            phylo_trans_filename_temp);
-        concatenate_filename(file_data_store->filename_phylogenetic_individualdata[p],
-            output_file_directory, file_labels->filename_label_bypatch[p],
-            phylo_indiv_filename_temp);
+    
+    concatenate_filename(file_data_store->filename_phylogenetic_transmission,
+        output_file_directory, file_labels->filename_label_bypatch[0],
+        phylo_trans_filename_temp);
+    concatenate_filename(file_data_store->filename_phylogenetic_individualdata,
+        output_file_directory, file_labels->filename_label_bypatch[0],
+        phylo_indiv_filename_temp);
 
-        concatenate_filename(file_data_store->filename_hivsurvival_individualdata[p],
-            output_file_directory, file_labels->filename_label_bypatch[p],
+    concatenate_filename(file_data_store->filename_hivsurvival_individualdata,
+        output_file_directory, file_labels->filename_label_bypatch[0],
         "HIVsurvival_individualdata");
-    }
+
     /* Output for hazards - note that we only want from patch 0. */
     concatenate_filename(file_data_store->filename_hazard_output,
         output_file_directory, file_labels->filename_label_bypatch[0],
@@ -1166,9 +1166,9 @@ void concatenate_filename(char *output_filename, char *output_file_directory, ch
 /* Note that this function can be called multiple times whenever we want to take snapshots at several times but want to
  * have flexibility as to the times when we store data - so we create several files each of which has the corresponding
  * year in the title. */
-void make_filenames_for_snapshot(char *output_filename, char *output_file_directory, file_label_struct *file_labels, double year, int p, char *file_tag){
-    char yearstring[9]; /* Each year has 9 digits + one char for "_" + one extra char for terminating '\0'. */
-    sprintf(yearstring,"_%.2f",year);
+void make_filenames_for_snapshot(char *output_filename, char *output_file_directory, file_label_struct *file_labels, int year, int p, char *file_tag){
+    char yearstring[6]; /* Each year has 4 digits + one char for "_" + one extra char for terminating '\0'. */
+    sprintf(yearstring,"_%i",year);
     memset(output_filename, '\0', LONGSTRINGLENGTH*sizeof(char));            /* Ensure that output_filename is blank. */
     /* If output_filename is not long enough then exit - so prevent buffer overflow.
      * We add 2 as we need a termination character '\0' and the slash from add_slash(). */
@@ -1377,11 +1377,25 @@ void print_param_struct(parameters *param){
         printf("param->p_dies_earlyart_cd4[icd4]=%lg\n",param->p_dies_earlyart_cd4[icd4]);
     printf("param->p_leaves_earlyart_cd4_over200_if_not_die_early=%lg\n",param->p_leaves_earlyart_cd4_over200_if_not_die_early);
     printf("param->p_leaves_earlyart_cd4_under200_if_not_die_early=%lg\n",param->p_leaves_earlyart_cd4_under200_if_not_die_early);
-    printf("param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave=%lg\n",param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave);
-    printf("param->p_stays_virally_suppressed=%lg\n",param->p_stays_virally_suppressed);
+    //printf("param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave=%lg\n",param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave);
+    printf("param->intercept_PDR=%lg\n",param->intercept_PDR);
+    printf("param->slope_PDR=%lg\n",param->slope_PDR);
+    printf("param->coeff_age_under45_PDR=%lg\n",param->coeff_age_under45_PDR);
+    printf("param->p_vs_given_PDR=%lg\n",param->p_vs_given_PDR[NOT_IPM]);
+    printf("param->p_vs_given_PDR=%lg\n",param->p_vs_given_PDR[IPM]);
+    printf("param->p_vs_given_nonPDR=%lg\n",param->p_vs_given_nonPDR[NOT_IPM]);    
+    printf("param->p_vs_given_nonPDR=%lg\n",param->p_vs_given_nonPDR[IPM]);    
+	printf("param->p_stays_virally_suppressed=%lg\n",param->p_stays_virally_suppressed);
     printf("param->p_stops_virally_suppressed=%lg\n",param->p_stops_virally_suppressed);
-    printf("param->p_vu_becomes_virally_suppressed=%lg\n",param->p_vu_becomes_virally_suppressed);
-    printf("param->t_earlyart_dropout_min[NOTPOPART]=%lg\n",param->t_earlyart_dropout_min[NOTPOPART]);
+    //printf("param->p_vu_becomes_virally_suppressed=%lg\n",param->p_vu_becomes_virally_suppressed);
+    printf("param->p_DR_given_vu=%lg\n",param->p_DR_given_vu);
+    
+	printf("param->p_DR_vu_becomes_virally_suppressed=%lg\n",param->p_DR_vu_becomes_virally_suppressed[NOT_IPM]);
+    printf("param->p_DR_vu_becomes_virally_suppressed=%lg\n",param->p_DR_vu_becomes_virally_suppressed[IPM]);
+    printf("param->p_nonDR_vu_becomes_virally_suppressed=%lg\n",param->p_nonDR_vu_becomes_virally_suppressed[NOT_IPM]);
+    printf("param->p_nonDR_vu_becomes_virally_suppressed=%lg\n",param->p_nonDR_vu_becomes_virally_suppressed[IPM]);
+	
+	printf("param->t_earlyart_dropout_min[NOTPOPART]=%lg\n",param->t_earlyart_dropout_min[NOTPOPART]);
     printf("param->t_earlyart_dropout_min[POPART]=%lg\n",param->t_earlyart_dropout_min[POPART]);
     printf("param->t_earlyart_dropout_range[NOTPOPART]=%lg\n",param->t_earlyart_dropout_range[NOTPOPART]);
     printf("param->t_earlyart_dropout_range[POPART]=%lg\n",param->t_earlyart_dropout_range[POPART]);
@@ -1872,14 +1886,31 @@ void check_if_parameters_plausible(parameters *param){
         fflush(stdout);
         exit(1);
     }
-
-    if (param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave<0 || param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave>1){
-        printf("Error:param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave is outside expected range [0,1]\nExiting\n");
+	if (param->p_vs_given_PDR[NOT_IPM]<0 || param->p_vs_given_PDR[NOT_IPM]>1){
+        printf("Error:param->p_vs_given_PDR is outside expected range [0,1]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
     }
-    if (param->p_stays_virally_suppressed<0 || param->p_stays_virally_suppressed>1){
+	if (param->p_vs_given_PDR[IPM]<0 || param->p_vs_given_PDR[IPM]>1){
+        printf("Error:param->p_vs_given_PDR is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    if (param->p_vs_given_nonPDR[NOT_IPM]<0 || param->p_vs_given_nonPDR[NOT_IPM]>1){
+        printf("Error:param->p_vs_given_nonPDR is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    if (param->p_vs_given_nonPDR[IPM]<0 || param->p_vs_given_nonPDR[IPM]>1){
+        printf("Error:param->p_vs_given_nonPDR is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+	if (param->p_stays_virally_suppressed<0 || param->p_stays_virally_suppressed>1){
         printf("Error:param->p_stays_virally_suppressed is outside expected range [0,1]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
@@ -1891,12 +1922,37 @@ void check_if_parameters_plausible(parameters *param){
         fflush(stdout);
         exit(1);
     }
-    if (param->p_vu_becomes_virally_suppressed<0 || param->p_vu_becomes_virally_suppressed>1){
-        printf("Error:param->p_vu_becomes_virally_suppressed is outside expected range [0,1]\nExiting\n");
+	if (param->p_DR_given_vu<0 || param->p_DR_given_vu>1){
+        printf("Error:param->p_DR_given_vu is outside expected range [0,1]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
     }
+    if (param->p_DR_vu_becomes_virally_suppressed[NOT_IPM]<0 || param->p_DR_vu_becomes_virally_suppressed[NOT_IPM]>1){
+        printf("Error:param->p_DR_vu_becomes_virally_suppressed is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    if (param->p_DR_vu_becomes_virally_suppressed[IPM]<0 || param->p_DR_vu_becomes_virally_suppressed[IPM]>1){
+        printf("Error:param->p_DR_vu_becomes_virally_suppressed is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    if (param->p_nonDR_vu_becomes_virally_suppressed[NOT_IPM]<0 || param->p_nonDR_vu_becomes_virally_suppressed[NOT_IPM]>1){
+        printf("Error:param->p_nonDR_vu_becomes_virally_suppressed is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+    if (param->p_nonDR_vu_becomes_virally_suppressed[IPM]<0 || param->p_nonDR_vu_becomes_virally_suppressed[IPM]>1){
+        printf("Error:param->p_nonDR_vu_becomes_virally_suppressed is outside expected range [0,1]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
+	
     for (chips_round=0; chips_round<NCHIPSROUNDS; chips_round++){
         if (param->p_popart_to_cascade[chips_round]<0 || param->p_popart_to_cascade[chips_round]>1){
             printf("Error:param->p_popart_to_cascade[%i] is outside expected range [0,1]\nExiting\n",chips_round);
@@ -2527,3 +2583,23 @@ void check_if_parameters_plausible(parameters *param){
         }
     }
 }
+// These functions were added in an attempt to get model simulations to 95/95/95 by 2030
+
+
+// c. Decrease pre-ART dropout rates post 2018 via increasing CD4 results collection
+double scaling_p_collect_cd4_test_results_cd4_nonpopart(int year, double p_collect_cd4_test_results_cd4_nonpopart) {
+    // these should be named parameters (sort later)
+    double max_p_collect_cd4_test_results_cd4_nonpopart = 1;
+    double ramp_up_end_year = 2030;
+    double ramp_up_start_year = 2018;
+    // same amount of yearly increase until ramp_up_end_year to reach max_p_collect_cd4_test_results_cd4_nonpopart
+    double yearly_increase = (max_p_collect_cd4_test_results_cd4_nonpopart - p_collect_cd4_test_results_cd4_nonpopart) / (ramp_up_end_year - ramp_up_start_year);
+    if (yearly_increase > 0) {
+        return p_collect_cd4_test_results_cd4_nonpopart + yearly_increase * (year - ramp_up_start_year);
+    }
+    else {
+        return p_collect_cd4_test_results_cd4_nonpopart;
+    }
+    
+}
+
