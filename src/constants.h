@@ -139,8 +139,8 @@ gsl_rng * rng;
 
 #define MAX_N_YEARS 200 /* Maximum number of years the simulation will run for */
 
-#define T_ROLLOUT_CHIPS_EVERYWHERE 2050 /* When we want post-popart CHiPs to roll out in contaminating patches. */
-#define ROLL_OUT_CHIPS_INSIDE_PATCH 1
+#define T_ROLLOUT_CHIPS_EVERYWHERE 2100 /* When we want post-popart CHiPs to roll out in contaminating patches. */
+#define ROLL_OUT_CHIPS_INSIDE_PATCH 0
 #define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2018 /* When to stop roll out of CHiPs to inside patch */
 
 #define ALLOW_COUNTERFACTUAL_ROLLOUT 0 /* Should post-PopART rollout of CHiPs be allowed in counterfactual simulations?  Defaul is that it's switched off*/
@@ -313,6 +313,10 @@ extern const char RISK_GP_NAMES[N_RISK][5];
  * ART CD4 eligibility may be different. */
 #define NOTPOPART 0
 #define POPART 1
+
+/* For the drug resistance component, the individual patient management (IPM) intervention is ran alongside popart resulting in different probabilities for viral suppression and waiting time*/
+#define NOT_IPM 0
+#define IPM 1
 
 #define NCHIPSROUNDS 3 /* Number of rounds of CHiPS visits. */
 #define CHIPSROUNDPOSTTRIAL -1 /* Indicates that we are post-trial. */

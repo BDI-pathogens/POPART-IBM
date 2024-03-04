@@ -911,6 +911,8 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
     long nmale_virallysuppressed=0;
     long nfemale_virallysuppressed=0;
 
+    long n_drug_resistant = 0;
+    
     /* FOR DEBUGGING ONLY */
     long N_men_noMC = 0;
     long N_men_waitingVMMC = 0;
@@ -1004,7 +1006,10 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
             if ((year - patch[p].individual_population[n_id].time_last_hiv_test) <= 1.0){
                 NTestedLastYear++;
             }
-            
+            /* Count total drug resistant*/
+            if (patch[p].individual_population[n_id].drug_resistant == 1){
+              n_drug_resistant++;  
+            }
             /* Gender-specific outputs derived here: */
             if (patch[p].individual_population[n_id].gender == MALE){
                 /* Use a function here so easy to add extra stratifications to output: */
@@ -1122,15 +1127,17 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
 
     if(PCdata == 0){
         
-        sprintf(temp_string, "%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string, "%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 prop_aware,
                 patch[p].PANGEA_N_ANNUALINFECTIONS/(npop - npositive + 0.0),
                 npositive,
+                n_drug_resistant,
                 patch[p].n_newly_infected_total,
                 patch[p].n_newly_infected_total_from_outside,
                 patch[p].n_newly_infected_total_from_acute,
+                patch[p].n_newly_infected_total_from_drug_resistant,
                 prophivposonart,
                 propvirallysuppressed,
                 patch[p].PANGEA_N_ANNUALINFECTIONS,
@@ -1157,15 +1164,17 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 patch[p].OUTPUT_NDIEDFROMHIV,npositive_dead,n_dead);
                 
     }else if(PCdata == 1){
-        sprintf(temp_string,"%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string,"%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 patch[p].PANGEA_N_ANNUALINFECTIONS/(npop - npositive + 0.0),
                  (1.0*naware_tot)/npositive,
                 npositive,
+                n_drug_resistant,
                 patch[p].n_newly_infected_total_pconly,
                 patch[p].n_newly_infected_total_from_outside_pconly,
                 patch[p].n_newly_infected_total_from_acute_pconly,
+                patch[p].n_newly_infected_total_from_drug_resistant_pconly,
                 prophivposonart,
                 propvirallysuppressed,
                 patch[p].PANGEA_N_ANNUALINFECTIONS,
@@ -2643,9 +2652,9 @@ void write_annual_outputs(file_struct *file_data_store, output_struct *output, i
     }
     
     /* Print the header of the file */
-    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Year,Prevalence,PropAware,Incidence,NumberPositive,");
+    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Year,Prevalence,Incidence,NumberPositive,NumberDrugResistant,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYear,NewCasesThisYearFromOutside,");
-    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYearFromAcute,PropHIVPosONART,PropVirallySuppressed,");
+    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYearFromAcute,NewCasesThisYearFromDrugResistant,PropHIVPosONART,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NAnnual,TotalPopulation,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
         "NumberPositiveM,NumberAwareM,PopulationM,NumberPositiveF,NumberAwareF,PopulationF,");
@@ -3054,15 +3063,15 @@ void store_phylogenetic_transmission_output(output_struct *output, double time, 
 	
     /* Format output: */
     if (infector->gender==MALE)
-        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,M,%s,%s,%.2lf,%.2lf\n",
+        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,M,%s,%s,%.2lf,%.2lf,%i,%i,%i,%i\n",
 			who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
 			infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
-			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB);
+			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB,infector->drug_resistant,infectee->drug_resistant,infector->cascade_round,infectee->cascade_round);
     else
-        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,F,%s,%s,%.2lf,%.2lf\n",
+        sprintf(temp_string,"%li,%li,%9.6lf,%i,%i,%i,%i,%i,%i,%6.4lf,%6.4lf,%i,F,%s,%s,%.2lf,%.2lf,%i,%i,%i,%i\n",
 			who_infected_id,new_infectee_id,time,t0,t_step, partner_is_acute,partner_on_art,
 			infector_out_patch,infector->cd4,SPVL_infector,SPVL_infectee,infector->n_partners,
-			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB);
+			infected_risk_text,infector_risk_text,infectee->DoB,infector->DoB,infector->drug_resistant,infectee->drug_resistant,infector->cascade_round,infectee->cascade_round);
     
     //print_here_string(temp_string,0);
     /* The -2 is because in C the last character in any string of length n is "\0" - so we only have n-1 characters in the array we can write to. Make -2 instead of -1 to be a bit more sure! */
@@ -3122,11 +3131,11 @@ void store_phylogenetic_transmission_initial_cases(output_struct *output, parame
 }
 
 void blank_phylo_transmission_data_file(file_struct *file_data_store){
-    for(int p=0;p<NPATCHES;p++){
-        file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p] = fopen(file_data_store->filename_phylogenetic_transmission[p],"w");
-        fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p],"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB\n");
-        fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p]);
-    }
+	for(int p=0;p<NPATCHES;p++){
+    	file_data_store->PHYLOGENETIC_TRANSMISSION_FILE = fopen(file_data_store->filename_phylogenetic_transmission,"w");
+    	fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE,"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB,InfectorDRstate,InfectedDRstate,InfectorCascadeRnd,InfectedCascadeRnd\n");
+    	fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE);
+	}
 }
 
 
@@ -3153,7 +3162,7 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
             file_data_store->filename_phylogenetic_individualdata[p],"w");
     
     fprintf(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p],
-        "Id,Sex,DoB,DoD,HIV_pos,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop\n");
+        "Id,Sex,DoB,DoD,HIV_pos,DRstate,CascadeRnd,t_HIVpos_diagnosis,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop\n");
 
     for (n_id=0; n_id<id_counter; n_id++){
         if (individual_population[n_id].sex_risk==LOW)
@@ -3170,9 +3179,11 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
         }
 
         if (individual_population[n_id].gender==MALE)
-            sprintf(tempstring,"%li,M,%.2lf,%.2lf,%i,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0);
+            sprintf(tempstring,"%li,M,%.2lf,%.2lf,%i,%i,%i,%.2f,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0,
+            individual_population[n_id].drug_resistant,individual_population[n_id].cascade_round,individual_population[n_id].t_HIVpos_diag);
         else if (individual_population[n_id].gender==FEMALE)
-            sprintf(tempstring,"%li,F,%.2lf,%.2lf,%i,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0);
+            sprintf(tempstring,"%li,F,%.2lf,%.2lf,%i,%i,%i,%.2f,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0,
+            individual_population[n_id].drug_resistant,individual_population[n_id].cascade_round,individual_population[n_id].t_HIVpos_diag);
 
         join_strings_with_check(tempstring, riskstring, 300, "tempstring and riskstring in write_phylo_individual_data()");
 

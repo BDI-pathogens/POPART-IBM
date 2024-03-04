@@ -63,6 +63,7 @@ struct individual{
 
     int HIV_status; /* 0 if uninfected, 1 if infected in acute infection, 2 if infected not in acute infection */
     int ART_status; /* -1 if never tested positive, 0 if positive but not yet on ART (or dropped out), 1 if on ART for <6 months, 2 if on ART for >=6 months and virally suppressed, 3 if on ART for >=6 months and not virally suppressed. */
+    int cascade_round; /* number of times individual has been in early ART stage (introduced after droputs could be retested to restart cascade post 2018)*/
     double t_start_art; /* Time at which the individual first started ART (used in cost-effectiveness) */
     double t_sc;    /* time at which person seroconverts. Note this is used to check if the person is currently outside the window period of the given HIV test. */
     int cd4; /* Currently use -2: dead ; -1: uninfected ; 0: CD4>500, 1: CD4 350-500, 2: CD4 200-350, 3: CD4<200. */
@@ -73,7 +74,8 @@ struct individual{
     double DEBUGTOTALTIMEHIVPOS; /* For each person measure how long they are HIV+ for so can see population-level distribution of those who die by end of simulation. */
     double time_last_hiv_test;   /* Allows us to count proportion of population tested in last year, last 3 months, ever. */
 
-
+    int drug_resistant; /* drug resistance status: -1= did not start cascade 0=none, 1=drug resistance(pre-treatment or de novo/post treatment failure(DR|VU))*/
+    double t_HIVpos_diag; /* time when first tested positive, unlike t_diag, does not get updated with start of emergency ART or retesting*/
     int next_HIV_event; /* -1 if not HIV+. Otherwise this stores the next HIV-biology related event to occur to this person (progression, AIDS death, starting ART because CD4<200). */
     long idx_hiv_pos_progression[2]; /* The indices which locate this individual in the hiv_pos_progression array. The first index is a function of the time to their next event (ie puts them in the group of people having an HIV event at some timestep dt) and the second is their location in this group. */
     /* for the above the origin of time is start_time_hiv */
@@ -370,9 +372,15 @@ typedef struct {
     double p_dies_earlyart_cd4[NCD4]; /* you die early */
     double p_leaves_earlyart_cd4_over200_if_not_die_early; /* drop out (high CD4) conditional on not dying */
     double p_leaves_earlyart_cd4_under200_if_not_die_early; /* drop out (low CD4) conditional on not dying*/
-    double p_becomes_vs_after_earlyart_if_not_die_early_or_leave; /* become virally suppressed, conditional on other stuff above */
+    //double p_becomes_vs_after_earlyart_if_not_die_early_or_leave; /* become virally suppressed, conditional on other stuff above */
+    /* The single probability above has been replaced by a value that is calculated using the parameters below used as proxies to the DR process. It made up of a prob(pre-treatment drug resistance|time and age) and the probability of viral suppression given HIV strain */
+	double intercept_PDR; /* Intercept to the logit function for prob(PDR|time and age)*/
+	double slope_PDR; /* slope to the logit function for prob(PDR|time and age)*/
+	double coeff_age_under45_PDR; /* age coefficient to the logit function for prob(PDR|time and age)*/
+	double p_vs_given_PDR[2]; /* probability of viral suppression given PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
+	double p_vs_given_nonPDR[2]; /* probability of viral suppression given non-PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
     /* or you remain virally unsuppressed */
-
+    
     /* Given you've become virally suppressed, 3 possible events can happen with following probabilities */
     double p_stays_virally_suppressed; /* remain virally suppressed until you die */
     double p_stays_virally_suppressed_male; /* Decrease in p_stays_virally_suppressed for men compared to women */
@@ -380,9 +388,15 @@ typedef struct {
     /* or you will drop out */
 
     /* Given you've become virally unsuppressed, 2 possible events can happen with following probabilities */
-    double p_vu_becomes_virally_suppressed; /* you become suppressed */
+    //double p_vu_becomes_virally_suppressed; /* you become suppressed */
     /* or you drop out */
 
+	/* Given you become virally unsuppressed, 2 events are possible, viral suppression or dropout. For the DR version of the model, the probability of VS is modified by DR statusso we now have 3 parameters instead of 1.*/
+	double p_DR_given_vu; /*probability that a viremic individual on treatment has drug resistance (HLDR)*/
+	double p_DR_vu_becomes_virally_suppressed[2]; /* you become suppressed with given you have DR. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
+	double p_nonDR_vu_becomes_virally_suppressed[2]; /* you become suppressed with given you don't have DR. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
+	/* or you drop out */
+	
     /* Cascade times: */
 
     double time_to_background_HIVtestNOW;
@@ -453,7 +467,19 @@ typedef struct {
     double t_get_vmmc_range[2];
     double t_vmmc_healing; /* Time for VMMC wound to heal after op, during which time susceptibility may be higher. */
 
-    //double prop_tested_by_chips[N_GENDER][NCHIPSROUNDS]; /* Proportion of population (by gender) visited by CHiPS each year. */
+    // Adding the proxy paramaters for drug resistance
+	// assuming the probability of transmitted drug resistance(TDR) increases over time and is age dependent, these are the paramaters of a logistic regression equation determining the individual level probability of TDR
+	double intercept_TDR;
+	double slope_TDR;
+	double coeff_age_under45_TDR;
+	// the probability of viral suppression given hiv strain 
+	double prob_vs_given_TDR;
+	double prob_vs_given_nonTDR;
+	// the probability of an individual on ART who is not virally suppressed developing acquired drug resistance
+	double prob_ADR_given_vu;
+		
+		
+	//double prop_tested_by_chips[N_GENDER][NCHIPSROUNDS]; /* Proportion of population (by gender) visited by CHiPS each year. */
     chips_param_struct *chips_params;
     PC_param_struct *PC_params;
     DHS_param_struct *DHS_params;
@@ -740,11 +766,13 @@ typedef struct{
     long n_newly_infected_total_from_outside;
     long n_newly_infected_total_from_acute;
     long n_newly_infected_total_by_risk[N_RISK];
-    
+    long n_newly_infected_total_from_drug_resistant;
+
     long n_newly_infected_total_pconly;
     long n_newly_infected_total_from_outside_pconly;
     long n_newly_infected_total_from_acute_pconly;
     long n_newly_infected_total_by_risk_pconly[N_RISK];
+    long n_newly_infected_total_from_drug_resistant_pconly;
     
     long n_died_from_HIV_by_risk[N_RISK];
     
