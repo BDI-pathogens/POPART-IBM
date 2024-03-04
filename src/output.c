@@ -1127,7 +1127,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
 
     if(PCdata == 0){
         
-        sprintf(temp_string, "%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string, "%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 prop_aware,
@@ -1164,7 +1164,7 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 patch[p].OUTPUT_NDIEDFROMHIV,npositive_dead,n_dead);
                 
     }else if(PCdata == 1){
-        sprintf(temp_string,"%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string,"%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 patch[p].PANGEA_N_ANNUALINFECTIONS/(npop - npositive + 0.0),
@@ -3132,9 +3132,9 @@ void store_phylogenetic_transmission_initial_cases(output_struct *output, parame
 
 void blank_phylo_transmission_data_file(file_struct *file_data_store){
 	for(int p=0;p<NPATCHES;p++){
-    	file_data_store->PHYLOGENETIC_TRANSMISSION_FILE = fopen(file_data_store->filename_phylogenetic_transmission,"w");
-    	fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE,"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB,InfectorDRstate,InfectedDRstate,InfectorCascadeRnd,InfectedCascadeRnd\n");
-    	fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE);
+    	file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p] = fopen(file_data_store->filename_phylogenetic_transmission[p],"w");
+    	fprintf(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p],"IdInfector,IdInfected,TimeOfInfection,YearOfInfection,TimestepOfInfection,IsInfectorAcute,PartnerARTStatus,IsInfectorOutsidePatch,InfectorCD4,InfectorSPVL,InfectedSPVL,Infector_NPartners,InfectorGender,InfectedRiskGroup,InfectorRiskGroup,InfectedDoB,InfectorDoB,InfectorDRstate,InfectedDRstate,InfectorCascadeRnd,InfectedCascadeRnd\n");
+    	fclose(file_data_store->PHYLOGENETIC_TRANSMISSION_FILE[p]);
 	}
 }
 
