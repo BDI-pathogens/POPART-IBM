@@ -2818,7 +2818,10 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
     /* PANGEA stuff: get the CD4 at diagnosis for HIV+ person: */
     indiv->PANGEA_cd4atdiagnosis = PANGEA_get_cd4(indiv, t); 
     indiv->PANGEA_t_diag = t;
-    indiv->t_HIVpos_diag = t;
+    if(indiv->t_HIVpos_diag == -1){
+        indiv->t_HIVpos_diag = t;
+    }
+    
 
     indiv->ART_status = ARTNAIVE;  /* Status changes as now known positive. */
 
