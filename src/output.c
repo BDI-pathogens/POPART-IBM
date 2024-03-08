@@ -912,7 +912,10 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
     long nfemale_virallysuppressed=0;
 
     long n_drug_resistant = 0;
-    
+    long n_drug_resistant_VU = 0; // count only viremic who are ART experienced(failed treatment)
+    long n_ART_experienced = 0;
+    long n_init_treatment_fail = 0;
+    long n_init_treatment_success = 0;
     /* FOR DEBUGGING ONLY */
     long N_men_noMC = 0;
     long N_men_waitingVMMC = 0;
@@ -1008,7 +1011,22 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
             }
             /* Count total drug resistant*/
             if (patch[p].individual_population[n_id].drug_resistant == 1){
-              n_drug_resistant++;  
+              n_drug_resistant++; 
+              if (patch[p].individual_population[n_id].ART_status != LTART_VS){
+                n_drug_resistant_VU++;
+              }
+            }
+            /* count ART experienced*/
+            if (patch[p].individual_population[n_id].ART_status >= EARLYART && patch[p].individual_population[n_id].ART_status < CASCADEDROPOUT){
+                n_ART_experienced++;
+            }
+            /* count those whio initially failed treatment */
+            if(patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITFAIL){
+                n_init_treatment_fail++;
+            }
+            /* count those whio initially suppressed post treatment */
+            if(patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITSUCCESS){
+                n_init_treatment_success++;
             }
             /* Gender-specific outputs derived here: */
             if (patch[p].individual_population[n_id].gender == MALE){
@@ -1127,17 +1145,22 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
 
     if(PCdata == 0){
         
-        sprintf(temp_string, "%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string, "%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 prop_aware,
                 patch[p].PANGEA_N_ANNUALINFECTIONS/(npop - npositive + 0.0),
                 npositive,
                 n_drug_resistant,
+                n_drug_resistant_VU,
+                n_ART_experienced,
+                n_init_treatment_fail,
+                n_init_treatment_success,
                 patch[p].n_newly_infected_total,
                 patch[p].n_newly_infected_total_from_outside,
                 patch[p].n_newly_infected_total_from_acute,
                 patch[p].n_newly_infected_total_from_drug_resistant,
+                patch[p].n_newly_infected_total_from_drug_resistant_VU,
                 prophivposonart,
                 propvirallysuppressed,
                 patch[p].PANGEA_N_ANNUALINFECTIONS,
@@ -1161,20 +1184,27 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
                 NNeedART_f,
                 N_men_MC/(1.0*npop_m),
                 *overall_partnerships->n_susceptible_in_serodiscordant_partnership,
-                patch[p].OUTPUT_NDIEDFROMHIV,npositive_dead,n_dead);
+                patch[p].OUTPUT_NDIEDFROMHIV,
+                npositive_dead,
+                n_dead);
                 
     }else if(PCdata == 1){
-        sprintf(temp_string,"%i,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
+        sprintf(temp_string,"%i,%8.6f,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%8.6f,%8.6f,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%li,%6.4f,%li,%li,%li,%li,",
                 year,
                 npositive/(npop+0.0),
                 patch[p].PANGEA_N_ANNUALINFECTIONS/(npop - npositive + 0.0),
                  (1.0*naware_tot)/npositive,
                 npositive,
                 n_drug_resistant,
+                n_drug_resistant_VU,
+                n_ART_experienced,
+                n_init_treatment_fail,
+                n_init_treatment_success,
                 patch[p].n_newly_infected_total_pconly,
                 patch[p].n_newly_infected_total_from_outside_pconly,
                 patch[p].n_newly_infected_total_from_acute_pconly,
                 patch[p].n_newly_infected_total_from_drug_resistant_pconly,
+                patch[p].n_newly_infected_total_from_drug_resistant_VU_pconly, 
                 prophivposonart,
                 propvirallysuppressed,
                 patch[p].PANGEA_N_ANNUALINFECTIONS,
@@ -2652,9 +2682,9 @@ void write_annual_outputs(file_struct *file_data_store, output_struct *output, i
     }
     
     /* Print the header of the file */
-    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Year,Prevalence,Incidence,NumberPositive,NumberDrugResistant,");
+    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Year,Prevalence,PropAware,Incidence,NumberPositive,NumberDrugResistant,NumberDrugResistantVU,NumberARTexperienced,NumberInitFailART,NumberInitSuccessART,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYear,NewCasesThisYearFromOutside,");
-    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYearFromAcute,NewCasesThisYearFromDrugResistant,PropHIVPosONART,");
+    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYearFromAcute,NewCasesThisYearFromDrugResistant,NewCasesThisYearFromDrugResistantVU,PropHIVPosONART,PropVirallySuppressed,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NAnnual,TotalPopulation,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],
         "NumberPositiveM,NumberAwareM,PopulationM,NumberPositiveF,NumberAwareF,PopulationF,");

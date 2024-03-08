@@ -390,6 +390,7 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
         new_adult->PANGEA_date_endfirstVLsuppression = -1.0;
 
         new_adult->drug_resistant = -1;
+        new_adult->init_treatment_outcome = TREATMENT_INEXPERIENCED;
         new_adult->t_HIVpos_diag = -1;
         /* Variables store cumulative amount of time a person spends on ART: */
         new_adult->DEBUG_cumulative_time_on_ART_VS = 0;

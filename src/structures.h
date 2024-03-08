@@ -74,6 +74,7 @@ struct individual{
     double DEBUGTOTALTIMEHIVPOS; /* For each person measure how long they are HIV+ for so can see population-level distribution of those who die by end of simulation. */
     double time_last_hiv_test;   /* Allows us to count proportion of population tested in last year, last 3 months, ever. */
 
+    int init_treatment_outcome; /* Track if individuals initially become VS of not, linked to DR*/
     int drug_resistant; /* drug resistance status: -1= did not start cascade 0=none, 1=drug resistance(pre-treatment or de novo/post treatment failure(DR|VU))*/
     double t_HIVpos_diag; /* time when first tested positive, unlike t_diag, does not get updated with start of emergency ART or retesting*/
     int next_HIV_event; /* -1 if not HIV+. Otherwise this stores the next HIV-biology related event to occur to this person (progression, AIDS death, starting ART because CD4<200). */
@@ -767,12 +768,14 @@ typedef struct{
     long n_newly_infected_total_from_acute;
     long n_newly_infected_total_by_risk[N_RISK];
     long n_newly_infected_total_from_drug_resistant;
+    long n_newly_infected_total_from_drug_resistant_VU;
 
     long n_newly_infected_total_pconly;
     long n_newly_infected_total_from_outside_pconly;
     long n_newly_infected_total_from_acute_pconly;
     long n_newly_infected_total_by_risk_pconly[N_RISK];
     long n_newly_infected_total_from_drug_resistant_pconly;
+    long n_newly_infected_total_from_drug_resistant_VU_pconly;
     
     long n_died_from_HIV_by_risk[N_RISK];
     

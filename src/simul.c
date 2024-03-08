@@ -96,7 +96,9 @@ int carry_out_processes(int t0, fitting_data_struct *fitting_data, patch_struct 
         patch[p].n_newly_infected_total_from_outside_pconly = 0;
         patch[p].n_newly_infected_total_from_acute_pconly = 0;
         patch[p].n_newly_infected_total_from_drug_resistant = 0;
+        patch[p].n_newly_infected_total_from_drug_resistant_VU = 0;
         patch[p].n_newly_infected_total_from_drug_resistant_pconly = 0;
+        patch[p].n_newly_infected_total_from_drug_resistant_VU_pconly = 0;
         
         
         for(r = 0; r < N_RISK; r++){

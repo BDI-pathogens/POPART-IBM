@@ -524,6 +524,9 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
         if(infector->drug_resistant == 1){
             patch[p].n_newly_infected_total_from_drug_resistant++;
         }
+        if(infector->drug_resistant == 1 && infector->ART_status >= LTART_VU){
+            patch[p].n_newly_infected_total_from_drug_resistant_VU++;
+        }
         
         // Increment PConly outputs
         
@@ -540,6 +543,9 @@ void hiv_acquisition(individual* susceptible, double time_infect, patch_struct *
             }
             if(infector->drug_resistant == 1){
             patch[p].n_newly_infected_total_from_drug_resistant_pconly++;
+            }
+            if(infector->drug_resistant == 1 && infector->ART_status >= LTART_VU){
+            patch[p].n_newly_infected_total_from_drug_resistant_VU_pconly++;
             }
             // Does this infection take place during a PC round?  
             // If so, increment the incident infections in the PC age range.  
@@ -2102,7 +2108,7 @@ void start_ART_process(individual* indiv, parameters *param, double t,
                 p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_nonPDR[NOT_IPM];
             }
         }else{
-            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_PDR[NOT_IPM];
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  param->p_vs_given_PDR[NOT_IPM];
         }
         
     }else{
@@ -2110,13 +2116,13 @@ void start_ART_process(individual* indiv, parameters *param, double t,
         if(indiv->drug_resistant != 1){
             if(x_pdr < prob_PDR_given_year){
                 indiv->drug_resistant = 1;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_PDR[IPM];
+                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  param->p_vs_given_PDR[IPM];
             }else{
                 indiv->drug_resistant = 0;
                 p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_nonPDR[IPM];
             }
         }else{
-            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_PDR[IPM];
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  param->p_vs_given_PDR[IPM];
         }
     }
 	
@@ -2167,6 +2173,11 @@ void start_ART_process(individual* indiv, parameters *param, double t,
                 p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain*
                 (1.0 - p_dropout-param->p_dies_earlyart_cd4[indiv->cd4]) )
     ){
+        
+        if(indiv->init_treatment_outcome == TREATMENT_INEXPERIENCED){
+            indiv->init_treatment_outcome = TREATMENT_INITSUCCESS;
+        }
+        
         if(is_popart == NOTPOPART){
             indiv->next_cascade_event = CASCADEEVENT_VS_NONPOPART;
             time_to_next_event = t + gsl_rng_uniform (rng)*param->t_end_early_art + TIME_STEP;
@@ -2185,6 +2196,9 @@ void start_ART_process(individual* indiv, parameters *param, double t,
     
     /* Otherwise, individual continues on ART but not fully virally suppressed. */
     }else{
+        if(indiv->init_treatment_outcome == TREATMENT_INEXPERIENCED){
+            indiv->init_treatment_outcome = TREATMENT_INITFAIL;
+        }
         if(is_popart == NOTPOPART){
             indiv->next_cascade_event = CASCADEEVENT_VU_NONPOPART;
             time_to_next_event = t + gsl_rng_uniform (rng)*param->t_end_early_art + TIME_STEP;
@@ -2339,7 +2353,7 @@ void draw_hiv_tests(parameters *param, age_list_struct *age_list, int year,
             // For each individual in that annual age group, schedule their first HIV test
             for(k = 0; k < age_list->age_list_by_gender[g]->number_per_age_group[aa]; k++){
                 // Allow for retesting of dropouts (post 2018) to bring them back into the cascade
-                if(year <= 2004){
+                if(year <= 2018){
                     // Only schedule tests for people who are not "HIV+ and aware of serostatus"
                     if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG){
 
@@ -3572,6 +3586,9 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                     increase_population_count_art_or_virallysuppressed(patch[p].n_art, indiv, t);
                     if (indiv -> ART_status == LTART_VS)
                     increase_population_count_art_or_virallysuppressed( patch[p].n_virallysuppressed, indiv, t);
+                }
+                else if (aux_ART_STATUS == CASCADEDROPOUT  && indiv->ART_status == ARTNAIVE ){
+                    continue;
                 }
                 else{
                     printf("This event in cascade was not accounted for: %d -> %d, for individual %ld in patch %d, at time %f\n", aux_ART_STATUS ,indiv->ART_status, indiv->id, indiv->patch_no, t);

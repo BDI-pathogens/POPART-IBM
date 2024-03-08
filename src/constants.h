@@ -107,7 +107,7 @@
 
 #define WRITE_PARTNERSHIPS_AT_PC0 0 /* Generates Distr_n_lifetime_partners and Distr_n_partners_lastyear csv files. NEEDED FOR ReadAnnualOutputs-knitr.Rnw.  */
 
-#define FOLLOW_INDIVIDUAL -1 //23727 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
+#define FOLLOW_INDIVIDUAL 19608//-1 //23727 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
 
 #define FOLLOW_PATCH 0 //1
 
@@ -286,6 +286,10 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 #define CASCADEDROPOUT 5 // Dropped out of HIV care cascade prior to ever starting ART.
 #define ARTDEATH 6 // Signals that the person needs to be removed as they die while on ART. 
 
+/* codes for indiv->init_treatment_outcome*/
+#define TREATMENT_INITFAIL 0
+#define TREATMENT_INITSUCCESS 1
+#define TREATMENT_INEXPERIENCED -1
 /* Used as CD4 value to identify that people are not infected with HIV.
  * Note: CD4==-2 means the person is dead.
  * 0="CD4>500", 1="CD4 350-500", 2="CD4 200-350", 3="CD4 <200". */
