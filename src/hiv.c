@@ -2034,7 +2034,12 @@ void start_ART_process(individual* indiv, parameters *param, double t,
     }
     
     indiv->ART_status = EARLYART;
-    //indiv->cascade_round = indiv->cascade_round+1;
+    if(indiv->cascade_round == -1){
+       indiv->cascade_round = 1;
+    }else{
+       indiv->cascade_round = indiv->cascade_round+1;
+    }
+    
     // Count the number of ART initiations
     int year_idx = (int) floor(t) - param->start_time_simul;
     calendar_outputs->N_calendar_started_ART_annual[year_idx]++;
@@ -2094,9 +2099,12 @@ void start_ART_process(individual* indiv, parameters *param, double t,
 	}
 	double prob_PDR_given_year;
 	prob_PDR_given_year = exp(regression_PDR_by_year)/(1 + exp(regression_PDR_by_year));
-	// - final probabilty of strain type and viral suppression given strain. The probabilities of viral suppression can change if the IPM intervention is in place alongside popart
+    
+    // - final probabilty of strain type and viral suppression given strain. The probabilities of viral suppression can change if the IPM intervention is in place alongside popart
 	double p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain;
     double x_pdr = gsl_rng_uniform (rng);
+    /* In an individual fails dur to DR outside of the intervention, then they keep failing even if they re-enter the cascade
+    but if they fail while IPM is in effect, then each time they re-enter there is a chance of success*/
 	if(is_popart == NOTPOPART){
 		// only assign a PDR status if new to cascade or previously drug sensitive(applies to dropouts who re-enter)
         if(indiv->drug_resistant != 1){
@@ -2107,6 +2115,8 @@ void start_ART_process(individual* indiv, parameters *param, double t,
                 indiv->drug_resistant = 0;
                 p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_nonPDR[NOT_IPM];
             }
+        }else if(indiv->drug_resistant == 1 && indiv->init_treatment_outcome == TREATMENT_INITFAIL){
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  0 * param->p_vs_given_PDR[NOT_IPM];
         }else{
             p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  param->p_vs_given_PDR[NOT_IPM];
         }
@@ -2749,7 +2759,7 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
     int TRUE_POS = 1;    /* 1 if a HIV+ person tests +ve. */
     /* Record the time of their most recent test (so we can count % of people who hve tested in last X months): */
     indiv->time_last_hiv_test = t;
-    indiv->cascade_round = indiv->cascade_round+1; /*individuals who start emergency ART do not get counted this way, fine for now, interest is in impact of re-entry vis HIV testing*/
+    //indiv->cascade_round = indiv->cascade_round+1; /*individuals who start emergency ART do not get counted this way, fine for now, interest is in impact of re-entry vis HIV testing*/
     
     /* Add one to the cumulative total of HIV tests carried out: */
     if(is_popart == NOTPOPART){

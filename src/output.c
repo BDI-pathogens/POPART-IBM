@@ -1020,12 +1020,12 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
             if (patch[p].individual_population[n_id].ART_status >= EARLYART && patch[p].individual_population[n_id].ART_status < CASCADEDROPOUT){
                 n_ART_experienced++;
             }
-            /* count those whio initially failed treatment */
-            if(patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITFAIL){
+            /* count those whio initially failed treatment in the last year */
+            if((year - patch[p].individual_population[n_id].t_start_art) <= 1.0 && patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITFAIL){
                 n_init_treatment_fail++;
             }
-            /* count those whio initially suppressed post treatment */
-            if(patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITSUCCESS){
+            /* count those whio initially suppressed post treatment in the last year */
+            if((year - patch[p].individual_population[n_id].t_start_art) <= 1.0 && patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITSUCCESS){
                 n_init_treatment_success++;
             }
             /* Gender-specific outputs derived here: */
@@ -2682,7 +2682,7 @@ void write_annual_outputs(file_struct *file_data_store, output_struct *output, i
     }
     
     /* Print the header of the file */
-    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Year,Prevalence,PropAware,Incidence,NumberPositive,NumberDrugResistant,NumberDrugResistantVU,NumberARTexperienced,NumberInitFailART,NumberInitSuccessART,");
+    fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"Year,Prevalence,PropAware,Incidence,NumberPositive,NumberDrugResistant,NumberDrugResistantVU,NumberARTexperienced,NumberInitFailARTlastYear,NumberInitSuccessARTlastYear,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYear,NewCasesThisYearFromOutside,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NewCasesThisYearFromAcute,NewCasesThisYearFromDrugResistant,NewCasesThisYearFromDrugResistantVU,PropHIVPosONART,PropVirallySuppressed,");
     fprintf(file_data_store->ANNUAL_OUTPUT_FILE[p],"NAnnual,TotalPopulation,");

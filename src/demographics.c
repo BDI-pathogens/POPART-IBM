@@ -357,7 +357,7 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
     if (hivstatus==0){
         new_adult->HIV_status = UNINFECTED;
         new_adult->ART_status = ARTNEG;
-        new_adult->cascade_round = 0;
+        new_adult->cascade_round = -1;
         new_adult->next_HIV_event = NOEVENT; /* Initialize at dummy value. */
         new_adult->next_cascade_event = NOEVENT; /* Initialize at dummy value. */
         new_adult->SPVL_num_G = 0;                  /* Initialize at dummy value. */

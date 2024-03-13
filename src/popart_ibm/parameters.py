@@ -6,7 +6,7 @@ PopART-IBM, as part of the HPTN 071 (PopART) trial.
 Usage
 -----
 
-from param import ParameterSet
+from parameters import ParameterSet
 
 ##############################
 # Reading a full parameter set
@@ -92,7 +92,7 @@ FILE_NAMES_LINELIST = ["HIV", "cascade", "partnerships", "demographics", "times"
 FILE_NAMES_DEMOGRAPHY = ["mortality", "fertility"]
 
 FILE_NAMES_PATCH =["param_processed_patchinfo.txt"]
-FILE_NAMES_MISC = ["python_seed.txt"] #"fitting_data_processed.txt", 
+FILE_NAMES_MISC = ["python_seed.txt", "fitting_data_processed.txt"]
 
 # Regular expressions for PC and CHiPs uptake files
 regex_pc = re.compile(f".*{FILE_NAME_PREFIX}_patch._PC._community.*")
@@ -196,21 +196,20 @@ class ParameterSet(object):
         self.FILE_NAMES_CHIPSUPTAKE = remove_popart_head_ext(self.FILE_NAMES_CHIPSUPTAKE)
         
         self.FILE_NAMES_PC = [s for s in files if regex_pc.match(s)]
-        #self.FILE_NAMES_PC = remove_popart_head_ext(self.FILE_NAMES_PC)
         
         for f in files:
-            print(f)
             self.read_param_file(join(param_dir, f))
         
         print("Read the following")
         self.summarise_params()
+        print(self.misc.keys())
+        print(self.params.keys())
     
     def read_param_file(self, param_file, file_name = None, patch = None):
         """Read a parameter file"""
         
         if not file_name:
             file_name = guess_file_name(param_file)
-            print(file_name)
         
         if file_name in FILE_NAMES_LINELIST:
             self.read_file_whitespace(param_file, file_name, header = 0)
@@ -227,8 +226,8 @@ class ParameterSet(object):
         if file_name in FILE_NAMES_PATCH:
             self.read_patchinfo(param_file)
         
-        #if file_name in FILE_NAMES_MISC:
-        #    self.read_file_raw(param_file, file_name)
+        if file_name in FILE_NAMES_MISC:
+            self.read_file_raw(param_file, file_name)
     
     def read_test_parameters(self, parameter_transpose_file, mortality_file, 
         fertility_file, patchinfo_file, python_seed_file = None,
@@ -240,8 +239,7 @@ class ParameterSet(object):
         file_type_var = "File"
         param_name_var = "Name"
         param_value_var = "Value"
-        param_file_stub = "param_processed"
-        
+
         df = pd.read_csv(parameter_transpose_file)
         files_grouped = df.groupby(file_type_var)
         
@@ -257,7 +255,8 @@ class ParameterSet(object):
         
         self.read_patchinfo(patchinfo_file)
         
-        self.read_file_raw(python_seed_file, "python_seed.txt")
+        if python_seed_file:
+            self.read_file_raw(python_seed_file, "python_seed.txt")
         
         # Create CHiPs schedules
         C = ChipsSchedule()
@@ -279,9 +278,11 @@ class ParameterSet(object):
         
         self.FILE_NAMES_PC = []
         for r in range(self.n_pc_rounds):
-            filename = f'PC{r}'
-            self.FILE_NAMES_PC.append(filename)
-            self.set_param_file(f"{filename}", P.schedule[filename])
+            for p in range(self.n_patches):
+                comm = self.patchinfo[0][p]
+                filename = f"{FILE_NAME_PREFIX}_patch{p}_PC{r}_community{comm}.csv"
+                self.FILE_NAMES_PC.append(filename)
+                self.misc[f"{filename}"] = P.schedule[f"PC{r}"].to_string(index = False)
     
     def read_file_whitespace(self, param_file, file_name, header):
         self.params[file_name] = pd.read_csv(param_file, header = header, delim_whitespace = True)
@@ -475,13 +476,15 @@ class ParameterSet(object):
             self.write_param_file(file_name = f, output_dir = output_dir)
 
         for f in self.FILE_NAMES_PC:
-            
-            self.write_param_file(file_name = f, output_dir = output_dir)
+            self.write_param_file_raw(
+                output = self.misc[f], 
+                output_filename = join(output_dir, f))
         
         for f in FILE_NAMES_MISC:
-            self.write_param_file_raw(
-                output = self.misc[f],
-                output_filename = join(output_dir, f))
+            if f in self.misc:
+                self.write_param_file_raw(
+                    output = self.misc[f],
+                    output_filename = join(output_dir, f))
     
     @property
     def param_dir(self):
