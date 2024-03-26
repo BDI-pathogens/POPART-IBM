@@ -73,7 +73,7 @@ struct individual{
     int SPVL_cat; /* categorical variable. Derived from SPVL_num_G+SPVL_num_E in function get_spvl_cat(). 4 categories (0="<4"; 1="4-4.5"; 2="4.5-5"; 3=">5"). Use for CD4 progression.  */
     double DEBUGTOTALTIMEHIVPOS; /* For each person measure how long they are HIV+ for so can see population-level distribution of those who die by end of simulation. */
     double time_last_hiv_test;   /* Allows us to count proportion of population tested in last year, last 3 months, ever. */
-
+    double time_last_hiv_test_routine; /* Time since the last HIV test done through the health-care system (NON popart)*/
     int init_treatment_outcome; /* Track if individuals initially become VS of not, linked to DR*/
     int drug_resistant; /* drug resistance status: -1= did not start cascade 0=none, 1=drug resistance(pre-treatment or de novo/post treatment failure(DR|VU))*/
     double t_HIVpos_diag; /* time when first tested positive, unlike t_diag, does not get updated with start of emergency ART or retesting*/

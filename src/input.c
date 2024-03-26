@@ -987,6 +987,7 @@ void read_time_params(char *patch_tag, parameters *allrunparameters, int n_runs,
             checkreadok = fscanf(param_file, "%lg", &temp_int);
             check_if_cannot_read_param(checkreadok, "param_local->DHS_params->DHS_YEAR[round]");
             param_local->DHS_params->DHS_YEAR[i] = (int) temp_int;
+            
         }
     }
     // Close parameter file
@@ -2025,6 +2026,7 @@ long get_python_seed(char *file_directory){
     seed : int
         The seed within the file `python_seed.txt`.  
     */
+    printf("%s\n", file_directory);
     long seed;
     FILE *PYTHON_SEED_FILE;
     PYTHON_SEED_FILE = fopen("", "r");

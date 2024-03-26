@@ -91,7 +91,7 @@
 #define WRITE_ART_STATUS_BY_AGE_SEX 0 // Write totals of individuals in each ART_status stratified by sex and year of age.  Write these for each time step.
 #define WRITE_DEBUG_CHIPS_STATES 0                /* Generates the files CHIPS_outputs_annual*.csv containing the annual data on people when they are visited by CHiPs. */
 
-#define WRITE_CALIBRATION 0 /* Write Calibration*.csv files to disk */
+#define WRITE_CALIBRATION 1 /* Write Calibration*.csv files to disk */
 #define PRINT_ALL_RUNS 1 /* Use this if you want to print everything regardless of fitting. */
 #define PRINT_EACH_RUN_OUTPUT 1 /* 0 if don't want to generate an output file for every run (when calibrating at present this is the case), or 1 if we do. */
 #define WRITE_EVERYTIMESTEP 0 /* Generates the files Timestep_outputs*.csv */
@@ -181,7 +181,7 @@ gsl_rng * rng;
 #define MAX_N_TIMESTEPS_PER_CHIPS_ROUND 96 /* Set this to be 2 years - no CHiPs round can therefore last >2 years (otherwise memory allocation issues). */
 #define NCHIPSROUNDSFORFITTING 3 /* Number of CHiPs rounds we use to calibrate to. */
 
-#define NDHSROUNDS_MAX 4 /* This is used for allocating memory to the array storing the times of the DHS rounds. In the code we use param->DHS_params->NDHSROUNDS once we know that, but that's only read in from param files at input time. */
+#define NDHSROUNDS_MAX 5 /* This is used for allocating memory to the array storing the times of the DHS rounds. In the code we use param->DHS_params->NDHSROUNDS once we know that, but that's only read in from param files at input time. */
 #define AGE_DHS_MIN 15
 #define AGE_DHS_MAX 59
 #define DHS_AGE_RANGE_MAX 45  /* DHS runs from 15-59 so 45 age groups. */

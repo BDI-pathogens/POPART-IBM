@@ -1472,6 +1472,7 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                 
                 // Assume that HIV testing still occurs at this point
                 indiv->time_last_hiv_test = t;
+                indiv->time_last_hiv_test_routine=t;
 
                 // PANGEA stuff - get CD4 at time of emergency ART:
                 indiv->PANGEA_t_diag = t;
@@ -2763,6 +2764,8 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
     
     /* Add one to the cumulative total of HIV tests carried out: */
     if(is_popart == NOTPOPART){
+        indiv -> time_last_hiv_test_routine=t;
+
         cumulative_outputs->N_total_HIV_tests_nonpopart++; // Test is not from CHiPs (ie this is a clinic-based test).
         calendar_outputs->N_calendar_HIV_tests_nonpopart[year_idx]++;
     }else{

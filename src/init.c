@@ -387,6 +387,7 @@ void set_up_population(int p, patch_struct *patch, population *pop){
     person_template.idx_hiv_pos_progression[0] = -1;     /* Initialize at dummy value. */
     person_template.idx_hiv_pos_progression[1] = -1;     /* Initialize at dummy value. */
     person_template.debug_last_hiv_event_index = -1;     /* Initialize at dummy value. */
+    person_template.time_last_hiv_test_routine=-1.0;
     person_template.idx_cascade_event[0] = -1;           /* Initialize at dummy value. */
     person_template.idx_cascade_event[1] = -1;           /* Initialize at dummy value. */
     person_template.debug_last_cascade_event_index = -1;     /* Initialize at dummy value. */
