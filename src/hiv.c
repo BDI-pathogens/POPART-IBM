@@ -2630,18 +2630,20 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         printf("called before start of HIV testing.\n");
     }
     double p_HIV_background_testing_female_current = param->p_HIV_background_testing_female_current;
-    double p_HIV_background_testing_female_pre2006_annual=1-pow((1-param->p_HIV_background_testing_female_pre2006),(1/(2006-COUNTRY_HIV_TEST_START)));
+    double p_HIV_background_testing_female_pre2006_annual=1.0-pow((1.0-param->p_HIV_background_testing_female_pre2006),(1.0/(2006.0-COUNTRY_HIV_TEST_START)));
     if(year == COUNTRY_HIV_TEST_START){
         /* This refers to the period [COUNTRY_HIV_TEST_START, 2006]. */
         p_test[MALE] = param->p_HIV_background_testing_female_pre2006 * param->RR_HIV_background_testing_male;
         p_test[FEMALE] = param->p_HIV_background_testing_female_pre2006;
         *t_gap = 2006 - COUNTRY_HIV_TEST_START;
+        
     }else{
         // allow testing probability to increase annualy up to a maximum of 0.95
         p_HIV_background_testing_female_current = p_HIV_background_testing_female_pre2006_annual + (0.95-p_HIV_background_testing_female_pre2006_annual)*(1-exp(-param->p_HIV_background_testing_female_current*(year-2006)));
         p_test[MALE] = p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
         p_test[FEMALE] = p_HIV_background_testing_female_current;
         *t_gap = 1;
+
     }
 }
 

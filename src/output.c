@@ -2402,11 +2402,12 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
                 exit(1);
             }
             /* Use only 15-59 year olds (or whatever the DHS age limits are): */
-            if (year - patch[p].individual_population[n_id].time_last_hiv_test_routine <1.0){
-                tested_last_year[patch[p].individual_population[n_id].gender]++;
-            }
+            
             a = (int) floor(year-patch[p].individual_population[n_id].DoB);
             if ((a>=AGE_DHS_MIN) && (a<=AGE_DHS_MAX)){
+                if ((year - patch[p].individual_population[n_id].time_last_hiv_test_routine <1.0) && (year - patch[p].individual_population[n_id].time_last_hiv_test_routine >=0)){
+                tested_last_year[patch[p].individual_population[n_id].gender]++;
+                }
                 g = patch[p].individual_population[n_id].gender; /* use g to make code more readable. */
                 totpop[g]++;
                 npop[g][a-AGE_DHS_MIN]++;
