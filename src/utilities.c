@@ -2516,7 +2516,7 @@ void check_if_parameters_plausible(parameters *param){
     }
 
     for (dhs_round=0; dhs_round<param->DHS_params->NDHSROUNDS; dhs_round++){
-        if (param->DHS_params->DHS_YEAR[dhs_round]<2000 || param->DHS_params->DHS_YEAR[dhs_round]>2015){
+        if (param->DHS_params->DHS_YEAR[dhs_round]<2000 || param->DHS_params->DHS_YEAR[dhs_round]>2018){
             printf("Error:param->DHS_params->DHS_YEAR[dhs_round] is outside expected range [2000,2015]\n");
             printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
             fflush(stdout);

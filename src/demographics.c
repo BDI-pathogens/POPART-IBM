@@ -366,6 +366,8 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
         new_adult->cd4 = CD4_UNINFECTED;                 /* Initialize at dummy value, here -1 */
         new_adult->SPVL_cat = -1;                            /* Initialize at dummy value. */
         new_adult->time_last_hiv_test = NEVERHIVTESTED;  /* Assume never previously tested. */
+        new_adult->time_last_hiv_test_routine = NEVERHIVTESTED;  /* Assume never previously tested. */
+
         new_adult->t_sc = -1;                            /* Initialize at dummy value. */
         new_adult->idx_hiv_pos_progression[0] = -1;     /* Initialize at dummy value. */
         new_adult->idx_hiv_pos_progression[1] = -1;     /* Initialize at dummy value. */
@@ -412,6 +414,7 @@ void create_new_individual(individual *new_adult, double t, parameters *param, i
         new_adult->cd4 = CD4_UNINFECTED;                 /// WRONG!!!
         new_adult->SPVL_cat = -1;                            /// WRONG!!!
         new_adult->time_last_hiv_test = t - AGE_ADULT;  ///  Assume that someone who survived this long was tested at birth. Not important anyway as we would be interested in ADULT testing in last year or less. 
+        new_adult->time_last_hiv_test_routine = t-AGE_ADULT;
         new_adult->t_sc = t - AGE_ADULT;                /* Seroconverted at birth. */
         new_adult->idx_vmmc_event[0] = -1;         /* Initialize at dummy value. */
         new_adult->idx_vmmc_event[1] = -1;

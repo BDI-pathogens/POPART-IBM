@@ -181,7 +181,7 @@ gsl_rng * rng;
 #define MAX_N_TIMESTEPS_PER_CHIPS_ROUND 96 /* Set this to be 2 years - no CHiPs round can therefore last >2 years (otherwise memory allocation issues). */
 #define NCHIPSROUNDSFORFITTING 3 /* Number of CHiPs rounds we use to calibrate to. */
 
-#define NDHSROUNDS_MAX 4 /* This is used for allocating memory to the array storing the times of the DHS rounds. In the code we use param->DHS_params->NDHSROUNDS once we know that, but that's only read in from param files at input time. */
+#define NDHSROUNDS_MAX 5 /* This is used for allocating memory to the array storing the times of the DHS rounds. In the code we use param->DHS_params->NDHSROUNDS once we know that, but that's only read in from param files at input time. */
 #define AGE_DHS_MIN 15
 #define AGE_DHS_MAX 59
 #define DHS_AGE_RANGE_MAX 45  /* DHS runs from 15-59 so 45 age groups. */

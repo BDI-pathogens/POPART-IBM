@@ -2376,20 +2376,22 @@ void store_calibration_outputs_pc(patch_struct *patch, int p, output_struct *out
 void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *output, int year){
     long n_id;
     int g, a;
-
+    long totpop[N_GENDER];
     long npop[N_GENDER][DHS_AGE_RANGE_MAX];
     long npositive[N_GENDER][DHS_AGE_RANGE_MAX];
-
+    long tested_last_year[N_GENDER]; //this is the number who received a test through dhs
     for (g=0;g<N_GENDER;g++){
         for (a=0;a<DHS_AGE_RANGE_MAX; a++){
             npop[g][a] = 0;
             npositive[g][a] = 0;
         }
+        totpop[g]=0;
+        tested_last_year[g]=0;
     }
     //printf("Accessing store_calibration_outputs_dhs() in year %i\n",year);
     char temp_string_n[100]; /* Temporary store of number of people in a population subgroup. */
     char temp_string_pos[100]; /* Temporary store of number of HIV+ in a population subgroup. */
-
+    char temp_string_tested[100];
     for (n_id=0; n_id<patch[p].id_counter; n_id++){
         /* Check that the person is not dead: */
         if (patch[p].individual_population[n_id].cd4!=DEAD){
@@ -2400,10 +2402,13 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
                 exit(1);
             }
             /* Use only 15-59 year olds (or whatever the DHS age limits are): */
+            if (year - patch[p].individual_population[n_id].time_last_hiv_test_routine <1.0){
+                tested_last_year[patch[p].individual_population[n_id].gender]++;
+            }
             a = (int) floor(year-patch[p].individual_population[n_id].DoB);
             if ((a>=AGE_DHS_MIN) && (a<=AGE_DHS_MAX)){
                 g = patch[p].individual_population[n_id].gender; /* use g to make code more readable. */
-
+                totpop[g]++;
                 npop[g][a-AGE_DHS_MIN]++;
                 if (patch[p].individual_population[n_id].HIV_status>UNINFECTED){
 //                  if (year>2005){
@@ -2429,6 +2434,11 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
             sprintf(temp_string_pos,"%ld,",npositive[g][a]);
             join_strings_with_check(output->dhs_output_string[p], temp_string_pos, SIZEOF_calibration_outputs-1, "dhs_output_string and temp_string_pos in store_calibration_outputs_dhs()");
         }
+    }
+    for (g=0;g<N_GENDER;g++){
+        sprintf(temp_string_tested,"%f,",tested_last_year[g]/(totpop[g]+0.0));
+        //printf("%f\n",tested_last_year[g]/(totpop[g]+0.0));
+        join_strings_with_check(output->dhs_output_string[p], temp_string_tested, SIZEOF_calibration_outputs-1, "dhs_output_string and temp_string_tested in store_calibration_outputs_dhs()");
     }
 }
 
@@ -2605,6 +2615,9 @@ void blank_calibration_output_file(char *calibration_output_filename, int NDHSRO
             fprintf(TEMPFILE, "DHSRound%iNposM%i,", r, a);
         for(a = AGE_DHS_MIN; a <= AGE_DHS_MAX; a++)
             fprintf(TEMPFILE, "DHSRound%iNposF%i,", r, a);
+        fprintf(TEMPFILE, "DHSRound%iptestedM,",r);
+        fprintf(TEMPFILE, "DHSRound%iptestedF,",r);
+
     }
     // Write prevalence of drug resistance to file.
     for(dr_year = YEAR_DR_MIN; dr_year <= YEAR_DR_MAX; dr_year++){
