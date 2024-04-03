@@ -1020,12 +1020,12 @@ void store_annual_outputs(patch_struct *patch, int p, output_struct *output,
             if (patch[p].individual_population[n_id].ART_status >= EARLYART && patch[p].individual_population[n_id].ART_status < CASCADEDROPOUT){
                 n_ART_experienced++;
             }
-            /* count those whio initially failed treatment in the last year */
-            if((year - patch[p].individual_population[n_id].t_start_art) <= 1.0 && patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITFAIL){
+            /* count those who initially failed treatment in the last year */
+            if(((year - patch[p].individual_population[n_id].last_start_art) <= 1.0 && (year - patch[p].individual_population[n_id].last_start_art) >=0) && patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITFAIL){
                 n_init_treatment_fail++;
-            }
-            /* count those whio initially suppressed post treatment in the last year */
-            if((year - patch[p].individual_population[n_id].t_start_art) <= 1.0 && patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITSUCCESS){
+            }//PANGEA_date_firstARTstart
+            /* count those who initially suppressed post treatment in the last year */
+            if(((year - patch[p].individual_population[n_id].last_start_art) <= 1.0 && (year - patch[p].individual_population[n_id].last_start_art) >=0) && patch[p].individual_population[n_id].init_treatment_outcome == TREATMENT_INITSUCCESS){
                 n_init_treatment_success++;
             }
             /* Gender-specific outputs derived here: */
@@ -2432,6 +2432,56 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
     }
 }
 
+/* store drug resistance prevalence for a given year */
+void store_calibration_outputs_DR(patch_struct *patch, int p, output_struct *output, int year){
+    long n_id;
+    int a;
+    //in the model, DR status is assigned at start of ART, so the denominator for checkin prevalence in ART starters
+    long n_pos_ART_start[DR_AGE_RANGE_MAX];
+    long n_pos_ART_start_DR[DR_AGE_RANGE_MAX];
+    for (a=0;a<DR_AGE_RANGE_MAX; a++){
+            n_pos_ART_start[a] = 0;
+            n_pos_ART_start_DR[a] = 0;
+    }
+    char temp_string_ART[100]; /* Temporary store of number of ART experienced people in a population subgroup. */
+    char temp_string_ART_DR[100]; /* Temporary store of number of ART experienced with DR in a population subgroup. */
+
+    for (n_id=0; n_id<patch[p].id_counter; n_id++){
+        //if(year == 2014 && patch[p].individual_population[n_id].id ==64836){
+         //               printf("individual with id %ld started ART at %lf and is ... %i\n",patch[p].individual_population[n_id].id,patch[p].individual_population[n_id].PANGEA_date_firstARTstart,patch[p].individual_population[n_id].cd4);
+        //}
+        /* Check that the person is not dead at the start of the year: */
+        //if (patch[p].individual_population[n_id].cd4!=DEAD){
+        if (patch[p].individual_population[n_id].DoD>(year-1) || patch[p].individual_population[n_id].DoD==-1){
+            
+            /* Count within DR age range*/
+            a = (int) floor(year-patch[p].individual_population[n_id].DoB);
+            
+            if((a>=AGE_DR_MIN) && (a<=MAX_AGE)){
+                // Initiated ART for the first time in the last year
+                if((year - patch[p].individual_population[n_id].last_start_art) <= 1.0 && (year - patch[p].individual_population[n_id].last_start_art) >=0){
+                    n_pos_ART_start[a-AGE_DR_MIN]++;
+                }
+                // How many of the new starters were had DR
+                if(((year - patch[p].individual_population[n_id].last_start_art) <= 1.0 && (year - patch[p].individual_population[n_id].last_start_art) >=0) && patch[p].individual_population[n_id].drug_resistant == 1){
+                    n_pos_ART_start_DR[a-AGE_DR_MIN]++;
+                }
+            }
+        }
+
+    }
+    
+    for (a=0;a<DR_AGE_RANGE_MAX; a++){
+            sprintf(temp_string_ART,"%ld,",n_pos_ART_start[a]);
+            join_strings_with_check(output->DR_output_string[p], temp_string_ART, SIZEOF_calibration_outputs-1, "DR_output_string and temp_string_ART in store_calibration_outputs_DR()");
+
+    }
+
+    for (a=0;a<DR_AGE_RANGE_MAX; a++){
+            sprintf(temp_string_ART_DR,"%ld,",n_pos_ART_start_DR[a]);
+            join_strings_with_check(output->DR_output_string[p], temp_string_ART_DR, SIZEOF_calibration_outputs-1, "DR_output_string and temp_string_ART_DR in store_calibration_outputs_DR()");
+    }
+}
 
 void store_calibration_outputs_chips(patch_struct *patch, int p, output_struct *output){
     /* Stores data for each CHiPs round (to be written to the calibration files)
@@ -2539,7 +2589,7 @@ void blank_calibration_output_file(char *calibration_output_filename, int NDHSRO
     */
     
     int r, a; /* Indices for DHS round and age. */
-    
+    int dr_year, dr_age; /* Indies for drug-resistance year and age*/
     /* Open and close this file to ensure it is blank at the beginning of run as we afterwards
     append data to it. */
     FILE *TEMPFILE;
@@ -2555,6 +2605,17 @@ void blank_calibration_output_file(char *calibration_output_filename, int NDHSRO
             fprintf(TEMPFILE, "DHSRound%iNposM%i,", r, a);
         for(a = AGE_DHS_MIN; a <= AGE_DHS_MAX; a++)
             fprintf(TEMPFILE, "DHSRound%iNposF%i,", r, a);
+    }
+    // Write prevalence of drug resistance to file.
+    for(dr_year = YEAR_DR_MIN; dr_year <= YEAR_DR_MAX; dr_year++){
+        for(dr_age = AGE_DR_MIN; dr_age <= MAX_AGE; dr_age++){
+            fprintf(TEMPFILE, "DRYEAR%iARTstartAGE%i,", dr_year, dr_age);
+        }
+        for(dr_age = AGE_DR_MIN; dr_age <= MAX_AGE; dr_age++){
+            /* Last entry should have a new-line rather than a comma. */
+            fprintf(TEMPFILE, "DRYEAR%iDRposAGE%i,", dr_year, dr_age);
+        }
+
     }
     // Write headers for number visited by chips, number positive, number aware of status, 
     // number on ART, and number virally suppressed.  
@@ -2639,6 +2700,8 @@ void blank_calibration_output_file(char *calibration_output_filename, int NDHSRO
                 fprintf(TEMPFILE, "PC%iPYF%i,", r*12, a);
         }
     }
+    
+
     fclose(TEMPFILE);
 }
 
@@ -3192,7 +3255,7 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
             file_data_store->filename_phylogenetic_individualdata[p],"w");
     
     fprintf(file_data_store->PHYLOGENETIC_INDIVIDUALDATA_FILE[p],
-        "Id,Sex,DoB,DoD,HIV_pos,DRstate,CascadeRnd,t_HIVpos_diagnosis,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop\n");
+        "Id,Sex,DoB,DoD,HIV_pos,DRstate,CascadeRnd,t_HIVpos_diagnosis,t_lastART_start,RiskGp,t_diagnosed,cd4_diagnosis,cd4atfirstART,t_1stARTstart,t_1stVLsupp_start,t_1stVLsupp_stop\n");
 
     for (n_id=0; n_id<id_counter; n_id++){
         if (individual_population[n_id].sex_risk==LOW)
@@ -3209,11 +3272,11 @@ void write_phylo_individual_data(file_struct *file_data_store, individual *indiv
         }
 
         if (individual_population[n_id].gender==MALE)
-            sprintf(tempstring,"%li,M,%.2lf,%.2lf,%i,%i,%i,%.2f,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0,
-            individual_population[n_id].drug_resistant,individual_population[n_id].cascade_round,individual_population[n_id].t_HIVpos_diag);
+            sprintf(tempstring,"%li,M,%.2lf,%.2lf,%i,%i,%i,%.2f,%.2f,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0,
+            individual_population[n_id].drug_resistant,individual_population[n_id].cascade_round,individual_population[n_id].t_HIVpos_diag,individual_population[n_id].last_start_art);
         else if (individual_population[n_id].gender==FEMALE)
-            sprintf(tempstring,"%li,F,%.2lf,%.2lf,%i,%i,%i,%.2f,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0,
-            individual_population[n_id].drug_resistant,individual_population[n_id].cascade_round,individual_population[n_id].t_HIVpos_diag);
+            sprintf(tempstring,"%li,F,%.2lf,%.2lf,%i,%i,%i,%.2f,%.2f,",individual_population[n_id].id,individual_population[n_id].DoB,individual_population[n_id].DoD,individual_population[n_id].HIV_status>0,
+            individual_population[n_id].drug_resistant,individual_population[n_id].cascade_round,individual_population[n_id].t_HIVpos_diag,individual_population[n_id].last_start_art);
 
         join_strings_with_check(tempstring, riskstring, 300, "tempstring and riskstring in write_phylo_individual_data()");
 

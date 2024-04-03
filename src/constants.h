@@ -91,7 +91,7 @@
 #define WRITE_ART_STATUS_BY_AGE_SEX 0 // Write totals of individuals in each ART_status stratified by sex and year of age.  Write these for each time step.
 #define WRITE_DEBUG_CHIPS_STATES 0                /* Generates the files CHIPS_outputs_annual*.csv containing the annual data on people when they are visited by CHiPs. */
 
-#define WRITE_CALIBRATION 0 /* Write Calibration*.csv files to disk */
+#define WRITE_CALIBRATION 1 /* Write Calibration*.csv files to disk */
 #define PRINT_ALL_RUNS 1 /* Use this if you want to print everything regardless of fitting. */
 #define PRINT_EACH_RUN_OUTPUT 1 /* 0 if don't want to generate an output file for every run (when calibrating at present this is the case), or 1 if we do. */
 #define WRITE_EVERYTIMESTEP 0 /* Generates the files Timestep_outputs*.csv */
@@ -109,7 +109,7 @@
 
 #define FOLLOW_INDIVIDUAL -1 //23727 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
 
-#define FOLLOW_PATCH 0 //1
+#define FOLLOW_PATCH 1 //0
 
 #define WRITE_COST_EFFECTIVENESS_OUTPUT 0 /*  Generates a new file cost_effectiveness_$.csv */
 #define WRITE_TREATS_OUTPUT 0 // Generates output for aligning the model with that used in the TREATS clinical trial.
@@ -229,6 +229,15 @@ extern const int FIND_AGE_GROUPS[MAX_AGE-AGE_ADULT+1]; /* Convert from (age-AGE_
 
 extern int POPART_SAMPLING_FRAME_ESTABLISHED;
 
+/************************************************************************/
+/***************************** Drug resistance ***************************/
+/************************************************************************/
+// these are used for calibrating to drug-resistance prevalence data
+#define AGE_DR_MIN 17 // minimun age of individual sampled to check for drug resistance
+#define DR_AGE_RANGE_MAX 64  /* DR checked for 17 years olds and over i.e. to max age  in model = 80, so 64 age groups. */
+#define YEAR_DR_MIN 2014 // starting year for drug resistance prevalence in the data
+#define YEAR_DR_MAX 2018 // last year with DR prevalence data
+#define DR_data_years 5
 /************************************************************************/
 /***************************** Partnership ***************************/
 /************************************************************************/

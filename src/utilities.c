@@ -1385,6 +1385,7 @@ void print_param_struct(parameters *param){
     printf("param->p_vs_given_PDR=%lg\n",param->p_vs_given_PDR[IPM]);
     printf("param->p_vs_given_nonPDR=%lg\n",param->p_vs_given_nonPDR[NOT_IPM]);    
     printf("param->p_vs_given_nonPDR=%lg\n",param->p_vs_given_nonPDR[IPM]);    
+    printf("param->odds_sampling_viremic=%lg\n",param->odds_sampling_viremic);    
 	printf("param->p_stays_virally_suppressed=%lg\n",param->p_stays_virally_suppressed);
     printf("param->p_stops_virally_suppressed=%lg\n",param->p_stops_virally_suppressed);
     //printf("param->p_vu_becomes_virally_suppressed=%lg\n",param->p_vu_becomes_virally_suppressed);
@@ -1910,6 +1911,12 @@ void check_if_parameters_plausible(parameters *param){
         fflush(stdout);
         exit(1);
     }
+    if (param->odds_sampling_viremic<=0 || param->odds_sampling_viremic>20){
+        printf("Error:param->odds_sampling_viremic is outside expected range (0,100]\nExiting\n");
+        printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+        fflush(stdout);
+        exit(1);
+    }
 	if (param->p_stays_virally_suppressed<0 || param->p_stays_virally_suppressed>1){
         printf("Error:param->p_stays_virally_suppressed is outside expected range [0,1]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
@@ -1952,7 +1959,13 @@ void check_if_parameters_plausible(parameters *param){
         fflush(stdout);
         exit(1);
     }
-	
+	if (WRITE_CALIBRATION == 1 && param->end_time_simul<(DR_data_years + YEAR_DR_MIN)){
+            printf("Error: param->end_time_simul less than minimum expected when calibrating to drug resistance 2019.\nExiting\n");
+            printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+            fflush(stdout);
+            exit(1);
+    }
+
     for (chips_round=0; chips_round<NCHIPSROUNDS; chips_round++){
         if (param->p_popart_to_cascade[chips_round]<0 || param->p_popart_to_cascade[chips_round]>1){
             printf("Error:param->p_popart_to_cascade[%i] is outside expected range [0,1]\nExiting\n",chips_round);
@@ -2603,3 +2616,10 @@ double scaling_p_collect_cd4_test_results_cd4_nonpopart(int year, double p_colle
     
 }
 
+/*Drug-resistance extention: this function calculates the true probability of viral suppression given an observed probability 
+(estimated from drug-resistance data) and the odds of observing a viremic person post ART initiation*/
+
+double true_probability_viral_suppression(double observed_probability_viral_suppression, double odds_sampling_viremic){
+    double observed_probability_failure = 1 - observed_probability_viral_suppression;
+    return 1 - (observed_probability_failure / ((odds_sampling_viremic * (1-observed_probability_failure)) + observed_probability_failure));
+}

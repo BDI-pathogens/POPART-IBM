@@ -1483,6 +1483,9 @@ void carry_out_HIV_events_per_timestep(double t, patch_struct *patch, int p,
                     indiv->PANGEA_cd4atfirstART = PANGEA_get_cd4(indiv, t);
                 }
                 
+                // keep track of most recent ART initiation
+                indiv->last_start_art = t;
+            
                 // Update debug counters regarding transitions to emergency ART
                 if(indiv->ART_status == ARTNEG){
                     debug->art_vars[p].n_start_emergency_art_fromartnaive++;
@@ -2110,15 +2113,15 @@ void start_ART_process(individual* indiv, parameters *param, double t,
         if(indiv->drug_resistant != 1){
             if(x_pdr < prob_PDR_given_year){
                 indiv->drug_resistant = 1;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_PDR[NOT_IPM];
+                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = true_probability_viral_suppression(param->p_vs_given_PDR[NOT_IPM],param->odds_sampling_viremic);
             }else{
                 indiv->drug_resistant = 0;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_nonPDR[NOT_IPM];
+                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = true_probability_viral_suppression(param->p_vs_given_nonPDR[NOT_IPM],param->odds_sampling_viremic);
             }
         }else if(indiv->drug_resistant == 1 && indiv->init_treatment_outcome == TREATMENT_INITFAIL){
             p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  0 * param->p_vs_given_PDR[NOT_IPM];
         }else{
-            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  param->p_vs_given_PDR[NOT_IPM];
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  true_probability_viral_suppression(param->p_vs_given_PDR[NOT_IPM],param->odds_sampling_viremic);
         }
         
     }else{
@@ -2126,13 +2129,13 @@ void start_ART_process(individual* indiv, parameters *param, double t,
         if(indiv->drug_resistant != 1){
             if(x_pdr < prob_PDR_given_year){
                 indiv->drug_resistant = 1;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  param->p_vs_given_PDR[IPM];
+                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  true_probability_viral_suppression(param->p_vs_given_PDR[IPM],param->odds_sampling_viremic);
             }else{
                 indiv->drug_resistant = 0;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_nonPDR[IPM];
+                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = true_probability_viral_suppression(param->p_vs_given_nonPDR[IPM],param->odds_sampling_viremic);
             }
         }else{
-            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  param->p_vs_given_PDR[IPM];
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  true_probability_viral_suppression(param->p_vs_given_PDR[IPM],param->odds_sampling_viremic);
         }
     }
 	
@@ -3521,6 +3524,9 @@ void carry_out_cascade_events_per_timestep(double t, patch_struct *patch, int p,
                     indiv->PANGEA_date_firstARTstart = t;
                     indiv->PANGEA_cd4atfirstART = PANGEA_get_cd4(indiv, t);
                 }
+                // keep track of most recent ART initiation
+                indiv->last_start_art = t;
+
                 debug->art_vars[p].cascade_transitions[indiv->ART_status+1][EARLYART+1]++;
                 start_ART_process(indiv, patch[p].param, t, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, patch[p].hiv_pos_progression, patch[p].n_hiv_pos_progression, patch[p].size_hiv_pos_progression,0, file_data_store, patch[p].calendar_outputs);
             }

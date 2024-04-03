@@ -54,6 +54,7 @@ void store_annual_partnerships_outputs(patch_struct *, int , output_struct *,
 void store_timestep_outputs(patch_struct *, int , double , output_struct *, int, int, int);
 void store_timestep_age_outputs(patch_struct *, int , double , output_struct *, int);
 void store_calibration_outputs_dhs(patch_struct *, int , output_struct *, int );
+void store_calibration_outputs_DR(patch_struct *, int , output_struct *, int);
 void store_cost_effectiveness_outputs(patch_struct *, int , output_struct *, all_partnerships *,
     int *, int, int);
 void store_treats_outputs(patch_struct *, int, output_struct *, all_partnerships *, 

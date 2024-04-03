@@ -97,7 +97,7 @@ int main(int argc,char *argv[]){
     int i_startrun; // the first parameter set used (i_startrun); allows picking a single run
     int n_startrun; // the number of parameter sets used (i.e. run from i_startrun to n_startrun)
     int i_dhs_round; /* To let us know if/when we need to store data for DHS. */
-
+    int i_DR_year; //track number of years of DR data stored up to max DR_data_years
     /* This stores the return value of carry_out_processes() - it is 1 if there was no fitting or
     if the run passed all the fits during the year, and 0 if there was a fit criterion which was
     not satisfied. This allows us to see if a run should be terminated early or not. */
@@ -368,7 +368,7 @@ int main(int argc,char *argv[]){
             }
             
             i_dhs_round = 0;  /* Reset the DHS round counter. */
-            
+            i_DR_year = 0; /* Reset the DR year counter. */
             /* FIX - USE patch[0] FOR NOW AS THEY ARE ALL THE SAME. */
             gsl_rng_set(rng, (allrunparameters[0]+i_run)->rng_seed);
             
@@ -684,6 +684,28 @@ int main(int argc,char *argv[]){
                                 }
                             }
                         }
+                        
+
+                        /* Store drug resistance summary statistics.
+                        At a given year, DR is derived at the start, so prevalnce from ART starters in the entire year-1 e.g. year 2014
+                        gives prevalence from anyone who started ART in 2013*/
+                        if(i_DR_year < DR_data_years){
+                            if(year == YEAR_DR_MIN + i_DR_year){
+                                
+                                store_calibration_outputs_DR(patch, p, output, year);
+                                /* Store everything after the final DR year: */
+                                if(i_DR_year == (DR_data_years - 1)){
+                                    join_strings_with_check(
+                                    output->calibration_outputs_combined_string[p],
+                                    output->DR_output_string[p], SIZEOF_calibration_outputs - 1,
+                                    "output->DR_output_string[p] and output->calibration_..._string[p] in main()");
+                                }
+                                // Only increment i_DR_year if we've looped through all patches    
+                                if(p == NPATCHES - 1){
+                                    i_DR_year += 1;
+                                }
+                            }     
+                        }
                     }
                     /* Generates the Age_distribution_check files - these are used to validate the
                     model age distribution by gender against UNPD age distribution estimates. */
@@ -820,9 +842,13 @@ int main(int argc,char *argv[]){
                     output->pc_output_string[p], SIZEOF_calibration_outputs - 1,
                     "output->pc_output_string[p] and output->calibration_..._string[p] in main()");
                     
-                    // Add a newline character to the output
-                    strcat(output->calibration_outputs_combined_string[p], "\n");
+                
+
+                // Add a newline character to the output
+                strcat(output->calibration_outputs_combined_string[p], "\n");
                 }
+                
+                
                 
                 /* Only want to write out to disk every NRUNSPERWRITETOFILE runs. So calculate i_run
                 (mod NRUNSPERWRITETOFILE): */
@@ -840,7 +866,7 @@ int main(int argc,char *argv[]){
                     }
                 }
             }
-            
+
             printf("-------------------------------------Simulated a total of: ");
             for(p = 0; p < NPATCHES; p++){
                 printf("%ld ", patch[p].id_counter);

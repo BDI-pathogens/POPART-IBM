@@ -77,6 +77,7 @@ struct individual{
     int init_treatment_outcome; /* Track if individuals initially become VS of not, linked to DR*/
     int drug_resistant; /* drug resistance status: -1= did not start cascade 0=none, 1=drug resistance(pre-treatment or de novo/post treatment failure(DR|VU))*/
     double t_HIVpos_diag; /* time when first tested positive, unlike t_diag, does not get updated with start of emergency ART or retesting*/
+    double last_start_art; /* keep track of most recent ART start date, matters when dropouts come back into the cascade*/
     int next_HIV_event; /* -1 if not HIV+. Otherwise this stores the next HIV-biology related event to occur to this person (progression, AIDS death, starting ART because CD4<200). */
     long idx_hiv_pos_progression[2]; /* The indices which locate this individual in the hiv_pos_progression array. The first index is a function of the time to their next event (ie puts them in the group of people having an HIV event at some timestep dt) and the second is their location in this group. */
     /* for the above the origin of time is start_time_hiv */
@@ -381,7 +382,8 @@ typedef struct {
 	double p_vs_given_PDR[2]; /* probability of viral suppression given PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
 	double p_vs_given_nonPDR[2]; /* probability of viral suppression given non-PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
     /* or you remain virally unsuppressed */
-    
+    double odds_sampling_viremic; /* introduced to allow the model to calibrate to DR data and estimate odds that sample from which VS|strain parameters were calculated was more likely to have viremic individuals*/
+
     /* Given you've become virally suppressed, 3 possible events can happen with following probabilities */
     double p_stays_virally_suppressed; /* remain virally suppressed until you die */
     double p_stays_virally_suppressed_male; /* Decrease in p_stays_virally_suppressed for men compared to women */
@@ -894,6 +896,7 @@ typedef struct{ /* structure which contains all the strings that are outputted *
 
     char *chips_output_string[NPATCHES];
     char *dhs_output_string[NPATCHES];
+    char *DR_output_string[NPATCHES]; // for calibrating to drug resistance
     char *pc_output_string[NPATCHES];
     char *calibration_outputs_combined_string[NPATCHES];
 

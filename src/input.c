@@ -1122,6 +1122,8 @@ void read_cascade_params(char *patch_tag, parameters *allrunparameters, int n_ru
         check_if_cannot_read_param(checkreadok,"param_local->p_vs_given_nonPDR");
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_vs_given_nonPDR[IPM]));
         check_if_cannot_read_param(checkreadok,"param_local->p_vs_given_nonPDR");
+		checkreadok = fscanf(param_file,"%lg",&(param_local->odds_sampling_viremic));
+        check_if_cannot_read_param(checkreadok,"param_local->odds_sampling_viremic");
 		
 
         checkreadok = fscanf(param_file,"%lg",&(param_local->p_stays_virally_suppressed));

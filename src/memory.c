@@ -162,6 +162,7 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
     memset(output->timestep_age_outputs_string[p], '\0', (N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_annual_outputs_string*sizeof(char));
     memset(output->timestep_age_outputs_string_PConly[p], '\0', (N_TIME_STEP_PER_YEAR/OUTPUTTIMESTEP)*SIZEOF_annual_outputs_string*sizeof(char));
     memset(output->dhs_output_string[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
+    memset(output->DR_output_string[p],'\0', SIZEOF_calibration_outputs*sizeof(char));
     memset(output->pc_output_string[p], '\0', SIZEOF_calibration_outputs*sizeof(char));
     //memset(output->annual_outputs_string_prevalence[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
     //memset(output->annual_outputs_string_knowserostatus[p], '\0', SIZEOF_annual_outputs_tempstore*sizeof(char));
@@ -213,6 +214,8 @@ void alloc_output_memory(output_struct **output)
         //(*output)->annual_outputs_string_knowserostatusandonart[p] = (char *)calloc(SIZEOF_annual_outputs_tempstore, sizeof(char));
         (*output)->dhs_output_string[p] = 
             (char *)calloc(SIZEOF_annual_outputs_tempstore, sizeof(char));
+        (*output)->DR_output_string[p] = 
+            (char *)calloc(SIZEOF_calibration_outputs, sizeof(char));
         (*output)->pc_output_string[p] = 
             (char *)calloc(SIZEOF_calibration_outputs, sizeof(char));
         (*output)->calibration_outputs_combined_string[p] = 
@@ -1227,6 +1230,7 @@ void free_output_memory(output_struct *output){
         free(output->timestep_age_outputs_string_PConly[p]);
         free(output->chips_output_string[p]);
         free(output->dhs_output_string[p]);
+        free(output->DR_output_string[p]);
         free(output->pc_output_string[p]);
         free(output->calibration_outputs_combined_string[p]);
         free(output->cost_effectiveness_outputs_string[p]);
