@@ -2640,8 +2640,9 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     }else{
         // allow testing probability to increase annualy up to a maximum of 0.95
         p_HIV_background_testing_female_current = p_HIV_background_testing_female_pre2006_annual + (0.95-p_HIV_background_testing_female_pre2006_annual)*(1-exp(-param->p_HIV_background_testing_female_current*(year-2006)));
-        p_test[MALE] = p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
+        p_test[MALE] =  p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
         p_test[FEMALE] = p_HIV_background_testing_female_current;
+        //printf("%f\n",p_HIV_background_testing_female_current );
         *t_gap = 1;
 
     }
@@ -2766,10 +2767,10 @@ void hiv_test_process(individual* indiv, parameters *param, double t, individual
     /* Record the time of their most recent test (so we can count % of people who hve tested in last X months): */
     indiv->time_last_hiv_test = t;
     //indiv->cascade_round = indiv->cascade_round+1; /*individuals who start emergency ART do not get counted this way, fine for now, interest is in impact of re-entry vis HIV testing*/
+    indiv -> time_last_hiv_test_routine=t;
     
     /* Add one to the cumulative total of HIV tests carried out: */
     if(is_popart == NOTPOPART){
-        indiv -> time_last_hiv_test_routine=t;
 
         cumulative_outputs->N_total_HIV_tests_nonpopart++; // Test is not from CHiPs (ie this is a clinic-based test).
         calendar_outputs->N_calendar_HIV_tests_nonpopart[year_idx]++;

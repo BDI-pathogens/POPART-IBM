@@ -2377,6 +2377,8 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
     long n_id;
     int g, a;
     long totpop[N_GENDER];
+    long totpop_uninf[N_GENDER];
+
     long npop[N_GENDER][DHS_AGE_RANGE_MAX];
     long npositive[N_GENDER][DHS_AGE_RANGE_MAX];
     long tested_last_year[N_GENDER]; //this is the number who received a test through dhs
@@ -2387,6 +2389,7 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
         }
         totpop[g]=0;
         tested_last_year[g]=0;
+        totpop_uninf[g]=0;
     }
     //printf("Accessing store_calibration_outputs_dhs() in year %i\n",year);
     char temp_string_n[100]; /* Temporary store of number of people in a population subgroup. */
@@ -2405,17 +2408,22 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
             
             a = (int) floor(year-patch[p].individual_population[n_id].DoB);
             if ((a>=AGE_DHS_MIN) && (a<=AGE_DHS_MAX)){
-                if ((year - patch[p].individual_population[n_id].time_last_hiv_test_routine <1.0) && (year - patch[p].individual_population[n_id].time_last_hiv_test_routine >=0)){
+                if ((year+1 - patch[p].individual_population[n_id].time_last_hiv_test_routine <=1.0) && (year+1 - patch[p].individual_population[n_id].time_last_hiv_test_routine >=0)){
                 tested_last_year[patch[p].individual_population[n_id].gender]++;
                 }
+
                 g = patch[p].individual_population[n_id].gender; /* use g to make code more readable. */
                 totpop[g]++;
+                
                 npop[g][a-AGE_DHS_MIN]++;
                 if (patch[p].individual_population[n_id].HIV_status>UNINFECTED){
 //                  if (year>2005){
 //                      printf("Infection %i %i\n",g,a);
 //                  }
                     npositive[g][a-AGE_DHS_MIN]++;
+                }
+                else{
+                    totpop_uninf[g]++;
                 }
 
             }
@@ -2437,8 +2445,9 @@ void store_calibration_outputs_dhs(patch_struct *patch, int p, output_struct *ou
         }
     }
     for (g=0;g<N_GENDER;g++){
-        sprintf(temp_string_tested,"%f,",tested_last_year[g]/(totpop[g]+0.0));
-        //printf("%f\n",tested_last_year[g]/(totpop[g]+0.0));
+        sprintf(temp_string_tested,"%f,",(tested_last_year[g]+0.0)/(totpop[g]+0.0));
+        
+        //printf("%lf, %ld, %ld\n",tested_last_year[g]/(totpop[g]+0.0), totpop[g],totpop_uninf[g]);
         join_strings_with_check(output->dhs_output_string[p], temp_string_tested, SIZEOF_calibration_outputs-1, "dhs_output_string and temp_string_tested in store_calibration_outputs_dhs()");
     }
 }
