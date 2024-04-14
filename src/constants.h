@@ -96,7 +96,7 @@
 #define PRINT_EACH_RUN_OUTPUT 1 /* 0 if don't want to generate an output file for every run (when calibrating at present this is the case), or 1 if we do. */
 #define WRITE_EVERYTIMESTEP 0 /* Generates the files Timestep_outputs*.csv */
 #define TIMESTEP_AGE 0 /* Generates the files Timestep_age_outputs_*.csv */
-#define WRITE_PHYLOGENETICS_OUTPUT 1 // 1    /* if 1 print phylo output to file, otherwise do not print */
+#define WRITE_PHYLOGENETICS_OUTPUT 0 // 1    /* if 1 print phylo output to file, otherwise do not print */
 #define WRITE_PARTNERSHIP_NETWORK_SNAPSHOT 0 /* if 1 then print out the sexual network at fixed times to allow network plots.  Writes the files Partnership_network_*.csv to disk.  The years at which partnerships are output are hard-coded in main.c */
 #define PARTNERSHIP_NETWORK_SNAPSHOT_START 2010
 #define PARTNERSHIP_NETWORK_SNAPSHOT_END 2019

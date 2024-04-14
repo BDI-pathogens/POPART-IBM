@@ -2638,8 +2638,8 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         *t_gap = 2006 - COUNTRY_HIV_TEST_START;
         
     }else{
-        // allow testing probability to increase annualy up to a maximum of 0.95
-        p_HIV_background_testing_female_current = p_HIV_background_testing_female_pre2006_annual + (0.95-p_HIV_background_testing_female_pre2006_annual)*(1-exp(-param->p_HIV_background_testing_female_current*(year-2006)));
+        // allow testing probability to increase annualy up to a maximum of 0.7
+        p_HIV_background_testing_female_current = p_HIV_background_testing_female_pre2006_annual + (0.7-p_HIV_background_testing_female_pre2006_annual)*(1-exp(-param->p_HIV_background_testing_female_current*(year-2006)));
         p_test[MALE] =  p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
         p_test[FEMALE] = p_HIV_background_testing_female_current;
         //printf("%f\n",p_HIV_background_testing_female_current );
