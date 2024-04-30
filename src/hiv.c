@@ -2102,8 +2102,8 @@ void start_ART_process(individual* indiv, parameters *param, double t,
 		regression_PDR_by_year = param->intercept_PDR + param->slope_PDR*(t - param->COUNTRY_ART_START);
 	}
 	double prob_PDR_given_year;
-	prob_PDR_given_year = exp(regression_PDR_by_year)/(1 + exp(regression_PDR_by_year));
-    
+    prob_PDR_given_year = exp(regression_PDR_by_year)/(1 + exp(regression_PDR_by_year));
+	
     // - final probabilty of strain type and viral suppression given strain. The probabilities of viral suppression can change if the IPM intervention is in place alongside popart
 	double p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain;
     double x_pdr = gsl_rng_uniform (rng);
@@ -3410,13 +3410,17 @@ void dropout_process(individual* indiv, parameters *param, double t, individual 
         ( indiv->ART_status == LTART_VU )
     ){
         calendar_outputs->N_calendar_AnnualDropoutOnART[g][age_idx][cd4][spvl][year_idx]++;
+        indiv->ART_status = ARTDROPOUT;
+    }
+    if (indiv->ART_status < EARLYART){
+        indiv->ART_status = CASCADEDROPOUT;
     }
     
     if(WRITE_COST_EFFECTIVENESS_OUTPUT == 1){
         calendar_outputs->N_calendar_dropout[year_idx]++;
     }
     
-    indiv->ART_status = CASCADEDROPOUT;
+    
     
     /* Need to allow CD4 progression again if they don't currently have CD4 progression event 
     (ie if they were on ART and virally suppressed). */
