@@ -1911,8 +1911,8 @@ void check_if_parameters_plausible(parameters *param){
         fflush(stdout);
         exit(1);
     }
-    if (param->odds_sampling_viremic<=0 || param->odds_sampling_viremic>20){
-        printf("Error:param->odds_sampling_viremic is outside expected range (0,100]\nExiting\n");
+    if (param->odds_sampling_viremic<=0 || param->odds_sampling_viremic>30){
+        printf("Error:param->odds_sampling_viremic is outside expected range (0,30]\nExiting\n");
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
