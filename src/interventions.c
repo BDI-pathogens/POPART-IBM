@@ -745,7 +745,7 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
             }else{
                 
                 /* Check that individual can only get here if previously dropped out. */
-                if(indiv->ART_status != CASCADEDROPOUT){
+                if((indiv->ART_status != CASCADEDROPOUT) && (indiv->ART_status != ARTDROPOUT)){
                     
                     printf("ERROR: Incorrect cascade in chips_visit_person for ");
                     printf("ART status =%d for person %ld in patch %d. ",
