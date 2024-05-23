@@ -2603,6 +2603,7 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     int year, int COUNTRY_HIV_TEST_START, parameters *param){
     /*
     Calculate probability an individual has an HIV test in the next window (t_gap).  
+    The probability of having a test at time t follows a logistic distribution, capped at 75%
     
     Arguments
     ---------
@@ -2629,22 +2630,11 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         printf("probability_get_hiv_test_in_next_window() ");
         printf("called before start of HIV testing.\n");
     }
-    double p_HIV_background_testing_female_current = param->p_HIV_background_testing_female_current;
-    double p_HIV_background_testing_female_pre2006_annual=1.0-pow((1.0-param->p_HIV_background_testing_female_pre2006),(1.0/(2006.0-COUNTRY_HIV_TEST_START)));
-    if(year == COUNTRY_HIV_TEST_START){
-        /* This refers to the period [COUNTRY_HIV_TEST_START, 2006]. */
-        p_test[MALE] = param->p_HIV_background_testing_female_pre2006 * param->RR_HIV_background_testing_male;
-        p_test[FEMALE] = param->p_HIV_background_testing_female_pre2006;
-        *t_gap = 2006 - COUNTRY_HIV_TEST_START;
-        
-    }else{
-        // allow testing probability to increase annualy up to a maximum of 0.7
-        p_HIV_background_testing_female_current = p_HIV_background_testing_female_pre2006_annual + (0.7-p_HIV_background_testing_female_pre2006_annual)*(1-exp(-param->p_HIV_background_testing_female_current*(year-2006)));
-        p_test[MALE] =  p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
-        p_test[FEMALE] = p_HIV_background_testing_female_current;
-        //printf("%f\n",p_HIV_background_testing_female_current );
-        *t_gap = 1;
-
+    else{
+        double rate_HIV_background_testing_female = param->rate_HIV_background_testing_female;
+        p_test[FEMALE] = 0.75/(1+exp(-param->rate_HIV_background_testing_female*(year-param->midpoint_testing)));
+        p_test[MALE] =  p_test[FEMALE] * param->RR_HIV_background_testing_male;
+        *t_gap = 1;       
     }
 }
 
