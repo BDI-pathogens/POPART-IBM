@@ -287,7 +287,7 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 /* codes for indiv->ART_status - could merge with HIV status? Note that these are states and not processes. */
 #define NARTEVENTS 8 // Currently runs from -1..6 so 8 events.
 #define ARTNEG  -1 // If never tested HIV positive (note that this is tested, not serostatus).
-#define ARTNAIVE 0 // Never been on ART.
+#define ARTNAIVE 0 // Never been on ART or re-started.
 #define EARLYART 1 // First few weeks/months before achieve viral suppression. Higher mortality and drop-out rate.
 #define LTART_VS 2 // longer-term ART and Virally Suppressed (so low transmission, no CD4 progression or drug resistance).  
 #define LTART_VU 3 // longer-term ART and Virally Unsuppressed (so higher transmission, could have (but not currently) CD4 progression and drug resistance).
