@@ -767,6 +767,11 @@ void new_infection(double time_infect, int SEEDEDINFECTION, individual* seroconv
     // Store the time at which they got infected
     seroconverter->t_sc = time_infect;
 
+    // if infector had detectable levels of drug resistance then they also get DR
+    if(infector->drug_resistant==DETECTABLE_DR){
+        seroconverter->drug_resistant=DETECTABLE_DR;
+    }
+
     // Draw SPVL
     if(SEEDEDINFECTION == TRUE)
         // If a seeded infection (ie no modelled infector) draw from a set distribution.
@@ -2093,50 +2098,21 @@ void start_ART_process(individual* indiv, parameters *param, double t,
             (1.0 - param->p_dies_earlyart_cd4[indiv->cd4]);
     }
     
-	//Determine the probability that an invidual becomes virally suppressed after initiating ART given infecting HIV strain. This replaces param->p_becomes_vs_after_earlyart_if_not_die_early_or_leave
-	// - probability individual has a drug resistant strain. Results of logistic regression with year and age group as determinants
-	double regression_PDR_by_year;
-	if(floor(t - indiv->DoB) < 45){
-		regression_PDR_by_year = param->intercept_PDR + param->slope_PDR*(t - param->COUNTRY_ART_START) + param->coeff_age_under45_PDR;
-	}else{
-		regression_PDR_by_year = param->intercept_PDR + param->slope_PDR*(t - param->COUNTRY_ART_START);
-	}
-	double prob_PDR_given_year;
-    prob_PDR_given_year = exp(regression_PDR_by_year)/(1 + exp(regression_PDR_by_year));
-	
     // - final probabilty of strain type and viral suppression given strain. The probabilities of viral suppression can change if the IPM intervention is in place alongside popart
 	double p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain;
-    double x_pdr = gsl_rng_uniform (rng);
     /* In an individual fails dur to DR outside of the intervention, then they keep failing even if they re-enter the cascade
     but if they fail while IPM is in effect, then each time they re-enter there is a chance of success*/
 	if(is_popart == NOTPOPART){
-		// only assign a PDR status if new to cascade or previously drug sensitive(applies to dropouts who re-enter)
-        if(indiv->drug_resistant != 1){
-            if(x_pdr < prob_PDR_given_year){
-                indiv->drug_resistant = 1;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = true_probability_viral_suppression(param->p_vs_given_PDR[NOT_IPM],param->odds_sampling_viremic);
-            }else{
-                indiv->drug_resistant = 0;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = true_probability_viral_suppression(param->p_vs_given_nonPDR[NOT_IPM],param->odds_sampling_viremic);
-            }
-        }else if(indiv->drug_resistant == 1 && indiv->init_treatment_outcome == TREATMENT_INITFAIL){
-            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  0 * param->p_vs_given_PDR[NOT_IPM];
+        if(indiv->drug_resistant > NO_DR){
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_DR[NOT_IPM];
         }else{
-            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  true_probability_viral_suppression(param->p_vs_given_PDR[NOT_IPM],param->odds_sampling_viremic);
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_nonDR[NOT_IPM];
         }
-        
     }else{
-		//only assign a PDR status if new to cascade or previously drug sensitive(applies to dropouts who re-enter)
-        if(indiv->drug_resistant != 1){
-            if(x_pdr < prob_PDR_given_year){
-                indiv->drug_resistant = 1;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  true_probability_viral_suppression(param->p_vs_given_PDR[IPM],param->odds_sampling_viremic);
-            }else{
-                indiv->drug_resistant = 0;
-                p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = true_probability_viral_suppression(param->p_vs_given_nonPDR[IPM],param->odds_sampling_viremic);
-            }
+		if(indiv->drug_resistant > NO_DR){
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_DR[IPM];
         }else{
-            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain =  true_probability_viral_suppression(param->p_vs_given_PDR[IPM],param->odds_sampling_viremic);
+            p_becomes_vs_after_earlyart_if_not_die_early_or_leave_given_strain = param->p_vs_given_nonDR[IPM];
         }
     }
 	
@@ -2188,9 +2164,6 @@ void start_ART_process(individual* indiv, parameters *param, double t,
                 (1.0 - p_dropout-param->p_dies_earlyart_cd4[indiv->cd4]) )
     ){
         
-        if(indiv->init_treatment_outcome == TREATMENT_INEXPERIENCED){
-            indiv->init_treatment_outcome = TREATMENT_INITSUCCESS;
-        }
         
         if(is_popart == NOTPOPART){
             indiv->next_cascade_event = CASCADEEVENT_VS_NONPOPART;
@@ -2210,9 +2183,7 @@ void start_ART_process(individual* indiv, parameters *param, double t,
     
     /* Otherwise, individual continues on ART but not fully virally suppressed. */
     }else{
-        if(indiv->init_treatment_outcome == TREATMENT_INEXPERIENCED){
-            indiv->init_treatment_outcome = TREATMENT_INITFAIL;
-        }
+        
         if(is_popart == NOTPOPART){
             indiv->next_cascade_event = CASCADEEVENT_VU_NONPOPART;
             time_to_next_event = t + gsl_rng_uniform (rng)*param->t_end_early_art + TIME_STEP;
@@ -3180,6 +3151,13 @@ void virally_suppressed_process(individual* indiv, parameters *param, double t, 
     //printf("virally_suppressed_process is_popart= %i\n",is_popart);
 
     indiv->ART_status = LTART_VS;
+    if(indiv->init_treatment_outcome == TREATMENT_INEXPERIENCED){
+            indiv->init_treatment_outcome = TREATMENT_INITSUCCESS;
+    }
+    if(indiv->drug_resistant == DETECTABLE_DR){
+            indiv->drug_resistant = UNDETECTABLE_DR;
+    }
+        
 
 
     if(indiv->id==FOLLOW_INDIVIDUAL && indiv->patch_no==FOLLOW_PATCH){
@@ -3261,6 +3239,12 @@ void virally_unsuppressed_process(individual* indiv, parameters *param, double t
 
 
     indiv->ART_status = LTART_VU;
+    if(indiv->init_treatment_outcome == TREATMENT_INEXPERIENCED){
+            indiv->init_treatment_outcome = TREATMENT_INITFAIL;
+    }
+    if(indiv->drug_resistant == UNDETECTABLE_DR){
+        indiv->drug_resistant = DETECTABLE_DR;
+    }
 
 
     /* Need to allow CD4 progression again. */
@@ -3271,36 +3255,38 @@ void virally_unsuppressed_process(individual* indiv, parameters *param, double t
         fflush(stdout);
     }
 
-    /* Now decide what cascade event happens next. 3 possible states: continues being virally unsuppressed,
-     * becomes suppressed(depending on DR status), or drops out of ART entirely. */
-    
-	double p_vu_becomes_virally_suppressed_given_strain;
+    /* Probability of viral suppressionis determined by whether or not they have drug resistance. Either
+    1) it was detactable from the start or switched upon start of ART OR 2) will be acquired as a result of being viremic and on ART*/ 
+    double p_vu_becomes_virally_suppressed_given_strain;
     double x_dr_vu = gsl_rng_uniform (rng);
+    double time_become_DR;
+        
     if (is_popart==NOTPOPART){
-        if(indiv->drug_resistant != 1){
-            if(x_dr_vu<param->p_DR_given_vu){
-                indiv->drug_resistant = 1;
-                p_vu_becomes_virally_suppressed_given_strain = param->p_DR_vu_becomes_virally_suppressed[NOT_IPM];
-            }else{
-                p_vu_becomes_virally_suppressed_given_strain = param->p_nonDR_vu_becomes_virally_suppressed[NOT_IPM];
-            }
-        }else{
+        if(indiv->drug_resistant == DETECTABLE_DR){
             p_vu_becomes_virally_suppressed_given_strain = param->p_DR_vu_becomes_virally_suppressed[NOT_IPM];
+        }else{
+            // determine if individual becomes DR and assign appropriate VS prob
+            if(x_dr_vu<(1-param->p_DR_given_vu)){ //No ADR (most likely)
+                p_vu_becomes_virally_suppressed_given_strain = param->p_nonDR_vu_becomes_virally_suppressed[NOT_IPM];
+                indiv->next_DR_event = NO_DR;
+            }else if(x_dr_vu<(param->p_DR_given_vu)*(param->p_DR_vu_becomes_virally_suppressed[NOT_IPM])){ //ADR and VS 
+                p_vu_becomes_virally_suppressed_given_strain = param->p_DR_vu_becomes_virally_suppressed[NOT_IPM];
+                time_become_DR = t + gsl_ran_exponential (rng,1.0/(0.0 - log(1.0- param->p_DR_given_vu)));
+                indiv->next_DR_event = DETECTABLE_DR;
+            }else{ //ADR and eventual dropout
+                p_vu_becomes_virally_suppressed_given_strain = param->p_DR_vu_becomes_virally_suppressed[NOT_IPM];
+                time_become_DR = t + gsl_ran_exponential (rng,1.0/(0.0 - log(1.0- param->p_DR_given_vu)));
+                indiv->next_DR_event = DETECTABLE_DR;
+            }
         }        
     }
     else{
-        if(indiv->drug_resistant != 1){
-            if(x_dr_vu<param->p_DR_given_vu){
-                indiv->drug_resistant = 1;
-                p_vu_becomes_virally_suppressed_given_strain = param->p_DR_vu_becomes_virally_suppressed[IPM];
-            }else{
-                p_vu_becomes_virally_suppressed_given_strain = param->p_nonDR_vu_becomes_virally_suppressed[IPM];
-            }
-        }else{
-            p_vu_becomes_virally_suppressed_given_strain = param->p_DR_vu_becomes_virally_suppressed[IPM];
-        }
+        // fill in POPART bit
     }
 	
+    /* Now decide what cascade event happens next. 3 possible states: continues being virally unsuppressed,
+     * becomes suppressed(depending on DR status), or drops out of ART entirely. */
+    
     double x = gsl_rng_uniform (rng);
     if (x<p_vu_becomes_virally_suppressed_given_strain){
         /* Next event is that patient becomes virally suppressed */

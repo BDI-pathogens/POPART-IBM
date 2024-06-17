@@ -232,6 +232,11 @@ extern int POPART_SAMPLING_FRAME_ESTABLISHED;
 /************************************************************************/
 /***************************** Drug resistance ***************************/
 /************************************************************************/
+// codes for indiv->drug_resistant
+#define NO_DR 0 // No drug resistance
+#define DETECTABLE_DR 1 // currently has drug resistance that can be found in consensus sequence
+#define UNDETECTABLE_DR 2 // had detectable DR but on dropping out (and ceasing ART) DR only detectable as minor variants
+
 // these are used for calibrating to drug-resistance prevalence data
 #define AGE_DR_MIN 17 // minimun age of individual sampled to check for drug resistance
 #define DR_AGE_RANGE_MAX 64  /* DR checked for 17 years olds and over i.e. to max age  in model = 80, so 64 age groups. */

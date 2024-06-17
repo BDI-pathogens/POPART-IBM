@@ -376,11 +376,8 @@ typedef struct {
     double p_leaves_earlyart_cd4_under200_if_not_die_early; /* drop out (low CD4) conditional on not dying*/
     //double p_becomes_vs_after_earlyart_if_not_die_early_or_leave; /* become virally suppressed, conditional on other stuff above */
     /* The single probability above has been replaced by a value that is calculated using the parameters below used as proxies to the DR process. It made up of a prob(pre-treatment drug resistance|time and age) and the probability of viral suppression given HIV strain */
-	double intercept_PDR; /* Intercept to the logit function for prob(PDR|time and age)*/
-	double slope_PDR; /* slope to the logit function for prob(PDR|time and age)*/
-	double coeff_age_under45_PDR; /* age coefficient to the logit function for prob(PDR|time and age)*/
-	double p_vs_given_PDR[2]; /* probability of viral suppression given PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
-	double p_vs_given_nonPDR[2]; /* probability of viral suppression given non-PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
+	double p_vs_given_DR[2]; /* probability of viral suppression given PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
+	double p_vs_given_nonDR[2]; /* probability of viral suppression given non-PDR strain. The indices [2] reflect NOT_IPM (=0) and IPM(=1) */
     /* or you remain virally unsuppressed */
     double odds_sampling_viremic; /* introduced to allow the model to calibrate to DR data and estimate odds that sample from which VS|strain parameters were calculated was more likely to have viremic individuals*/
 
