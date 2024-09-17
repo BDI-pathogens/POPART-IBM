@@ -2603,7 +2603,7 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     int year, int COUNTRY_HIV_TEST_START, parameters *param){
     /*
     Calculate probability an individual has an HIV test in the next window (t_gap).  
-    The probability of having a test at time t follows a logistic distribution, capped at 75%
+    The probability of having a test at time t follows a logistic distribution, capped at 20%
     
     Arguments
     ---------
@@ -2632,7 +2632,7 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     }
     else{
         double rate_HIV_background_testing_female = param->rate_HIV_background_testing_female;
-        p_test[FEMALE] = 0.75/(1+exp(-param->rate_HIV_background_testing_female*(year-param->midpoint_testing)));
+        p_test[FEMALE] = 0.2/(1+exp(-param->rate_HIV_background_testing_female*(year-param->midpoint_testing)));
         p_test[MALE] =  p_test[FEMALE] * param->RR_HIV_background_testing_male;
         *t_gap = 1;       
     }
