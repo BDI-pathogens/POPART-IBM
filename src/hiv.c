@@ -2392,7 +2392,7 @@ void draw_hiv_tests(parameters *param, age_list_struct *age_list, int year,
                         }
                     }
                 }else{
-                    if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG || age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == CASCADEDROPOUT ){
+                    if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG || age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == CASCADEDROPOUT || age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTDROPOUT){
 
                         schedule_hiv_test_fixedtime(age_list->age_list_by_gender[g]->age_group[aa][k],
                             param, year, cascade_events, n_cascade_events, size_cascade_events, 
