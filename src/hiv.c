@@ -2629,12 +2629,17 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     if(year < COUNTRY_HIV_TEST_START){
         printf("probability_get_hiv_test_in_next_window() ");
         printf("called before start of HIV testing.\n");
-    }
-    else{
-        double rate_HIV_background_testing_female = param->rate_HIV_background_testing_female;
-        p_test[FEMALE] = param->midpoint_testing/(1+exp(-param->rate_HIV_background_testing_female*(year-2012)));
-        p_test[MALE] =  p_test[FEMALE] * param->RR_HIV_background_testing_male;
-        *t_gap = 1;       
+    }   
+
+    if(year == COUNTRY_HIV_TEST_START){
+        /* This refers to the period [COUNTRY_HIV_TEST_START, 2006]. */
+        p_test[MALE] = param->midpoint_testing * param->RR_HIV_background_testing_male;
+        p_test[FEMALE] = param->midpoint_testing;
+        *t_gap = 2006 - COUNTRY_HIV_TEST_START;
+    }else{
+        p_test[MALE] = param->rate_HIV_background_testing_female*param->RR_HIV_background_testing_male;
+        p_test[FEMALE] = param->rate_HIV_background_testing_female;
+        *t_gap = 1;
     }
 }
 
