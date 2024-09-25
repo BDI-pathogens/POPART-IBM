@@ -2270,9 +2270,8 @@ void draw_hiv_tests(parameters *param, age_list_struct *age_list, int year,
         for(aa = 0; aa < MAX_AGE - AGE_ADULT; aa++){
             // For each individual in that annual age group, schedule their first HIV test
             for(k = 0; k < age_list->age_list_by_gender[g]->number_per_age_group[aa]; k++){
-                
-                // Only schedule tests for people who are not "HIV+ and aware of serostatus"
-                if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG){
+                // Only schedule tests for people who are not "HIV+ and aware of serostatus" or, after UTT implemented, for everyone including dropouts
+                if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG || (year<= param->COUNTRY_IMMEDIATE_ART_START && age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTDROPOUT)){
 
                     schedule_hiv_test_fixedtime(age_list->age_list_by_gender[g]->age_group[aa][k],
                         param, year, cascade_events, n_cascade_events, size_cascade_events, 
@@ -2508,17 +2507,12 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
         printf("probability_get_hiv_test_in_next_window() ");
         printf("called before start of HIV testing.\n");
     }
-    
-    if(year == COUNTRY_HIV_TEST_START){
-        /* This refers to the period [COUNTRY_HIV_TEST_START, 2006]. */
-        p_test[MALE] = param->p_HIV_background_testing_female_pre2006 * param->RR_HIV_background_testing_male;
-        p_test[FEMALE] = param->p_HIV_background_testing_female_pre2006;
-        *t_gap = 2006 - COUNTRY_HIV_TEST_START;
-    }else{
-        p_test[MALE] = param->p_HIV_background_testing_female_current*param->RR_HIV_background_testing_male;
-        p_test[FEMALE] = param->p_HIV_background_testing_female_current;
-        *t_gap = 1;
-    }
+    //Assume that testing follows a simple exponential curve with saturation (DHS Zambia)
+    p_test[FEMALE] = param -> endpoint_background_testing_rate* (1-exp(-param ->shape_background_testing_rate*(year+1-COUNTRY_HIV_TEST_START)));
+    p_test[MALE] = p_test[FEMALE]*param->RR_HIV_background_testing_male;
+    //ßprintf("this is p_test[Female] = %f\n", p_test[FEMALE]);
+    *t_gap=1;
+
 }
 
 
