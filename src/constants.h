@@ -311,7 +311,7 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 /* Decides if a cascade event (e.g. an HIV test) is from PopART or not. 
  * If it is PopART then things happen faster (e.g. time to CD4 test is quicker), and
  * ART CD4 eligibility may be different. */
-#define NOTPOPART990
+#define NOTPOPART 0
 #define POPART 1
 
 #define NCHIPSROUNDS 3 /* Number of rounds of CHiPS visits. */
