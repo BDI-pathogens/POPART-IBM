@@ -132,6 +132,11 @@ void reinitialize_arrays_to_default(int p, patch_struct *patch, all_partnerships
                 output->NCHIPS_HIVAWARE[p][g][ac][chips_round] = 0;
                 output->NCHIPS_ONART[p][g][ac][chips_round] = 0;
                 output->NCHIPS_VS[p][g][ac][chips_round] = 0;
+                patch[p].chips_sample->number_to_visit[g][ac]=0;
+                int ti=0;
+                for (ti=0;ti<MAX_N_TIMESTEPS_PER_CHIPS_ROUND;ti++){
+                    patch[p].chips_sample->number_to_see_per_timestep[g][ac][ti]=0;
+                }
             }
         }
     }

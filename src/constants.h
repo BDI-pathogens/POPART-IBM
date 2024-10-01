@@ -107,9 +107,9 @@
 
 #define WRITE_PARTNERSHIPS_AT_PC0 0 /* Generates Distr_n_lifetime_partners and Distr_n_partners_lastyear csv files. NEEDED FOR ReadAnnualOutputs-knitr.Rnw.  */
 
-#define FOLLOW_INDIVIDUAL -1 //23727 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
+#define FOLLOW_INDIVIDUAL 0 //23727 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
 
-#define FOLLOW_PATCH 0 //1
+#define FOLLOW_PATCH 1 //1
 
 #define WRITE_COST_EFFECTIVENESS_OUTPUT 0 /*  Generates a new file cost_effectiveness_$.csv */
 #define WRITE_TREATS_OUTPUT 0 // Generates output for aligning the model with that used in the TREATS clinical trial.
@@ -139,11 +139,11 @@ gsl_rng * rng;
 
 #define MAX_N_YEARS 200 /* Maximum number of years the simulation will run for */
 
-#define T_ROLLOUT_CHIPS_EVERYWHERE 2050 /* When we want post-popart CHiPs to roll out in contaminating patches. */
+#define T_ROLLOUT_CHIPS_EVERYWHERE 2999 /* When we want post-popart CHiPs to roll out in contaminating patches. */
 #define ROLL_OUT_CHIPS_INSIDE_PATCH 1
-#define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2018 /* When to stop roll out of CHiPs to inside patch */
+#define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2100 /* When to stop roll out of CHiPs to inside patch */
 
-#define ALLOW_COUNTERFACTUAL_ROLLOUT 0 /* Should post-PopART rollout of CHiPs be allowed in counterfactual simulations?  Defaul is that it's switched off*/
+#define ALLOW_COUNTERFACTUAL_ROLLOUT 1 /* Should post-PopART rollout of CHiPs be allowed in counterfactual simulations?  Defaul is that it's switched off*/
 
 /************************************************************************/
 /***************************** Settings ***************************/
@@ -311,7 +311,7 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 /* Decides if a cascade event (e.g. an HIV test) is from PopART or not. 
  * If it is PopART then things happen faster (e.g. time to CD4 test is quicker), and
  * ART CD4 eligibility may be different. */
-#define NOTPOPART 0
+#define NOTPOPART990
 #define POPART 1
 
 #define NCHIPSROUNDS 3 /* Number of rounds of CHiPS visits. */
