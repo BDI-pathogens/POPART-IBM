@@ -2271,7 +2271,7 @@ void draw_hiv_tests(parameters *param, age_list_struct *age_list, int year,
             // For each individual in that annual age group, schedule their first HIV test
             for(k = 0; k < age_list->age_list_by_gender[g]->number_per_age_group[aa]; k++){
                 // Only schedule tests for people who are not "HIV+ and aware of serostatus" or, after UTT implemented, for everyone including dropouts
-                if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG || (year<= param->COUNTRY_IMMEDIATE_ART_START && age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTDROPOUT)){
+                if(age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTNEG  || (year>= param->COUNTRY_IMMEDIATE_ART_START && age_list->age_list_by_gender[g]->age_group[aa][k]->ART_status == ARTDROPOUT)){
 
                     schedule_hiv_test_fixedtime(age_list->age_list_by_gender[g]->age_group[aa][k],
                         param, year, cascade_events, n_cascade_events, size_cascade_events, 

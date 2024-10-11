@@ -491,7 +491,6 @@ void carry_out_chips_visits_per_timestep(int t0, int t_step, patch_struct *patch
                     }
                     
                     }else{
-                    
                     /* Send the address (ie pointer) to this person. */
                     chips_visit_person(&(patch[p].individual_population[patch[p].chips_sample->list_ids_to_visit[g][ac][i]]), 
                         patch[p].cumulative_outputs,
@@ -574,9 +573,11 @@ void chips_visit_person(individual *indiv, cumulative_outputs_struct *cumulative
         fflush(stdout);
         exit(1);
     }
-    
     if(indiv->cd4 == DUMMYVALUE){
         printf("Trying to CHiPS visit a non-existent person %d %ld !!! Exiting\n", p, indiv->id);
+
+        printf("at time t=%f\n",t);
+        printf("At chips round %d", chips_round);
         printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
         fflush(stdout);
         exit(1);
