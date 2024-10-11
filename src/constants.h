@@ -139,9 +139,9 @@ gsl_rng * rng;
 
 #define MAX_N_YEARS 200 /* Maximum number of years the simulation will run for */
 
-#define T_ROLLOUT_CHIPS_EVERYWHERE 2050 /* When we want post-popart CHiPs to roll out in contaminating patches. */
+#define T_ROLLOUT_CHIPS_EVERYWHERE 2019 /* When we want post-popart CHiPs to roll out in contaminating patches. */
 #define ROLL_OUT_CHIPS_INSIDE_PATCH 1
-#define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2018 /* When to stop roll out of CHiPs to inside patch */
+#define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2030 /* When to stop roll out of CHiPs to inside patch */
 
 #define ALLOW_COUNTERFACTUAL_ROLLOUT 0 /* Should post-PopART rollout of CHiPs be allowed in counterfactual simulations?  Defaul is that it's switched off*/
 

@@ -906,14 +906,16 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
         (is_counterfactual == NOT_COUNTERFACTUAL_RUN) && 
         (RUN_POPART == 1)
     ){
-        if(POPART_FINISHED == 1 && t0 >= T_ROLLOUT_CHIPS_EVERYWHERE){
+        if(POPART_FINISHED == 1 && t0 >= T_ROLLOUT_CHIPS_EVERYWHERE && t_step>patch[p].param ->CHIPS_START_TIMESTEP_POSTTRIAL ){
             // To indicate we are post-trial
             chips_round = CHIPSROUNDPOSTTRIAL;
-            
+             
             if(POPART_SAMPLING_FRAME_ESTABLISHED == 0){
+                printf("Parameter: %d in patch %d\n", patch[p].param->CHIPS_START_TIMESTEP_POSTTRIAL, p);
                 printf("Error -trying to start PopART before PopART sample is set up at time ");
                 printf("t=%f Exiting\n", t);
                 printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
+                
                 fflush(stdout);
                 exit(1);
             }
@@ -928,7 +930,7 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
         (RUN_POPART == 1) &&
         (ALLOW_COUNTERFACTUAL_ROLLOUT == 1)
     ){
-        if(POPART_FINISHED == 1 && t0 >= T_ROLLOUT_CHIPS_EVERYWHERE){
+        if(POPART_FINISHED == 1 && t0 >= T_ROLLOUT_CHIPS_EVERYWHERE && t_step>patch[p].param ->CHIPS_START_TIMESTEP_POSTTRIAL){
             // To indicate we are post-trial
             chips_round = CHIPSROUNDPOSTTRIAL;
             
