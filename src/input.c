@@ -952,10 +952,11 @@ void read_time_params(char *patch_tag, parameters *allrunparameters, int n_runs,
 
         param_local->CHIPS_START_TIMESTEP_POSTTRIAL = 
             param_local->CHIPS_END_TIMESTEP[NCHIPSROUNDS - 1] + 1;
-        
+       printf("chips timestep post trial start = %d \n", param_local->CHIPS_START_TIMESTEP_POSTTRIAL); 
         if(param_local->CHIPS_START_TIMESTEP_POSTTRIAL >= N_TIME_STEP_PER_YEAR){
             param_local->CHIPS_START_TIMESTEP_POSTTRIAL =
                 param_local->CHIPS_START_TIMESTEP_POSTTRIAL - N_TIME_STEP_PER_YEAR;
+            printf("chips timestep post trial start corrected= %d \n", param_local->CHIPS_START_TIMESTEP_POSTTRIAL);
         }
 
         checkreadok = fscanf(param_file, "%lf", &temp_int);

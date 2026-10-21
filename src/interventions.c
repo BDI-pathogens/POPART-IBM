@@ -100,7 +100,7 @@ void create_popart_chips_samples(age_list_struct *age_list, chips_sample_struct 
     int g_persontofollow = -1; /* Default value indicates that the FOLLOW_INDIVIDUAL did not turn 
         up when going through - this is because they are too young to be visited by CHiPs. */
     int ac_persontofollow = -1;
-    
+    int ntovisit = 0;  
     if(chips_round < -1 || chips_round >= NCHIPSROUNDS){
         printf("ERROR: The calculated CHiPS round is %d, outside the range -1 to %d. Exiting\n",
             chips_round, NCHIPSROUNDS - 1);
@@ -221,6 +221,7 @@ void create_popart_chips_samples(age_list_struct *age_list, chips_sample_struct 
             
             if (chips_sample->number_to_visit[g][ac]>0){
                 
+                ntovisit = ntovisit + chips_sample->number_to_visit[g][ac];
                 /* Choose chips_sample->number_to_visit[g][ac] from the array csf->m. */
                 gsl_ran_choose(rng, chips_sample->list_ids_to_visit[g][ac],
                     chips_sample->number_to_visit[g][ac],
@@ -237,7 +238,7 @@ void create_popart_chips_samples(age_list_struct *age_list, chips_sample_struct 
     
     /* Check to see if this person was visited. Note that if g_persontofollow==-1 then they are too
     young to be in csf->list_ids_to_visit. */
-    
+   //printf("ntovisit = %d \n",ntovisit); 
     if(p == FOLLOW_PATCH && g_persontofollow > -1){
         for(i = 0; 
         i < csf->number_to_visit[g_persontofollow][ac_persontofollow]; 
@@ -336,7 +337,7 @@ void schedule_chips_visits(chips_sample_struct *chips_sample, parameters *param,
                 
                 chips_sample->number_to_see_per_timestep[g][ac][i] = (int) round(
                     chips_sample->number_to_visit[g][ac] * temp_fraction_visited_normalised);
-                
+                //printf("number to visit per timestep = %ld\n",chips_sample->number_to_see_per_timestep[g][ac][i]); 
                 /* Now deal with the fact that there are rounding issues - we may end up seeing
                 more/less people than intended as a result. For example if we are to see 10 people
                 over 9 timesteps equally at a rate of 1/9 then we would see 1 at each timestep and
@@ -466,7 +467,8 @@ void carry_out_chips_visits_per_timestep(int t0, int t_step, patch_struct *patch
     for(g = 0; g < N_GENDER; g++){
         /* Run from AGE_CHIPS to 80+. */
         for (ac = 0; ac < (MAX_AGE - AGE_CHIPS + 1); ac++){
-            
+            //printf("\n\npatch[p].chips_sample->next_person_to_see[g][ac] = %ld \n patch[p].chips_sample->number_to_see_per_timestep[g][ac][t_i] = %ld\n",patch[p].chips_sample->next_person_to_see[g][ac],patch[p].chips_sample->number_to_see_per_timestep[g][ac][t_i] );
+            //printf("numbertovisit = %ld\n",patch[p].chips_sample->number_to_visit[g][ac]);
             for(i = patch[p].chips_sample->next_person_to_see[g][ac]; 
                 (i < (patch[p].chips_sample->next_person_to_see[g][ac] +
                     patch[p].chips_sample->number_to_see_per_timestep[g][ac][t_i])); 
@@ -474,13 +476,11 @@ void carry_out_chips_visits_per_timestep(int t0, int t_step, patch_struct *patch
                     if((patch[p].chips_sample->next_person_to_see[g][ac] +
                         patch[p].chips_sample->number_to_see_per_timestep[g][ac][t_i]) > 
                     (patch[p].chips_sample->number_to_visit[g][ac])){
-                    
                     /* Only print out error message if we are over 2 too many otherwise just skip
                     those people. */
                     if((patch[p].chips_sample->next_person_to_see[g][ac] + 
                         patch[p].chips_sample->number_to_see_per_timestep[g][ac][t_i]) >
                         (patch[p].chips_sample->number_to_visit[g][ac])){
-                        
                         if(VERBOSE_OUTPUT == 1){
                         printf("Visited too many people in patch %i at ", p);
                         printf("time=%6.4f g=%i ac=%i Excess=%li Number = %li\n",

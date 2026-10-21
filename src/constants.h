@@ -89,14 +89,14 @@
 #define DEBUG_MAX_HIV_STATE_OUTPUT_TIME 2016
 #define WRITE_DEBUG_ART_STATE 0                   /* Generates the files DEBUG_ART_population_*.csv. These are then used by generate_art_distribution_files.py to make ART_distribution.csv and ART_transition_dist.csv files. */
 #define WRITE_ART_STATUS_BY_AGE_SEX 0 // Write totals of individuals in each ART_status stratified by sex and year of age.  Write these for each time step.
-#define WRITE_DEBUG_CHIPS_STATES 0                /* Generates the files CHIPS_outputs_annual*.csv containing the annual data on people when they are visited by CHiPs. */
+#define WRITE_DEBUG_CHIPS_STATES 1                /* Generates the files CHIPS_outputs_annual*.csv containing the annual data on people when they are visited by CHiPs. */
 
 #define WRITE_CALIBRATION 0 /* Write Calibration*.csv files to disk */
 #define PRINT_ALL_RUNS 1 /* Use this if you want to print everything regardless of fitting. */
 #define PRINT_EACH_RUN_OUTPUT 1 /* 0 if don't want to generate an output file for every run (when calibrating at present this is the case), or 1 if we do. */
-#define WRITE_EVERYTIMESTEP 0 /* Generates the files Timestep_outputs*.csv */
+#define WRITE_EVERYTIMESTEP 1 /* Generates the files Timestep_outputs*.csv */
 #define TIMESTEP_AGE 0 /* Generates the files Timestep_age_outputs_*.csv */
-#define WRITE_PHYLOGENETICS_OUTPUT 0 // 1    /* if 1 print phylo output to file, otherwise do not print */
+#define WRITE_PHYLOGENETICS_OUTPUT 1 // 1    /* if 1 print phylo output to file, otherwise do not print */
 #define WRITE_PARTNERSHIP_NETWORK_SNAPSHOT 0 /* if 1 then print out the sexual network at fixed times to allow network plots.  Writes the files Partnership_network_*.csv to disk.  The years at which partnerships are output are hard-coded in main.c */
 #define PARTNERSHIP_NETWORK_SNAPSHOT_START 2010
 #define PARTNERSHIP_NETWORK_SNAPSHOT_END 2019
@@ -107,9 +107,9 @@
 
 #define WRITE_PARTNERSHIPS_AT_PC0 0 /* Generates Distr_n_lifetime_partners and Distr_n_partners_lastyear csv files. NEEDED FOR ReadAnnualOutputs-knitr.Rnw.  */
 
-#define FOLLOW_INDIVIDUAL 0 //23727 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
+#define FOLLOW_INDIVIDUAL -1 //23727 // 30295 // 28101 //  -1 // 1972 // 2727 // 267 // 4328  // if -1 then normal run, otherwise printing things and checking everything that happens to an individual with a certain ID
 
-#define FOLLOW_PATCH 1 //1
+#define FOLLOW_PATCH 0 //1
 
 #define WRITE_COST_EFFECTIVENESS_OUTPUT 0 /*  Generates a new file cost_effectiveness_$.csv */
 #define WRITE_TREATS_OUTPUT 0 // Generates output for aligning the model with that used in the TREATS clinical trial.
@@ -139,11 +139,14 @@ gsl_rng * rng;
 
 #define MAX_N_YEARS 200 /* Maximum number of years the simulation will run for */
 
-#define T_ROLLOUT_CHIPS_EVERYWHERE 2019 /* When we want post-popart CHiPs to roll out in contaminating patches. */
+#define T_ROLLOUT_CHIPS_EVERYWHERE 2090 /* When we want post-popart CHiPs to roll out in contaminating patches. */
 #define ROLL_OUT_CHIPS_INSIDE_PATCH 1
-#define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2030 /* When to stop roll out of CHiPs to inside patch */
+#define T_STOP_ROLLOUT_CHIPS_INSIDE_PATCH 2019 /* When to stop roll out of CHiPs to inside patch */
 
 #define ALLOW_COUNTERFACTUAL_ROLLOUT 1 /* Should post-PopART rollout of CHiPs be allowed in counterfactual simulations?  Defaul is that it's switched off*/
+
+#define T_BEGIN_DISRUPTION 2025
+#define T_END_DISRUPTION 2027
 
 /************************************************************************/
 /***************************** Settings ***************************/
@@ -363,10 +366,10 @@ extern const char RISK_GP_NAMES[N_RISK][5];
 #define TRADITIONAL_MC 4
 
 
-#define DEFAULT_N_HIV_PROGRESS_PER_TIME_STEP MAX_POP_SIZE/100   /* This is the default number of HIV+ people whose next progression event will happen in a given time step.
+#define DEFAULT_N_HIV_PROGRESS_PER_TIME_STEP MAX_POP_SIZE/5   /* This is the default number of HIV+ people whose next progression event will happen in a given time step.
                                                                Taken to be moderately conservative - in a 50% prevalence population assume average of 1 HIV event per year. 
                                                                 At some point in the future we will tune this to avoid too many reallocs(). */
-#define DEFAULT_N_HIV_CASCADE_PER_TIME_STEP MAX_POP_SIZE/50   /* This is the default number of people who will have an HIV cascade event (HIV test, start ART etc) in a given time step.
+#define DEFAULT_N_HIV_CASCADE_PER_TIME_STEP MAX_POP_SIZE/2   /* This is the default number of people who will have an HIV cascade event (HIV test, start ART etc) in a given time step.
                                                                Taken to be moderately conservative - in a 50% prevalence population assume average of 1 HIV event per year. 
                                                                 At some point in the future we will tune this to avoid too many reallocs(). */
 

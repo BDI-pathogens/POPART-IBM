@@ -1196,7 +1196,7 @@ void next_hiv_event(individual* indiv, individual ***hiv_pos_progression,
             (t >= param->COUNTRY_ART_START) && 
             (indiv->ART_status != LTART_VU) && 
             (DO_HIV_TESTING == 1) && 
-            (ALLOW_EMERGENCY_ART == 1)
+            (ALLOW_EMERGENCY_ART == 1)&&(t<=T_BEGIN_DISRUPTION || t >=T_END_DISRUPTION)
         ){
             double time_emergency_start_ART = get_time_emergency_start_ART(indiv,param,t);
             
@@ -2393,6 +2393,7 @@ void schedule_generic_cascade_event(individual* indiv, parameters *param, double
             // planned_breakups[time_breakup] **), so ditch this code for now and use the following
             // lines
             printf("Unable to re-allocate cascade_events[i]. Execution aborted.");
+            printf("id = %ld, patch = %d\n",indiv->id, indiv->patch_no);
             printf("LINE %d; FILE %s\n", __LINE__, __FILE__);
             fflush(stdout);
             exit(1);
@@ -2512,7 +2513,10 @@ void probability_get_hiv_test_in_next_window(double *p_test, double *t_gap, int 
     p_test[MALE] = p_test[FEMALE]*param->RR_HIV_background_testing_male;
     //ßprintf("this is p_test[Female] = %f\n", p_test[FEMALE]);
     *t_gap=1;
-
+    if(year>=T_BEGIN_DISRUPTION && year < T_END_DISRUPTION){
+        p_test[FEMALE] =0.0;
+        p_test[MALE]=0;
+    }
 }
 
 

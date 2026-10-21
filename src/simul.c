@@ -566,11 +566,11 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
             chips_round = CHIPSROUNDPOSTTRIAL;
             
             if(t_step == patch[p].param->CHIPS_START_TIMESTEP_POSTTRIAL){
-                if(VERBOSE_OUTPUT == 1){
+                 if(VERBOSE_OUTPUT==1){
                     printf("PopART occurring in external (non-popart) patch at time ");
                     printf("t = %f using post-trial data\n", t);
                     fflush(stdout);
-                }
+                 }
                 POPART_SAMPLING_FRAME_ESTABLISHED = 1;  // This shouldn't matter.
                 
                 create_popart_chips_samples(patch[p].age_list, patch[p].chips_sample,
@@ -801,7 +801,27 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
     /******************************************/
     
     if(t >= patch[p].param->COUNTRY_HIV_TEST_START){
-        carry_out_cascade_events_per_timestep(t, patch, p, overall_partnerships, debug,
+        if (t == T_BEGIN_DISRUPTION){
+                long ind=0;
+                for (ind=0; ind < patch[p].id_counter; ind++){
+                    if (patch[p].individual_population[ind].cd4!=DEAD){
+
+                    if(patch[p].individual_population[ind].id == FOLLOW_INDIVIDUAL && patch[p].individual_population[ind].patch_no == FOLLOW_PATCH){
+                        printf("Checking if between T_BEGIN_DISRUPTION and T_END_DISRUPTION the individual will ever be droppedout of cascade care: t=%f, patch[p].individual_population[ind].ART_status = %d, next cascade event = %d \n\n", t, patch[p].individual_population[ind].ART_status, patch[p].individual_population[ind].next_cascade_event );
+                        fflush(stdout);
+                    }
+                    if (patch[p].individual_population[ind].ART_status >0 && patch[p].individual_population[ind].ART_status <4){
+                            //make sure the individual doesn't go multiple cascade events
+                            remove_from_cascade_events(&patch[p].individual_population[ind], patch[p].cascade_events,  patch[p].n_cascade_events,
+                                    patch[p].size_cascade_events,t, patch[p].param);
+                        patch[p].individual_population[ind].next_cascade_event=CASCADEEVENT_DROPOUT_NONPOPART;
+                        schedule_generic_cascade_event(&patch[p].individual_population[ind], patch[p].param , (double) t+1.0/48, patch[p].cascade_events, patch[p].n_cascade_events, patch[p].size_cascade_events, (double) t);
+                    }     
+
+			}
+		}
+	}
+   carry_out_cascade_events_per_timestep(t, patch, p, overall_partnerships, debug,
             file_data_store);
     }
     
@@ -906,7 +926,7 @@ int carry_out_processes_by_patch_by_time_step(int t_step, int t0, fitting_data_s
         (is_counterfactual == NOT_COUNTERFACTUAL_RUN) && 
         (RUN_POPART == 1)
     ){
-        if(POPART_FINISHED == 1 && t0 >= T_ROLLOUT_CHIPS_EVERYWHERE && t_step>patch[p].param ->CHIPS_START_TIMESTEP_POSTTRIAL ){
+        if(POPART_FINISHED == 1 && (t0 == T_ROLLOUT_CHIPS_EVERYWHERE && t_step>patch[p].param ->CHIPS_START_TIMESTEP_POSTTRIAL) || t0>T_ROLLOUT_CHIPS_EVERYWHERE ){
             // To indicate we are post-trial
             chips_round = CHIPSROUNDPOSTTRIAL;
              
